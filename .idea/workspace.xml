@@ -1,13 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Imported some tools from Jupyter notebooks and setup some basic project structure.">
-      <change afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_on_axis.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/figure.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/process.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/process.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/utilities.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_on_axis.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_on_axis.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -87,7 +84,7 @@
       <option name="presentableId" value="Default" />
       <updated>1570440128437</updated>
       <workItem from="1570440130068" duration="10597000" />
-      <workItem from="1570603393578" duration="4908000" />
+      <workItem from="1570603393578" duration="8412000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -96,7 +93,14 @@
       <option name="project" value="LOCAL" />
       <updated>1570457204430</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board">
+      <created>1570611109263</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1570611109263</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -117,6 +121,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Imported some tools from Jupyter notebooks and setup some basic project structure." />
-    <option name="LAST_COMMIT_MESSAGE" value="Imported some tools from Jupyter notebooks and setup some basic project structure." />
+    <MESSAGE value="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board" />
+    <option name="LAST_COMMIT_MESSAGE" value="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board" />
   </component>
 </project>

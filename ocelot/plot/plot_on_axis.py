@@ -1,20 +1,23 @@
 """A set of functions for adding standardised things to an axis."""
 
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from . import utilities
-from . import process
 from typing import Optional
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 
-def position_and_pmotion(axis_1,
-                         axis_2,
-                         data_gaia: pd.DataFrame,
-                         open_cluster_pm_to_mark: Optional[list, np.ndarray] = None,
-                         pmra_plot_limits: Optional[list, np.ndarray] = None,
-                         pmdec_plot_limits: Optional[list, np.ndarray] = None,
-                         plot_std_limit: float = 1.5):
+from . import process
+from . import utilities
+
+
+def position_and_pmotion(
+        axis_1,
+        axis_2,
+        data_gaia: pd.DataFrame,
+        open_cluster_pm_to_mark: Optional[list, np.ndarray] = None,
+        pmra_plot_limits: Optional[list, np.ndarray] = None,
+        pmdec_plot_limits: Optional[list, np.ndarray] = None,
+        plot_std_limit: float = 1.5):
     """Makes a scatter plot of position and proper motion for a given cluster,
     using plot_helper_calculate_alpha to prevent over-saturation of the
     figures.
@@ -24,16 +27,14 @@ def position_and_pmotion(axis_1,
         axis_2 (matplotlib axis): the proper motion (pmra/pmdec) axis.
         data_gaia (pandas.DataFrame): the Gaia data read in to a DataFrame.
             Keys should be unchanged from default Gaia source table names.
-        open_cluster_pm_to_mark (list-like, optional): the co-ordinates
-            (pmra, pmdec) of a point to mark on the proper motion diagram, such
-            as a literature value.
-        pmra_plot_limits (list-like, optional): the minimum and maximum
-            proper motion in the right ascension direction plot limits.
-        pmdec_plot_limits (list-like, optional): the minimum and maximum
-            proper motion in the declination direction plot limits.
-        plot_std_limit (float): standard deviation of proper motion to use
-            to find plotting limits if none are explicitly specified.
-            Default: 1.5
+        open_cluster_pm_to_mark (list-like, optional): the co-ordinates (pmra, pmdec) of a point to mark on the proper
+            motion diagram, such as a literature value.
+        pmra_plot_limits (list-like, optional): the minimum and maximum proper motion in the right ascension direction
+            plot limits.
+        pmdec_plot_limits (list-like, optional): the minimum and maximum proper motion in the declination direction
+            plot limits.
+        plot_std_limit (float): standard deviation of proper motion to use to find plotting limits if none are
+            explicitly specified. Default: 1.5
 
     Returns:
         axis_1 (matplotlib axis): the modified position axis.
