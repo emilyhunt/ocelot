@@ -1,22 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/ocelot.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/plot/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/plot/axis.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/plot/figure.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/plot/process.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/plot/utilities.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/context.py" afterDir="false" />
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Imported some tools from Jupyter notebooks and setup some basic project structure.">
+      <change afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_on_axis.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/figure.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/process.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/process.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/utilities.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -32,6 +23,11 @@
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="PREVIOUS_COMMIT_AUTHORS">
+      <list>
+        <option value="Emily Hunt &lt;emily.hunt.physics@gmail.com&gt;" />
+      </list>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="ProjectId" id="1RrziPSIh3XuBidNfAcGl4Wx24B" />
@@ -90,8 +86,17 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1570440128437</updated>
-      <workItem from="1570440130068" duration="9702000" />
+      <workItem from="1570440130068" duration="10597000" />
+      <workItem from="1570603393578" duration="4908000" />
     </task>
+    <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
+      <created>1570457204430</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1570457204430</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -102,10 +107,16 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
           </value>
         </entry>
       </map>
     </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Imported some tools from Jupyter notebooks and setup some basic project structure." />
+    <option name="LAST_COMMIT_MESSAGE" value="Imported some tools from Jupyter notebooks and setup some basic project structure." />
   </component>
 </project>

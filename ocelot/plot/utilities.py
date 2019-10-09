@@ -35,6 +35,11 @@ def calculate_alpha(n_points: int, area: float, marker_radius: int, dpi: int = 3
     return np.clip(desired_max_density / current_max_density, 0., 1.)
 
 
+def generate_figure_title():
+    # Todo: a helper function to quickly grab information from... somewhere... and make a nicely formatted figure title, including all information of the run.
+    pass
+
+
 """
 # TODO: this function sucks. get rid of it
 def add_text(my_axis, x: float, y: float, text: Union[str, List[str]], ha: str = 'center', va: str = 'center',
