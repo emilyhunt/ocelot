@@ -1,6 +1,7 @@
 """Set of functions for reading in isochrones from their downloaded formats and processing them into useful spaces."""
 
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -45,4 +46,46 @@ def read_cmd_isochrone(file_location: Path, skiprows: int = 11) -> pd.DataFrame:
     # Reset so that everything is a float
     isochrones = isochrones.astype(np.float)
 
+    # Add some extra useful things
+    isochrones['G_BP-RP'] = isochrones['G_BPmag'] - isochrones['G_RPmag']
+    isochrones['logZini'] = np.log10(isochrones['Zini'])
+
     return isochrones
+
+
+def convert_cmd_table_to_array(data_isochrone: pd.DataFrame,
+                               dimensions: Union[list, tuple, np.ndarray, str] = 'infer',
+                               axes: Union[list, tuple] = None,
+                               equally_sized_axes: int = 2) -> np.ndarray:
+    """Converts an input CMD 3.3 table into an array for use in interpolation.
+
+    Args:
+        data_isochrone (pd.DataFrame): a table of the isochrones, read in via read_cmd_isochrone.
+        dimensions (list-like or str): the dimensions to split the table along, or 'infer' to try and find this
+            automatically.
+            Default: 'infer'
+        axes (list-like of str): the axis labels, in order, to convert to an array on.
+            Default: ['Zini', 'logAge', 'Gmag', 'G_BP-RP']
+
+    Returns:
+        a np.ndarray of the specified shape.
+
+    """
+    # Set the axes to default values if None were specified:
+    if axes is None:
+        axes = ['Zini', 'logAge', 'Gmag', 'G_BP-RP']
+
+    # Infer the dimensions of the table if necessary
+    if dimensions == 'infer':
+        # Grab some constants we need and re-assign dimensions to be blank
+        number_of_axes = len(axes)
+        dimensions = np.zeros(number_of_axes)
+
+        # Loop over each axis and find how many unique values there are, stopping before the equally sized axes
+        for an_axis, i in enumerate(axes[:-equally_sized_axes]):
+            dimensions[i] = np.unique(data_isochrone[an_axis]).size
+
+    # Todo: probably not actually needed. oops lol
+
+    pass
+

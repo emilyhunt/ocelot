@@ -19,18 +19,19 @@ import numpy as np
 
 def test_read_cmd_isochrone():
     """Tests the input-output functionality of the isochrone module."""
-    path_to_test_isochrones = Path('../../data/isochrones/191008_isochrones_wide_logz_and_logt.dat')
+    # Todo: we should have a small isochrone table test packaged with the module instead, preferably in the tests folder itself.
+    path_to_test_isochrones = Path('../../../data/isochrones/191008_isochrones_wide_logz_and_logt.dat')
     my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrones)
 
     # Check that we've read in the right shape of file
-    assert my_isochrones.shape == (95919, 28)
+    assert my_isochrones.shape == (95919, 30)
 
     # Test that the headers were read in correctly
     assert list(my_isochrones.keys()) == \
         ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe',
          'logg', 'label', 'McoreTP', 'C_O', 'period0', 'period1', 'pmode',
          'Mloss', 'tau1m', 'X', 'Y', 'Xc', 'Xn', 'Xo', 'Cexcess', 'Z', 'mbolmag',
-         'Gmag', 'G_BPmag', 'G_RPmag']
+         'Gmag', 'G_BPmag', 'G_RPmag', 'G_BP-RP', 'logZini']
 
     # Check that there aren't any hidden rows in there (CMD 3.3 hides them in some spots
     rows_with_another_header = np.where(my_isochrones['Zini'] == '#')[0]
@@ -41,7 +42,30 @@ def test_read_cmd_isochrone():
     assert my_isochrones.loc[10000, 'Gmag'] == 6.197
     assert my_isochrones.loc[94000, 'Mini'] == 1.6531767845
 
+    return my_isochrones
+
 
 # Run tests manually if the file is ran
 if __name__ == '__main__':
-    test_read_cmd_isochrone()
+    iso = test_read_cmd_isochrone()
+
+    # Some plotting code just for my own sanity check
+    import matplotlib.pyplot as plt
+
+    age = 6
+    max_label = 3  # See CMD website for what stage of stellar evolution these correspond to
+
+    hello = iso.drop(np.where(iso['logAge'] != age)[0], axis=0).reset_index()
+    unique_z = np.unique(hello['Zini'])
+
+    for a_z in unique_z:
+        where_z_met = np.logical_and(np.where(hello['Zini'] == a_z, True, False),
+                                     np.where(hello['label'] <= max_label, True, False))
+        x = hello.loc[where_z_met, 'G_BP-RP']
+        y = hello.loc[where_z_met, 'Gmag']
+        plt.plot(x, y, '-', label=f'[M/H]={np.log10(a_z):.2}')
+
+    plt.gca().invert_yaxis()
+    plt.legend()
+    plt.title(f'Isochrones for max_label={max_label} and logAge={age}')
+    plt.show()
