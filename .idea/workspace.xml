@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/scripts/spline_fit_to_random_data.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/isochrone/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/isochrone/io.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/io.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_isochrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_isochrone.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -196,7 +196,7 @@
       <workItem from="1570603393578" duration="19746000" />
       <workItem from="1570691256791" duration="13816000" />
       <workItem from="1570778243637" duration="12572000" />
-      <workItem from="1571036773136" duration="5455000" />
+      <workItem from="1571036773136" duration="21151000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -233,7 +233,14 @@
       <option name="project" value="LOCAL" />
       <updated>1570717103952</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Some testing of a new way to spline fit random data, &amp; beginning development on isochrone.IsochroneInterpolator &#10;- I should be able to try just finding scatter about an interpolated curve of random data - a new test script has been written for this.&#10;- Began working on the IsochroneInterpolator class by adding a cumulative sum along a curve function.">
+      <created>1571042528433</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1571042528433</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -259,7 +266,8 @@
     <MESSAGE value="0.1-unstable&#10;- Basic plotting functionality ported from the Jupyter notebook,&#10;- Minimal testing completed!&#10;- Releasing early as I want to work on other things - ocelot.plot will have changes and more refactoring in the future." />
     <MESSAGE value="Implemented ocelot.isochrone.io.read_cmd_isochrone()&#10;- It reads in isochrones from CMD 3.3!&#10;- Unit test written &amp; passed.&#10;&gt; This satisfies feature(s) [a] for future release 0.2.0" />
     <MESSAGE value="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io" />
-    <option name="LAST_COMMIT_MESSAGE" value="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io" />
+    <MESSAGE value="Some testing of a new way to spline fit random data, &amp; beginning development on isochrone.IsochroneInterpolator &#10;- I should be able to try just finding scatter about an interpolated curve of random data - a new test script has been written for this.&#10;- Began working on the IsochroneInterpolator class by adding a cumulative sum along a curve function." />
+    <option name="LAST_COMMIT_MESSAGE" value="Some testing of a new way to spline fit random data, &amp; beginning development on isochrone.IsochroneInterpolator &#10;- I should be able to try just finding scatter about an interpolated curve of random data - a new test script has been written for this.&#10;- Began working on the IsochroneInterpolator class by adding a cumulative sum along a curve function." />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>

@@ -52,29 +52,42 @@ def test_read_cmd_isochrone():
     return my_isochrones
 
 
+def test_isochrone_interpolation():
+    """Tests the isochrone interpolation functionality of ocelot."""
+    my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrones, max_label=max_label)
+
+    stars_to_cut = np.asarray(my_isochrones['Zini'] != 0.0094713).nonzero()[0]
+
+    my_isochrones = my_isochrones.drop(stars_to_cut).reset_index(drop=True)
+
+    isochrones_for_fun_and_profit = ocelot.isochrone.IsochroneInterpolator(my_isochrones,
+                                                                           parameters_as_arguments=['logAge'],
+                                                                           parameters_to_infer=None,
+                                                                           interpolation_type='LinearND')
+
+    test_points = np.asarray([[6.]])
+
+    isochrone_output = isochrones_for_fun_and_profit(test_points)
+
+    return [isochrones_for_fun_and_profit, isochrone_output]
+
+
 # Run tests manually if the file is ran
 if __name__ == '__main__':
-    iso = test_read_cmd_isochrone()
+    isochrones = test_read_cmd_isochrone()
 
-    """
+    interpolator, interpolator_output = test_isochrone_interpolation()
+
     # Some plotting code just for my own sanity check
     import matplotlib.pyplot as plt
 
-    age = 6
-    max_label = 3  # See CMD website for what stage of stellar evolution these correspond to
+    good_stars = np.asarray(np.logical_and(isochrones['Zini'] == 0.0094713,
+                                           np.logical_or(isochrones['logAge'] == 6., isochrones['logAge'] == 6.)))
+    plt.plot(isochrones['G_BP-RP'].iloc[good_stars], isochrones['Gmag'].iloc[good_stars], 'k-', label='original')
 
-    hello = iso.drop(np.where(iso['logAge'] != age)[0], axis=0).reset_index()
-    unique_z = np.unique(hello['Zini'])
-
-    for a_z in unique_z:
-        where_z_met = np.logical_and(np.where(hello['Zini'] == a_z, True, False),
-                                     np.where(hello['label'] <= max_label, True, False))
-        x = hello.loc[where_z_met, 'G_BP-RP']
-        y = hello.loc[where_z_met, 'Gmag']
-        plt.plot(x, y, '-', label=f'[M/H]={np.log10(a_z):.2}')
+    plt.plot(interpolator_output[0], interpolator_output[1], 'r-', label='interpolated')
 
     plt.gca().invert_yaxis()
     plt.legend()
-    plt.title(f'Isochrones for max_label={max_label} and logAge={age}')
+    plt.title(f'Isochrones: interpolated vs original')
     plt.show()
-    """
