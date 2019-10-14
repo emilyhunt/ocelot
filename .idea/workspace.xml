@@ -2,6 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/scripts/spline_fit_to_random_data.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/isochrone/io.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/io.py" afterDir="false" />
@@ -30,8 +31,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Python Script" />
         <option value="Python Unit Test" />
+        <option value="Python Script" />
       </list>
     </option>
   </component>
@@ -52,7 +53,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$USER_HOME$/Desktop" />
-    <property name="settings.editor.selected.configurable" value="PyScientificConfigurable" />
+    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -111,6 +112,28 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="spline_fit_to_random_data" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="ocelot" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/scripts" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/scripts/spline_fit_to_random_data.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="test_isochrone" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -149,10 +172,12 @@
     <list>
       <item itemvalue="Python.io" />
       <item itemvalue="Python.test_isochrone" />
+      <item itemvalue="Python.spline_fit_to_random_data" />
     </list>
     <recent_temporary>
       <list>
         <item itemvalue="Python.test_isochrone" />
+        <item itemvalue="Python.spline_fit_to_random_data" />
         <item itemvalue="Python.io" />
       </list>
     </recent_temporary>
@@ -169,7 +194,9 @@
       <updated>1570440128437</updated>
       <workItem from="1570440130068" duration="10597000" />
       <workItem from="1570603393578" duration="19746000" />
-      <workItem from="1570691256791" duration="13654000" />
+      <workItem from="1570691256791" duration="13816000" />
+      <workItem from="1570778243637" duration="12572000" />
+      <workItem from="1571036773136" duration="5455000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -199,7 +226,14 @@
       <option name="project" value="LOCAL" />
       <updated>1570630466173</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io">
+      <created>1570717103952</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1570717103952</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -224,7 +258,8 @@
     <MESSAGE value="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board" />
     <MESSAGE value="0.1-unstable&#10;- Basic plotting functionality ported from the Jupyter notebook,&#10;- Minimal testing completed!&#10;- Releasing early as I want to work on other things - ocelot.plot will have changes and more refactoring in the future." />
     <MESSAGE value="Implemented ocelot.isochrone.io.read_cmd_isochrone()&#10;- It reads in isochrones from CMD 3.3!&#10;- Unit test written &amp; passed.&#10;&gt; This satisfies feature(s) [a] for future release 0.2.0" />
-    <option name="LAST_COMMIT_MESSAGE" value="Implemented ocelot.isochrone.io.read_cmd_isochrone()&#10;- It reads in isochrones from CMD 3.3!&#10;- Unit test written &amp; passed.&#10;&gt; This satisfies feature(s) [a] for future release 0.2.0" />
+    <MESSAGE value="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io" />
+    <option name="LAST_COMMIT_MESSAGE" value="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>

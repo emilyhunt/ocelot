@@ -7,10 +7,12 @@ import numpy as np
 import pandas as pd
 
 
-def read_cmd_isochrone(file_location: Path, skiprows: int = 11) -> pd.DataFrame:
+def read_cmd_isochrone(file_location: Path, skiprows: int = 11, max_label: int = 7) -> pd.DataFrame:
     """Reads an input CMD 3.3 isochrone.
 
     # Todo: more sophisticated would be to cycle over the first few rows (outside of pandas) until the first one not starting with a # is found.
+
+    # Todo: astropy.io.ascii.basic would be more appropriate: http://docs.astropy.org/en/stable/api/astropy.io.ascii.Basic.html#astropy.io.ascii.Basic
 
     Notes:
         - Only verified for use when reading in isochrones from the CMD v3.3 & PARSEC v1.2S web interface at
@@ -25,6 +27,19 @@ def read_cmd_isochrone(file_location: Path, skiprows: int = 11) -> pd.DataFrame:
         file_location (pathlib.Path): location of the file containing CMD 3.3 / PARSEC v1.2s isochrones.
         skiprows (int): how many rows to skip (the output header from CMD 3.3).
             Default: 11. Will need changing if CMD change anything on their end!
+        max_label (int): maximum label to read in. This corresponds to:
+            0 = PMS, pre main sequence
+            1 = MS, main sequence
+            2 = SGB, subgiant branch, or Hertzsprung gap for more intermediate+massive stars
+            3 = RGB, red giant branch, or the quick stage of red giant for intermediate+massive stars
+            4 = CHEB, core He-burning for low mass stars, or the initial stage of CHeB for intermediate+massive stars
+            5 = still CHEB, the blueward part of the Cepheid loop of intermediate+massive stars
+            6 = still CHEB, the redward part of the Cepheid loop of intermediate+massive stars
+            7 = EAGB, the early asymptotic giant branch, or a quick stage of red giant for massive stars
+            8 = TPAGB, the thermally pulsing asymptotic giant branch
+            9 = post-AGB (in preparation!)
+            default: 7
+
 
     Returns:
         a pd.DataFrame of the read-in isochrone. It's worth checking manually that this worked, as the tables are in
@@ -45,6 +60,10 @@ def read_cmd_isochrone(file_location: Path, skiprows: int = 11) -> pd.DataFrame:
 
     # Reset so that everything is a float
     isochrones = isochrones.astype(np.float)
+
+    # Drop anything that isn't the right type of thing
+    rows_with_bad_label = np.where(isochrones['label'] > max_label)[0]
+    isochrones = isochrones.drop(labels=rows_with_bad_label, axis='index').reset_index(drop=True)
 
     # Add some extra useful things
     isochrones['G_BP-RP'] = isochrones['G_BPmag'] - isochrones['G_RPmag']
