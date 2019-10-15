@@ -175,3 +175,8 @@ def clustering_result(data_gaia: pd.DataFrame,
         fig.show()
 
     return fig
+
+
+def isochrone():
+
+    pass

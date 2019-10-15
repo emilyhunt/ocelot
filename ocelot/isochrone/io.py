@@ -1,18 +1,18 @@
 """Set of functions for reading in isochrones from their downloaded formats and processing them into useful spaces."""
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 
 import numpy as np
 import pandas as pd
+from astropy.io import ascii
 
 
-def read_cmd_isochrone(file_location: Path, skiprows: int = 11, max_label: int = 7) -> pd.DataFrame:
+def read_cmd_isochrone(file_location: Path,
+                       max_label: int = 7,
+                       column_names: Optional[str]=None,
+                       solar_metallicity: float = 0.0207) -> pd.DataFrame:
     """Reads an input CMD 3.3 isochrone.
-
-    # Todo: more sophisticated would be to cycle over the first few rows (outside of pandas) until the first one not starting with a # is found.
-
-    # Todo: astropy.io.ascii.basic would be more appropriate: http://docs.astropy.org/en/stable/api/astropy.io.ascii.Basic.html#astropy.io.ascii.Basic
 
     Notes:
         - Only verified for use when reading in isochrones from the CMD v3.3 & PARSEC v1.2S web interface at
@@ -25,8 +25,6 @@ def read_cmd_isochrone(file_location: Path, skiprows: int = 11, max_label: int =
 
     Args:
         file_location (pathlib.Path): location of the file containing CMD 3.3 / PARSEC v1.2s isochrones.
-        skiprows (int): how many rows to skip (the output header from CMD 3.3).
-            Default: 11. Will need changing if CMD change anything on their end!
         max_label (int): maximum label to read in. This corresponds to:
             0 = PMS, pre main sequence
             1 = MS, main sequence
@@ -39,35 +37,32 @@ def read_cmd_isochrone(file_location: Path, skiprows: int = 11, max_label: int =
             8 = TPAGB, the thermally pulsing asymptotic giant branch
             9 = post-AGB (in preparation!)
             default: 7
-
+        column_names (str, optional): alternative column names to use.
+            Default: None, which uses column names:
+                ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe', 'logg', 'label',
+                 'mbolmag', 'Gmag', 'G_BPmag', 'G_RPmag']
+            as from the CMD 3.3 output in the Gaia DR2 Evans+2018 photometric system.
+        solar_metallicity (float): value of the solar metallicity Z/X to use when computing log initial metallicities.
+            Default: 0.0207
 
     Returns:
         a pd.DataFrame of the read-in isochrone. It's worth checking manually that this worked, as the tables are in
             a format that requires some cleaning (that should hopefully be done automatically.)
 
     """
-    isochrones = pd.read_csv(file_location, skiprows=skiprows, delim_whitespace=True)
+    isochrones = ascii.read(str(file_location.resolve())).to_pandas()
 
-    # Deal with the fact that the header row starts with a #, which adds an extra empty column & fucks with the header
-    # names
-    cleaned_headers = list(isochrones.keys())[1:]
-    isochrones = isochrones.drop(labels=cleaned_headers[-1], axis='columns')
-    isochrones.columns = cleaned_headers
+    # Use default column names if none are specified
+    if column_names is None:
+        isochrones.columns = ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe', 'logg', 'label',
+                              'mbolmag', 'Gmag', 'G_BPmag', 'G_RPmag']
 
-    # Drop rows that contain a repeat of the header
-    rows_with_another_header = np.where(isochrones['Zini'] == '#')[0]
-    isochrones = isochrones.drop(labels=rows_with_another_header, axis='index').reset_index(drop=True)
-
-    # Reset so that everything is a float
-    isochrones = isochrones.astype(np.float)
-
-    # Drop anything that isn't the right type of thing
+    # Drop anything that isn't the right type of star
     rows_with_bad_label = np.where(isochrones['label'] > max_label)[0]
     isochrones = isochrones.drop(labels=rows_with_bad_label, axis='index').reset_index(drop=True)
 
     # Add some extra useful things
     isochrones['G_BP-RP'] = isochrones['G_BPmag'] - isochrones['G_RPmag']
-    isochrones['logZini'] = np.log10(isochrones['Zini'])
 
     return isochrones
 

@@ -39,7 +39,7 @@ class IsochroneInterpolator:
         """
         # Use the default hard-coded set of parameter labels, if laziness is desired by the user
         if parameters_as_arguments is None:
-            self.argument_parameters = ['logZini', 'logAge']
+            self.argument_parameters = ['MH', 'logAge']
         else:
             self.argument_parameters = parameters_as_arguments
         if parameters_to_infer is None:
@@ -136,15 +136,16 @@ class IsochroneInterpolator:
 
             # Cycle over all possible parameter combinations
             for a_parameter_combination in unique_parameter_combos:
+                # Sum the number of parameter matches per row
                 stars_to_use = np.sum(data_isochrone[self.argument_parameters] == a_parameter_combination, axis=1)
 
-                # We only want stars where all the parameters_are matched (the row-wise sum should equal n_parameters
-                stars_to_use = np.asarray(stars_to_use == n_parameters).nonzero()
+                # Only accept stars where all the parameters_are matched (the row-wise sum should equal n_parameters)
+                stars_to_use = np.asarray(stars_to_use == n_parameters)
 
                 # Hence, calculate the distance
-                x = data_isochrone[self.inferred_parameters[0]].iloc[stars_to_use]
-                y = data_isochrone[self.inferred_parameters[1]].iloc[stars_to_use]
-                data_isochrone['cumulative_distance_along_curve'].iloc[stars_to_use] = self.sum_along_curve(x, y)
+                x = data_isochrone.loc[stars_to_use, self.inferred_parameters[0]]
+                y = data_isochrone.loc[stars_to_use, self.inferred_parameters[1]]
+                data_isochrone.loc[stars_to_use, 'cumulative_distance_along_curve'] = self.sum_along_curve(x, y)
 
         # If there aren't any other parameters, then we just find the cumulative distance for the whole damn table
         else:
