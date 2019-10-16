@@ -1,14 +1,15 @@
 """A set of tools for post-processing data ready for plotting."""
 
+from typing import Optional, Union
+
 import numpy as np
 from sklearn.neighbors import KernelDensity
-from typing import Optional
 
 
 def kde_fit_2d(xy: np.ndarray,
                kde_bandwidth: float,
-               x_limits: Optional[list, np.ndarray] = None,
-               y_limits: Optional[list, np.ndarray] = None,
+               x_limits: Optional[Union[list, np.ndarray]] = None,
+               y_limits: Optional[Union[list, np.ndarray]] = None,
                kde_resolution: int = 50):
     """Fits a Kernel Density Estimator (KDE) in 2 dimensions with a Gaussian
     kernel of specified bandwidth.

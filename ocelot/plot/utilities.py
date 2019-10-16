@@ -1,7 +1,6 @@
 """Some little friends to help with various odd jobs in OCELOT's plotting submod."""
 
 import numpy as np
-from typing import Union, List
 
 
 def calculate_alpha(n_points: int, area: float, marker_radius: int, dpi: int = 300, desired_max_density: float = 0.03):

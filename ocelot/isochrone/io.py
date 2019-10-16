@@ -10,9 +10,10 @@ from astropy.io import ascii
 
 def read_cmd_isochrone(file_location: Path,
                        max_label: int = 7,
-                       column_names: Optional[str]=None,
-                       solar_metallicity: float = 0.0207) -> pd.DataFrame:
+                       column_names: Optional[str]=None) -> pd.DataFrame:
     """Reads an input CMD 3.3 isochrone.
+
+    # Todo: file_location should be able to be a list of paths, and we should be able to automatically join files.
 
     Notes:
         - Only verified for use when reading in isochrones from the CMD v3.3 & PARSEC v1.2S web interface at
@@ -42,8 +43,6 @@ def read_cmd_isochrone(file_location: Path,
                 ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe', 'logg', 'label',
                  'mbolmag', 'Gmag', 'G_BPmag', 'G_RPmag']
             as from the CMD 3.3 output in the Gaia DR2 Evans+2018 photometric system.
-        solar_metallicity (float): value of the solar metallicity Z/X to use when computing log initial metallicities.
-            Default: 0.0207
 
     Returns:
         a pd.DataFrame of the read-in isochrone. It's worth checking manually that this worked, as the tables are in

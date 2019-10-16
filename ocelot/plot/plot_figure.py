@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from . import plot_on_axis
+from ocelot.isochrone import IsochroneInterpolator
+from .axis import ax_isochrone
+from .axis import cluster
 
 
 def location(data_gaia: pd.DataFrame,
@@ -14,9 +16,9 @@ def location(data_gaia: pd.DataFrame,
              save_name: Optional[str] = None,
              figure_size: Union[list, np.ndarray] = (10, 10),
              figure_title: str = None,
-             open_cluster_pm_to_mark: Optional[list, np.ndarray] = None,
-             pmra_plot_limits: Optional[list, np.ndarray] = None,
-             pmdec_plot_limits: Optional[list, np.ndarray] = None,
+             open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
+             pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
+             pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
              plot_std_limit: float = 1.5,
              kde_resolution: int = 50,
              plotting_resolution: int = 50,
@@ -26,13 +28,9 @@ def location(data_gaia: pd.DataFrame,
     there are grains of sand on all the beaches on the planet.
 
     Args:
+        --- Function unique ---
         data_gaia (pandas.DataFrame): the Gaia data read in to a DataFrame.
             Keys should be unchanged from default Gaia source table names.
-        show_figure (bool): whether or not to show the figure at the end of plotting. Default: True
-        save_name (string, optional): whether or not to save the figure at the end of plotting.
-            Default: None (no figure is saved)
-        figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib. Default: (10, 10).
-        figure_title (string, optional): the desired title of the figure.
         open_cluster_pm_to_mark (list-like, optional): the co-ordinates
             (pmra, pmdec) of a point to mark on the proper motion diagram, such
             as a literature value.
@@ -46,12 +44,19 @@ def location(data_gaia: pd.DataFrame,
         kde_resolution (int): number of points to sample the KDE at when scoring
             (across a resolution x resolution-sized grid.)
             Default: 50.
-        plotting_resolution (int): number of levels to use in contour plots.
-            Default: 50
         kde_bandwidth_radec (float): the bandwidth of the position kde.
             Default: 0.08
         kde_bandwidth_pmotion (float): the bandwidth of the proper motion kde.
             Default: 0.08
+        plotting_resolution (int): number of levels to use in contour plots.
+            Default: 50
+
+        --- Module standard ---
+        show_figure (bool): whether or not to show the figure at the end of plotting. Default: True
+        save_name (string, optional): whether or not to save the figure at the end of plotting.
+            Default: None (no figure is saved)
+        figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib. Default: (10, 10).
+        figure_title (string, optional): the desired title of the figure.
 
     Returns:
         The generated figure.
@@ -60,7 +65,7 @@ def location(data_gaia: pd.DataFrame,
     # Initialise the figure and add stuff to the axes
     fig, ax = plt.subplots(nrows=2, ncols=2, figure_size=figure_size)
 
-    ax[0, 0], ax[0, 1] = plot_on_axis.position_and_pmotion(
+    ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
         ax[0, 0],
         ax[0, 1],
         data_gaia,
@@ -69,7 +74,7 @@ def location(data_gaia: pd.DataFrame,
         pmdec_plot_limits=pmdec_plot_limits,
         plot_std_limit=plot_std_limit)
 
-    ax[1, 0], ax[1, 1] = plot_on_axis.density_position_and_pmotion(
+    ax[1, 0], ax[1, 1] = cluster.density_position_and_pmotion(
         ax[1, 0],
         ax[1, 1],
         data_gaia,
@@ -100,16 +105,16 @@ def location(data_gaia: pd.DataFrame,
 
 def clustering_result(data_gaia: pd.DataFrame,
                       cluster_labels: np.ndarray = None,
-                      cluster_indices: Optional[list, np.ndarray] = None,
+                      cluster_indices: Optional[Union[list, np.ndarray]] = None,
                       show_figure: bool = True,
                       save_name: Optional[str] = None,
                       figure_size: Union[list, np.ndarray] = (10, 10),
                       figure_title: str = None,
-                      open_cluster_pm_to_mark: Optional[list, np.ndarray] = None,
-                      pmra_plot_limits: Optional[list, np.ndarray] = None,
-                      pmdec_plot_limits: Optional[list, np.ndarray] = None,
-                      cmd_plot_x_limits: Optional[list, np.ndarray] = None,
-                      cmd_plot_y_limits: Optional[list, np.ndarray] = None,
+                      open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
+                      pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
+                      pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
+                      cmd_plot_x_limits: Optional[Union[list, np.ndarray]] = None,
+                      cmd_plot_y_limits: Optional[Union[list, np.ndarray]] = None,
                       plot_std_limit: float = 1.5,
                       cmd_plot_std_limit: float = 3.0):
     """A figure for evaluating the results of a clustering algorithm.
@@ -121,13 +126,6 @@ def clustering_result(data_gaia: pd.DataFrame,
             clustered stars. This should be the default sklearn.cluster output.
         cluster_indices (list-like, optional): the clusters to plot in
             cluster_labels. For instance, you may not want to plot '-1'
-        show_figure (bool): whether or not to show the figure at the end of plotting.
-            Default: True
-        save_name (string, optional): whether or not to save the figure at the end of plotting.
-            Default: None (no figure is saved)
-        figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib.
-            Default: (10, 10).
-        figure_title (string, optional): the desired title of the figure.
         open_cluster_pm_to_mark (list-like, optional): the co-ordinates
             (pmra, pmdec) of a point to mark on the proper motion diagram, such
             as a literature value.
@@ -145,6 +143,13 @@ def clustering_result(data_gaia: pd.DataFrame,
             value is often more suitable here.
             Default: 3.0
 
+        --- Module standard ---
+        show_figure (bool): whether or not to show the figure at the end of plotting. Default: True
+        save_name (string, optional): whether or not to save the figure at the end of plotting.
+            Default: None (no figure is saved)
+        figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib. Default: (10, 10).
+        figure_title (string, optional): the desired title of the figure.
+
     Returns:
         The generated figure.
 
@@ -152,11 +157,11 @@ def clustering_result(data_gaia: pd.DataFrame,
     # Initialise the figure and add stuff to the axes
     fig, ax = plt.subplots(nrows=2, ncols=2, figure_size=figure_size)
 
-    ax[0, 0], ax[0, 1] = plot_on_axis.position_and_pmotion(
+    ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
         ax[0, 0], ax[0, 1], data_gaia, open_cluster_pm_to_mark=open_cluster_pm_to_mark,
         pmra_plot_limits=pmra_plot_limits, pmdec_plot_limits=pmdec_plot_limits, plot_std_limit=plot_std_limit)
 
-    ax[1, 0] = plot_on_axis.color_magnitude_diagram(
+    ax[1, 0] = cluster.color_magnitude_diagram(
         ax[1, 0], data_gaia, cluster_labels, cluster_indices,
         x_limits=cmd_plot_x_limits, y_limits=cmd_plot_y_limits, plot_std_limit=cmd_plot_std_limit)
 
@@ -177,6 +182,101 @@ def clustering_result(data_gaia: pd.DataFrame,
     return fig
 
 
-def isochrone():
+def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
+              literature_isochrones_to_plot: Optional[np.ndarray] = None,
+              isochrone_interpolator: Optional[IsochroneInterpolator] = None,
+              interpolated_isochrones_to_plot: Optional[np.ndarray] = None,
+              isochrone_arguments: Union[list, tuple] = ('MH', 'logAge'),
+              isochrone_parameters: Union[list, tuple] = ('G_BP-RP', 'Gmag'),
+              literature_colors = 'same',
+              interpolated_colors = 'same',
+              literature_line_style = '-',
+              interpolated_line_style = '--',
+              legend = True,
+              show_figure: bool = True,
+              save_name: Optional[str] = None,
+              figure_size: Union[list, np.ndarray] = (6, 6),
+              figure_title: str = None,):
+    """A figure showing a number of different isochrones - both interpolated and not. Can be configured to plot as
+    many different isochrones as required, working with CMD 3.3-style isochrone tables and the
+    ocelot.isochrone.IsochroneInterpolator class.
+
+    Args:
+        --- Function unique ---
+
+
+        --- Module standard ---
+        show_figure (bool): whether or not to show the figure at the end of plotting.
+            Default: True
+        save_name (string, optional): whether or not to save the figure at the end of plotting.
+            Default: None (no figure is saved)
+        figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib.
+            Default: (10, 10).
+        figure_title (string, optional): the desired title of the figure.
+
+
+    """
+
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figure_size)
+
+    # Plot literature isochrones, if requested
+    if data_isochrone is not None:
+        # Raise an error if everything we need hasn't been given
+        if literature_isochrones_to_plot is None:
+            raise ValueError("data_isochrone specified but no corresponding literature_isochrones_to_plot provided.")
+
+        # Colormap setup
+        n_isochrones = literature_isochrones_to_plot.shape[0]
+        if literature_colors == 'same':
+            # If the same colour has been requested for all lines, we set the literature isochrones to be black
+            colors = [(0.0, 0.0, 0.0, 1.0)] * n_isochrones
+        else:
+            colormap = plt.get_cmap(literature_colors)
+            colors = [colormap(1. * i / n_isochrones) for i in range(n_isochrones)]
+
+        # Cycle over the requested isochrones and plot them!
+        for an_isochrone, a_color in zip(literature_isochrones_to_plot, colors):
+            ax = ax_isochrone.literature_isochrone(ax, data_isochrone, an_isochrone,
+                                                   isochrone_arguments, isochrone_parameters,
+                                                   a_color, literature_line_style)
+
+    # Plot interpolated isochrones, if requested
+    if isochrone_interpolator is not None:
+        # Raise an error if everything we need hasn't been given
+        if interpolated_isochrones_to_plot is None:
+            raise ValueError("data_isochrone specified but no corresponding interpolated_isochrones_to_plot provided.")
+
+        # Colormap setup
+        n_isochrones = interpolated_isochrones_to_plot.shape[0]
+        if interpolated_colors == 'same':
+            # If the same colour has been requested for all lines, we set the literature isochrones to be black
+            colors = [(1.0, 0.0, 0.0, 1.0)] * n_isochrones
+        else:
+            colormap = plt.get_cmap(interpolated_colors)
+            colors = [colormap(1. * i / n_isochrones) for i in range(n_isochrones)]
+
+        # Cycle over the requested isochrones and plot them!
+        for an_isochrone, a_color in zip(interpolated_isochrones_to_plot, colors):
+            ax = ax_isochrone.interpolated_isochrone(ax, isochrone_interpolator, an_isochrone,
+                                                     isochrone_arguments, a_color, interpolated_line_style)
+
+    # Make sure the axis is the right way up...
+    ax.invert_yaxis()
+
+    if legend is True:
+        ax.legend(fontsize=8)
+
+    # Plot a title - we use text instead of the title api so that it can be long and multi-line.
+    if figure_title is not None:
+        ax[0, 0].text(0., 1.10, figure_title, transform=ax[0, 0].transAxes, va="bottom")
+
+    # Output time
+    if save_name is not None:
+        fig.save(save_name, dpi=300)
+
+    if show_figure is True:
+        fig.show()
+
+    return fig
 
     pass

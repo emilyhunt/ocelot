@@ -1,22 +1,22 @@
-"""A set of functions for adding standardised things to an axis."""
+"""A set of functions for adding standardised things to an axis, specifically for star cluster plotting."""
 
-from typing import Optional
+from typing import Optional, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from . import process
-from . import utilities
+from .. import process
+from .. import utilities
 
 
 def position_and_pmotion(
         axis_1,
         axis_2,
         data_gaia: pd.DataFrame,
-        open_cluster_pm_to_mark: Optional[list, np.ndarray] = None,
-        pmra_plot_limits: Optional[list, np.ndarray] = None,
-        pmdec_plot_limits: Optional[list, np.ndarray] = None,
+        open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
+        pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
+        pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
         plot_std_limit: float = 1.5):
     """Makes a scatter plot of position and proper motion for a given cluster,
     using plot_helper_calculate_alpha to prevent over-saturation of the
@@ -181,10 +181,10 @@ def density_position_and_pmotion(axis_1,
 def color_magnitude_diagram(axis,
                             data_gaia: pd.DataFrame,
                             cluster_labels: np.ndarray = None,
-                            cluster_indices: Optional[list, np.ndarray] = None,
+                            cluster_indices: Optional[Union[list, np.ndarray]] = None,
                             plot_std_limit: float = 3.0,
-                            x_limits: Optional[list, np.ndarray] = None,
-                            y_limits: Optional[list, np.ndarray] = None):
+                            x_limits: Optional[Union[list, np.ndarray]] = None,
+                            y_limits: Optional[Union[list, np.ndarray]] = None):
     """Makes a colour magnitude diagram plot of a given star field, and may
     also overplot star clusters within that field.
 
