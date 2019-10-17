@@ -188,11 +188,11 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
               interpolated_isochrones_to_plot: Optional[np.ndarray] = None,
               isochrone_arguments: Union[list, tuple] = ('MH', 'logAge'),
               isochrone_parameters: Union[list, tuple] = ('G_BP-RP', 'Gmag'),
-              literature_colors = 'same',
-              interpolated_colors = 'same',
-              literature_line_style = '-',
-              interpolated_line_style = '--',
-              legend = True,
+              literature_colors: str = 'same',
+              interpolated_colors: str = 'same',
+              literature_line_style: str = '-',
+              interpolated_line_style: str = '--',
+              legend: bool = True,
               show_figure: bool = True,
               save_name: Optional[str] = None,
               figure_size: Union[list, np.ndarray] = (6, 6),
@@ -201,9 +201,48 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
     many different isochrones as required, working with CMD 3.3-style isochrone tables and the
     ocelot.isochrone.IsochroneInterpolator class.
 
-    Args:
-        --- Function unique ---
+    Notes:
+        - The function will plot anything that matches the numerical & parameter arguments within the table. If you want
+            to, for instance, only plot one metallicity, then please make sure data_isochrone is already cleaned of any
+            different metallicites.
+        - At least one of either [data_isochrone, literature_isochrones_to_plot] *or* [isochrone_interpolator,
+            interpolated_isochrones_to_plot] must be specified, else nothing will be plotted!
 
+    Args:
+        --- Function unique: data & arguments ---
+        data_isochrone (pd.DataFrame, optional): data for the isochrones, in the CMD 3.3 table format. If specified,
+            literature_isochrones_to_plot must also be specified.
+            Default: None
+        literature_isochrones_to_plot (np.ndarray, optional): an array of values to find in data_isochrones, of shape
+            (n_points, n_arguments.)
+            Default: None
+        isochrone_interpolator (ocelot.isochrone.IsochroneInterpolator, optional): an isochrone interpolator to call
+            values from. If specified, interpolated_isochrones_to_plot must also be specified.
+            Default: None
+        interpolated_isochrones_to_plot (np.ndarray, optional): an array of values to interpolate from
+            isochrone_interpolator, of shape (n_points, n_arguments.)
+            Default: None
+        isochrone_arguments (list, tuple): names of arguments that correspond to the literature_isochrones_to_plot.
+            Default: ('MH', 'logAge')
+        isochrone_parameters (list, tuple): names of parameters that specify points for literature isochrones.
+            Default: ('G_BP-RP', 'Gmag')
+
+        --- Function unique: plotting style ---
+        literature_colors (str): colors for the literature isochrones. Must specify either a valid matplotlib colourmap
+            or 'same', which plots them all as black lines.
+            Default: same
+        interpolated_colors (str): colors for the interpolated isochrones. Must specify either a valid matplotlib
+            colourmap or 'same', which plots them all as red lines.
+            Default: same
+        literature_line_style (str): style of the literature lines. Must specify a valid matplotlib line style, WITHOUT
+            a color.
+            Default: '-'
+        interpolated_line_style (str): style of the interpolated lines. Must specify a valid matplotlib line style,
+            WITHOUT a color.
+            Default: '--'
+        legend (bool): whether or not to plot a legend, whose labels are auto_generated based on input arguments and
+            parameters.
+            Default: True
 
         --- Module standard ---
         show_figure (bool): whether or not to show the figure at the end of plotting.
@@ -211,10 +250,11 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
         save_name (string, optional): whether or not to save the figure at the end of plotting.
             Default: None (no figure is saved)
         figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib.
-            Default: (10, 10).
+            Default: (6, 6).
         figure_title (string, optional): the desired title of the figure.
 
-
+    Returns:
+        a Matplotlib figure instance.
     """
 
     fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figure_size)
@@ -240,6 +280,10 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
                                                    isochrone_arguments, isochrone_parameters,
                                                    a_color, literature_line_style)
 
+    # Raise an error if nothing was specified for plotting at all
+    elif isochrone_interpolator is None:
+        raise ValueError('Neither data_isochrone or isochrone_interpolator were specified. I have nothing to plot!')
+
     # Plot interpolated isochrones, if requested
     if isochrone_interpolator is not None:
         # Raise an error if everything we need hasn't been given
@@ -263,6 +307,10 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
     # Make sure the axis is the right way up...
     ax.invert_yaxis()
 
+    # Beautifying
+    ax.set_xlabel(r'm_{bp} - m_{gp}')
+    ax.set_ylabel(r'm_{G}')
+
     if legend is True:
         ax.legend(fontsize=8)
 
@@ -278,5 +326,3 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
         fig.show()
 
     return fig
-
-    pass

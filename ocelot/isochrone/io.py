@@ -1,19 +1,17 @@
 """Set of functions for reading in isochrones from their downloaded formats and processing them into useful spaces."""
 
 from pathlib import Path
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
 
 
-def read_cmd_isochrone(file_location: Path,
+def read_cmd_isochrone(file_location: Union[Path, List[Path]],
                        max_label: int = 7,
-                       column_names: Optional[str]=None) -> pd.DataFrame:
-    """Reads an input CMD 3.3 isochrone.
-
-    # Todo: file_location should be able to be a list of paths, and we should be able to automatically join files.
+                       column_names: Optional[str] = None) -> pd.DataFrame:
+    """Reads input CMD 3.3 isochrone(s). In the plural case, they're combined into one DataFrame.
 
     Notes:
         - Only verified for use when reading in isochrones from the CMD v3.3 & PARSEC v1.2S web interface at
@@ -25,7 +23,10 @@ def read_cmd_isochrone(file_location: Path,
             path_to_isochrones = Path('<location_of_the_isochrones>')
 
     Args:
-        file_location (pathlib.Path): location of the file containing CMD 3.3 / PARSEC v1.2s isochrones.
+        file_location (pathlib.Path or list of pathlib.Path): you have three options:
+            - Location of a file containing CMD 3.3 / PARSEC v1.2s isochrones.
+            - A list of files as the above - they will all be joined.
+            - A directory of .dat files containing isochrones
         max_label (int): maximum label to read in. This corresponds to:
             0 = PMS, pre main sequence
             1 = MS, main sequence
@@ -46,10 +47,42 @@ def read_cmd_isochrone(file_location: Path,
 
     Returns:
         a pd.DataFrame of the read-in isochrone. It's worth checking manually that this worked, as the tables are in
-            a format that requires some cleaning (that should hopefully be done automatically.)
+            a format that requires some cleaning (that should hopefully be done automatically.) It will also have had
+            the colour calculated, which will be labelled 'G_BP-RP'.
 
     """
-    isochrones = ascii.read(str(file_location.resolve())).to_pandas()
+    # Use default column names if none are specified
+    if column_names is None:
+        column_names = ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe', 'logg', 'label',
+                        'mbolmag', 'Gmag', 'G_BPmag', 'G_RPmag']
+
+    # See if file_location is a directory - only works if one path is specified
+    try:
+        file_location_is_a_directory = file_location.is_dir()
+    except AttributeError:  # Catches if file_location is a list of paths instead, and does not have an is_dir() method
+        file_location_is_a_directory = False
+
+    # Iterate over all files if a list of files or a directory has been specified
+    if type(file_location) is list or file_location_is_a_directory:
+
+        # If a directory was specified, we want to first make a list of all its .dat files.
+        if file_location_is_a_directory:
+            file_location = list(file_location.glob('*.dat'))
+
+        # Cycle over all the isochrones, combining them into a file
+        list_of_isochrones = []
+        for a_file in file_location:
+            current_isochrones = ascii.read(str(a_file.resolve())).to_pandas()
+            current_isochrones.columns = column_names
+            list_of_isochrones.append(current_isochrones)
+
+        # Combine all the isochrones into one and reset the indexing
+        isochrones = pd.concat(list_of_isochrones, ignore_index=True)
+
+    # Otherwise, just read in the one file
+    else:
+        isochrones = ascii.read(str(file_location.resolve())).to_pandas()
+        isochrones.columns = column_names
 
     # Use default column names if none are specified
     if column_names is None:

@@ -18,12 +18,14 @@ import numpy as np
 
 # Path towards the test isochrones
 max_label = 7
-path_to_test_isochrones = Path('./test_data/isochrones.dat')
+path_to_test_isochrone = Path('./test_data/isochrones.dat')
+path_to_test_isochrones = Path('./test_data/')
+list_of_paths_to_test_isochrones = [Path('./test_data/isochrones.dat'), Path('./test_data/isochrones_2.dat')]
 
 
 def test_read_cmd_isochrone():
     """Tests the input-output functionality of the isochrone module."""
-    my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrones, max_label=max_label)
+    my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrone, max_label=max_label)
 
     # Check that we've read in the right shape of file
     assert my_isochrones.shape == (2878, 15)
@@ -49,9 +51,29 @@ def test_read_cmd_isochrone():
     return my_isochrones
 
 
+def test_read_cmd_isochrone_multiple_isochrones():
+    """Specifically tests the ability of ocelot.isochrone.read_cmd_isochrone to read multiple files."""
+    # Read in isochrones two ways
+    isochrones_read_as_directory = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrones, max_label=max_label)
+    isochrones_read_as_list = ocelot.isochrone.read_cmd_isochrone(list_of_paths_to_test_isochrones, max_label=max_label)
+
+    # Check their shapes
+    assert isochrones_read_as_directory.shape == (5756, 15)
+    assert isochrones_read_as_list.shape == (5756, 15)
+
+    # Check two values near to the end - if indexing went wrong, these will have been scrambled
+    assert isochrones_read_as_directory.loc[5000, 'Gmag'] == -0.866
+    assert isochrones_read_as_directory.loc[5001, 'Gmag'] == -0.908
+
+    assert isochrones_read_as_list.loc[5000, 'Gmag'] == -0.866
+    assert isochrones_read_as_list.loc[5001, 'Gmag'] == -0.908
+
+    return isochrones_read_as_directory
+
+
 def test_isochrone_interpolation():
     """Tests the isochrone interpolation functionality of ocelot."""
-    my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrones, max_label=max_label)
+    my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrone, max_label=max_label)
 
     # Cut some stars for speed purposes
     stars_to_cut = np.asarray(my_isochrones['MH'] != 0.0).nonzero()[0]
@@ -84,6 +106,7 @@ def test_isochrone_interpolation():
 # Run tests manually if the file is ran
 if __name__ == '__main__':
     isochrones = test_read_cmd_isochrone()
+    isochrones_long = test_read_cmd_isochrone_multiple_isochrones()
     interpolator, interpolator_output_x, interpolator_output_y = test_isochrone_interpolation()
 
     """

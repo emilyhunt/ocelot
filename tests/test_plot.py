@@ -18,7 +18,7 @@ import numpy as np
 # Path towards the test isochrones
 max_label = 0
 path_to_test_isochrones = Path('./test_data/isochrones.dat')
-#path_to_test_isochrones = Path('../../../data/isochrones/191015_isochrones_z-2_8_to_1_2/z_-2.8_1.2_1young_age.dat')
+#path_to_test_isochrone = Path('../../../data/isochrones/191015_isochrones_z-2_8_to_1_2/z_-2.8_1.2_1young_age.dat')
 
 
 def test_isochrone_plotting(show_figure=False):
@@ -49,7 +49,7 @@ def test_isochrone_plotting(show_figure=False):
                           literature_colors='same',
                           interpolated_colors='autumn',
                           show_figure=show_figure,
-                          figure_size=[20, 20])
+                          figure_size=[10, 10])
 
     return my_isochrones
 
