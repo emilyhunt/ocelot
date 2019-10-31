@@ -2,15 +2,114 @@
 
 from typing import Union, Optional
 
+import networkx as nx
 import numpy as np
 import pandas as pd
 from scipy.interpolate import LinearNDInterpolator
 from scipy.interpolate import Rbf as RBFInterpolator
+from scipy.interpolate import UnivariateSpline
+from scipy.signal import savgol_filter
+from sklearn.neighbors import NearestNeighbors
+
+
+def sum_along_curve(x: Union[np.ndarray, pd.Series], y: Union[np.ndarray, pd.Series],
+                    normalise: bool = True) -> Union[np.ndarray, pd.Series]:
+    """Calculates differences between consecutive values along a curve and returns the cumulative sum! Assumes
+    use of the Euclidean metric.
+
+    Args:
+        x (np.ndarray, pd.Series): x data for the curve.
+        y (np.ndarray, pd.Series): y data for the curve.
+        normalise (bool): whether or not to normalise the resulting cumulative sum.
+            Default: True
+
+    Returns:
+        a np.ndarray or a pd.Series, depending on the input type.
+    """
+
+    # Calculate the difference between consecutive points
+    x_difference = np.diff(x)
+    y_difference = np.diff(y)
+
+    # Calculate the Euclidean distance between each point
+    distance_between_points = np.sqrt(x_difference ** 2 + y_difference ** 2)
+    cumulative_distance_between_points = np.cumsum(distance_between_points)
+
+    # Add a zero at the start because diff reduces the length by 1
+    cumulative_distance_between_points = np.insert(cumulative_distance_between_points, 0, 0)
+
+    # Normalise the distances to the range [0, 1] if desired (this makes later use a lot easier)
+    if normalise:
+        cumulative_distance_between_points = (cumulative_distance_between_points
+                                              / np.max(cumulative_distance_between_points))
+
+    return cumulative_distance_between_points
+
+
+def proximity_to_line_sort():
+    """Given a field of unorganised points and an ordered list of points defining a line, this function returns the
+    field of points sorted by order of how close to the points on the line they are.
+
+    This function was made to sort unordered CMDs.
+
+
+
+
+
+    """
+    # Todo: still needed?
+    pass
+
+
+def nn_graph_sort(x, y):
+    """Sorts data based on a nearest neighbour graph.
+
+    # Todo: still needed?
+
+    Note:
+        - Currently always starts at the lowest value.
+        - A solution to my CMDInterpolator sorting problem from:
+            https://stackoverflow.com/questions/37742358/sorting-points-to-form-a-continuous-line
+        - MAY NOT RETURN A GRAPH INCLUDING ALL POINTS - this solution is quite basic unfortunately and does NOT work for
+            noisy data.
+
+    Args:
+
+
+    """
+    # Order stuff into a 2D array
+    points = np.column_stack([x, y])
+
+    # Create a graph (as a sparse matrix), where each node is connected to its nearest neighbours:
+    clf = NearestNeighbors(2).fit(points)
+    graph = clf.kneighbors_graph()
+    nx_graph = nx.from_scipy_sparse_matrix(graph)
+
+    # Extract the best paths between all the points
+    # Todo optimise this steaming pile of for-loop dogshit!!!1!
+
+    print(len(nx_graph))
+
+    paths = [list(nx.dfs_preorder_nodes(nx_graph, source=i)) for i in range(x.size)]
+
+    mindist = np.inf
+    minidx = None
+
+    for i in range(len(points)):
+        p = paths[i]  # order of nodes
+        ordered = points[p]  # ordered nodes
+        # Find cost of that order by the sum of euclidean distances between points (i) and (i+1),
+        cost = (((ordered[:-1] - ordered[1:]) ** 2).sum(1)).sum()
+        if cost < mindist:
+            mindist = cost
+            minidx = i
+
+    return paths[minidx]
 
 
 class IsochroneInterpolator:
-    def __init__(self, data_isochrone: pd.DataFrame, parameters_as_arguments: Optional[list] = None,
-                 parameters_to_infer: Optional[list] = None, interpolation_type: str = 'LinearND'):
+    def __init__(self, data_isochrone: pd.DataFrame, parameters_as_arguments: Union[list, tuple] = ('MH', 'logAge'),
+                 parameters_to_infer: Union[list, tuple] = ('G_BP-RP', 'Gmag'), interpolation_type: str = 'LinearND'):
         """Given an input in the format outputted by the CMD 3.3 web interface, this class will produce interpolated
         isochrones, marginalised over the specified argument_parameters. Yay!
 
@@ -35,17 +134,10 @@ class IsochroneInterpolator:
         Returns:
             absolutely... NOTHING
             (call the class if you want to evaluate it)
-
         """
-        # Use the default hard-coded set of parameter labels, if laziness is desired by the user
-        if parameters_as_arguments is None:
-            self.argument_parameters = ['MH', 'logAge']
-        else:
-            self.argument_parameters = parameters_as_arguments
-        if parameters_to_infer is None:
-            self.inferred_parameters = ['G_BP-RP', 'Gmag']
-        else:
-            self.inferred_parameters = parameters_to_infer
+        # Set all the parameter names to the class
+        self.argument_parameters = parameters_as_arguments
+        self.inferred_parameters = parameters_to_infer
 
         # Calculate the normalised distances along the curve
         data_isochrone = self.calculate_normalised_cumulative_distances_along_curve(data_isochrone)
@@ -78,40 +170,6 @@ class IsochroneInterpolator:
         else:
             raise ValueError('Specified interpolation method not recognised!')
 
-    @staticmethod
-    def sum_along_curve(x: Union[np.ndarray, pd.Series], y: Union[np.ndarray, pd.Series],
-                        normalise: bool = True) -> Union[np.ndarray, pd.Series]:
-        """Calculates differences between consecutive values along a curve and returns the cumulative sum! Assumes
-        use of the Euclidean metric.
-
-        Args:
-            x (np.ndarray, pd.Series): x data for the curve.
-            y (np.ndarray, pd.Series): y data for the curve.
-            normalise (bool): whether or not to normalise the resulting cumulative sum.
-                Default: True
-
-        Returns:
-            a np.ndarray or a pd.Series, depending on the input type.
-        """
-
-        # Calculate the difference between consecutive points
-        x_difference = np.diff(x)
-        y_difference = np.diff(y)
-
-        # Calculate the Euclidean distance between each point
-        distance_between_points = np.sqrt(x_difference**2 + y_difference**2)
-        cumulative_distance_between_points = np.cumsum(distance_between_points)
-
-        # Add a zero at the start because diff reduces the length by 1
-        cumulative_distance_between_points = np.insert(cumulative_distance_between_points, 0, 0)
-
-        # Normalise the distances to the range [0, 1] if desired (this makes later use a lot easier)
-        if normalise:
-            cumulative_distance_between_points = (cumulative_distance_between_points
-                                                  / np.max(cumulative_distance_between_points))
-
-        return cumulative_distance_between_points
-
     def calculate_normalised_cumulative_distances_along_curve(self, data_isochrone: pd.DataFrame):
         """Calculates cumulative distances along an arbitrary curve and normalises them.
 
@@ -120,7 +178,6 @@ class IsochroneInterpolator:
 
         Returns:
             the modified data_isochrone, with cumulative distances under the key 'cumulative_distance_along_curve'.
-
         """
 
         # Grab the number of argument_parameters (this comment is self-evident)
@@ -145,13 +202,13 @@ class IsochroneInterpolator:
                 # Hence, calculate the distance
                 x = data_isochrone.loc[stars_to_use, self.inferred_parameters[0]]
                 y = data_isochrone.loc[stars_to_use, self.inferred_parameters[1]]
-                data_isochrone.loc[stars_to_use, 'cumulative_distance_along_curve'] = self.sum_along_curve(x, y)
+                data_isochrone.loc[stars_to_use, 'cumulative_distance_along_curve'] = sum_along_curve(x, y)
 
         # If there aren't any other parameters, then we just find the cumulative distance for the whole damn table
         else:
             x = data_isochrone[self.inferred_parameters[0]]
             y = data_isochrone[self.inferred_parameters[1]]
-            data_isochrone['cumulative_distance_along_curve'] = self.sum_along_curve(x, y)
+            data_isochrone['cumulative_distance_along_curve'] = sum_along_curve(x, y)
 
         return data_isochrone
 
@@ -163,7 +220,6 @@ class IsochroneInterpolator:
 
         Returns:
             a list containing [x_data, y_data] for the requested points.
-
         """
         return [self.x_interpolator(input_data), self.y_interpolator(input_data)]
 
@@ -176,14 +232,13 @@ class IsochroneInterpolator:
 
         Returns:
             a list containing [x_data, y_data] for the requested points.
-
         """
         input_data = input_data.T
         return [self.x_interpolator(*input_data), self.y_interpolator(*input_data)]
 
     def __call__(self, input_data: Union[np.ndarray, pd.DataFrame],
                  range_to_evaluate: Union[str, np.ndarray] = 'full isochrone',
-                 resolution: int = 100):
+                 resolution: int = 100) -> list:
         """Evaluate the interpolator against a specific set of points. Contains systems to automate a lot of the process
         for you, because it's kind like that. =)
 
@@ -198,7 +253,6 @@ class IsochroneInterpolator:
 
         Returns:
             a list containing [x_data, y_data] for the requested points.
-
         """
         if range_to_evaluate == 'full isochrone':
             range_to_evaluate = np.linspace(0, 1, resolution)
@@ -215,9 +269,149 @@ class IsochroneInterpolator:
         return self.evaluate(input_data)
 
 
+class CMDInterpolator:
+    def __init__(self, data_gaia: pd.DataFrame,
+                 parameters: Union[list, tuple] = ('B-R', 'G'),
+                 curve_parameterisation_type: str = 'summed',
+                 data_sorted_on: str = 'y_values',
+                 filter_input: bool = False,
+                 filter_window_fraction: float = 0.1,
+                 filter_order: int = 3,
+                 interp_type: str = 'UnivariateSpline',
+                 interp_weights: Optional[str] = None,
+                 interp_smoothing: Optional[float] = 0.05,
+                 interp_order: int = 3):
+        """Interpolates data from a potential cluster, allowing its scatter from the best fit spline to be evaluated.
+
+        Notes:
+            - Call the object later to evaluate the interpolated spline!
+            - Will get slow if an especially big cluster is passed to the method.
+
+        Args:
+            data_gaia (pd.DataFrame): the Gaia data, which ought to contain magnitude information (including a blue -
+                red column.)
+            parameters (list, tuple): the parameters in data_gaia that define the blue-red and total magnitudes.
+            curve_parameterisation_type (string): how to parameterise the curve. Options:
+                linear: parameterise with a sequence from 0 to 1 for all data points. Easiest to do,
+                    but may produce sharp changes in gradient in what has to be fit.
+                summed:  parameterise by mapping the sequence from 0 to 1 to a weighted sum of the distance along the
+                    curve. Will generally produce better results, but assumes that the sorting was largely successful.
+                Default: 'summed'
+            data_sorted_on (string): how to sort the data (since the interpolator has to receive points in a certain order.
+                y_values: sort all data on the magnitude parameter.
+                x_values: sort all data on the colour parameter.
+                Default: 'y_values'
+            Todo add filtering to the docstr
+            interp_type (string): type of interpolator to use. Currently, only 'UnivariateSpline' is implemented.
+            interp_weights (string, optional): name of the column in data_gaia that gives parameter weights. If None, no
+                weights are passed to the spline fit.
+                Default: None
+            interp_smoothing (float, optional): amount of smoothing to apply. If None, the SciPy intepolator will
+                try to calculate an optimum value itself.
+                Default: 0.05
+            interp_order (int): order of the polynomial to fit.
+                Default: 3
+        """
+        # Set the parameter names to the class
+        self.parameters = parameters
+
+        # Kill The Panda, It's Time For X and Y Arrays
+        data_colour = np.asarray(data_gaia[parameters[0]])
+        data_magnitude = np.asarray(data_gaia[parameters[1]])
+
+        # Decide on what the weights for the curve fitting will be
+        if interp_weights is not None:
+            star_weights = data_gaia[interp_weights]
+        else:
+            star_weights = None  # Aka no weights will be passed to functions
+
+        # Decide on how we're gonna initially sort the data
+        # Sort x and y based on y values
+        if data_sorted_on == 'y_values':
+            sort_args = np.argsort(data_magnitude)
+        # Sort x and y based on x values
+        elif data_sorted_on == 'x_values':
+            sort_args = np.argsort(data_colour)
+        # Create a nearest neighbour graph and sort using it
+        elif data_sorted_on == 'nearest_neighbour_graph':
+            sort_args = nn_graph_sort(data_colour, data_magnitude)
+        else:
+            raise ValueError('Specified method for sorting the data not recognised!')
+
+        # Apply the sort
+        data_colour = data_colour[sort_args]
+        data_magnitude = data_magnitude[sort_args]
+
+        # Decide on how we're gonna parameterise the curve
+        if curve_parameterisation_type == 'linear':
+            self.curve_parameter = np.linspace(0, 1, data_magnitude.size)
+        elif curve_parameterisation_type == 'summed':
+            self.curve_parameter = sum_along_curve(data_colour, data_magnitude, normalise=True)
+        else:
+            raise ValueError('Specified method for curve_parameterisation_type of the curve not recognised!')
+
+        # Filter the data using a Savitsky-Golay filter and based on the curve parameterisation
+        if filter_input:
+
+            # Set the filter window length to be some fraction of the dataset size, making sure that it's an odd number
+            filter_window_length = int(np.round(data_colour.size * filter_window_fraction / 2) * 2 + 1)
+
+            # Apply the filter!
+
+            print(sort_args)
+            data_colour = savgol_filter(data_colour, filter_window_length, filter_order)
+            data_magnitude = savgol_filter(data_magnitude, filter_window_length, filter_order)
+
+        # Interpolation time!
+        if interp_type == 'UnivariateSpline':
+            self.x_interpolator = UnivariateSpline(self.curve_parameter, data_colour, w=star_weights,
+                                                   s=interp_smoothing, k=interp_order)
+            self.y_interpolator = UnivariateSpline(self.curve_parameter, data_magnitude, w=star_weights,
+                                                   s=interp_smoothing, k=interp_order)
+
+            # Set __call__ to use this function!
+            self.evaluate = self.evaluate_univariate_spline
+
+        else:
+            raise ValueError('Specified interpolation method not recognised!')
+
+    def evaluate_univariate_spline(self, input_data: np.ndarray) -> list:
+        """Evaluation function in the case that the class's interpolator is a scipy.interpolate.UnivariateSpline.
+
+        Args:
+            input_data (np.ndarray): input parameter data at whatever resolution is desired.
+
+        Returns:
+            a list containing [x_data, y_data] for the requested points.
+        """
+        return [self.x_interpolator(input_data), self.y_interpolator(input_data)]
+
+    def __call__(self, range_to_evaluate: Union[str, np.ndarray] = 'full isochrone',
+                 resolution: int = 100) -> list:
+        """Evaluate the interpolator and re-produce all (or part of) the interpolated isochrone. Contains systems to
+        automate a lot of the process for you, because it's kind like that. =)
+
+        Args:
+            range_to_evaluate (str, np.ndarray): array of values in the correct range (typically [0, 1]) to evaluate the
+                isochrone at.
+                Default: 'full isochrone', which computes a set of points in the range [0, 1] automatically.
+            resolution (int): if range_to_evaluate is set to 'full isochrone', this controls how many points will be
+                returned.
+
+        Returns:
+            a list containing [x_data, y_data] for the requested points.
+        """
+        if range_to_evaluate == 'full isochrone':
+            range_to_evaluate = np.linspace(0, 1, resolution)
+
+        return self.evaluate(range_to_evaluate)
+
+
+
 class IsochroneDistanceInterpolator:
     def __init__(self):
-        print(1)
+        raise NotImplementedError("What are you doing, this isn't implemented, stop")
 
     def __call__(self):
         pass
+
