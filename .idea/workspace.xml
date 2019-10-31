@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/tests/test_data/simulated_population.dat" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" afterDir="false" />
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/isochrone/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/scripts/spline_fit_to_random_data.py" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/spline_fit_to_random_data.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_isochrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_isochrone.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -77,7 +73,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.spline_fit_to_random_data">
+  <component name="RunManager" selected="Python.test_isochrone">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -148,9 +144,6 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -212,8 +205,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.spline_fit_to_random_data" />
         <item itemvalue="Python.test_isochrone" />
+        <item itemvalue="Python.spline_fit_to_random_data" />
         <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.io" />
       </list>
@@ -239,7 +232,7 @@
       <workItem from="1571298604508" duration="17208000" />
       <workItem from="1572252389851" duration="3331000" />
       <workItem from="1572421878152" duration="18131000" />
-      <workItem from="1572511940929" duration="1931000" />
+      <workItem from="1572511940929" duration="11347000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -311,7 +304,14 @@
       <option name="project" value="LOCAL" />
       <updated>1571306185897</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="Implemented CMDInterpolator, a class for interpolating CMDs directly with a spline.&#10;- System is working well!&#10;- Unit tests are *nearly* finished, now also using a new synthetic open cluster from CMD 3.3 for testing&#10;- Also added a nearest neighbour search routine, although I don't think it will be useful enough to keep&#10;- Still in need of a better way to sort CMDs - although that may come later&#10;- Also still in need of an actual routine for then calculating scatter.&#10;&#10;This release completes the requirements for 0.2.0 feature c.">
+      <created>1572517572994</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1572517572994</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -331,6 +331,7 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <option name="CHECK_CODE_SMELLS_BEFORE_PROJECT_COMMIT" value="true" />
     <option name="CHECK_NEW_TODO" value="false" />
     <MESSAGE value="Imported some tools from Jupyter notebooks and setup some basic project structure." />
     <MESSAGE value="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board" />
@@ -342,7 +343,9 @@
     <MESSAGE value="IsochroneInterpolator unit testing&#10;- Added more unit testing and did more output checking.&#10;- Changed to using a significantly smaller isochrone table to speed up testing results. &#10;&gt; This further satisfies feature(s) [b] for future release 0.2.0" />
     <MESSAGE value="More work on isochrone plotting&#10;- Completed ocelot.plot.isochrone&#10;- Still need to do some documentation, but I'm nearly there on 2.0.0 feature b1" />
     <MESSAGE value="Final work on isochrone plotting&#10;- Completed ocelot.plot.isochrone documentation&#10;- Added functionality to ocelot.isochrone.read_cmd_isochrone allowing it to be given a directory of files or a list of files, where each file is a separate set of isochrones.&#10;- Isochrone interpolation issues for sharp corners (e.g. logAge ~ 6.7) will be investigated later.&#10;&#10;This release completes the requirements for 2.0.0 feature b1." />
-    <option name="LAST_COMMIT_MESSAGE" value="Final work on isochrone plotting&#10;- Completed ocelot.plot.isochrone documentation&#10;- Added functionality to ocelot.isochrone.read_cmd_isochrone allowing it to be given a directory of files or a list of files, where each file is a separate set of isochrones.&#10;- Isochrone interpolation issues for sharp corners (e.g. logAge ~ 6.7) will be investigated later.&#10;&#10;This release completes the requirements for 2.0.0 feature b1." />
+    <MESSAGE value="Implemented CMDInterpolator, a class for interpolating CMDs directly with a spline.&#10;- System is working well!&#10;- Unit tests are *nearly* finished, now also using a new synthetic open cluster from CMD 3.3 for testing&#10;- Also added a nearest neighbour search routine, although I don't think it will be useful enough to keep&#10;- Still in need of a better way to sort CMDs - although that may come later&#10;- Also still in need of an actual routine for then calculating scatter.&#10;&#10;This release completes the requirements for 0.2.0 feature c." />
+    <MESSAGE value="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>

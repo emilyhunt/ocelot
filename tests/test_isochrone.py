@@ -14,6 +14,7 @@ except ModuleNotFoundError:
 from pathlib import Path
 
 import numpy as np
+import pytest
 from astropy.io import ascii
 
 # Path towards the test isochrones
@@ -136,6 +137,7 @@ def test_cmd_interpolation():
     interpolated_cmd_x, interpolated_cmd_y = spline_me_up_scotty(resolution=100)
 
     # Todo add an actual test once this is finalised!
+    # Todo: this currently fails because nearest_neighbour_graph sorting has issues.
 
     return [data_gaia, interpolated_cmd_x, interpolated_cmd_y]
 
@@ -166,12 +168,57 @@ def test_nn_graph_sort():
 
     # See if it actually hecking worked:
     # Check that the sorted x array is identical to the original x one
-    #np.testing.assert_array_max_ulp(x, x_sorted, maxulp=1)
+    np.testing.assert_array_max_ulp(x, x_sorted, maxulp=1)
 
     # Check that the sorted y array is identical to the original y one
-    #np.testing.assert_array_max_ulp(y, y_sorted, maxulp=1)
+    np.testing.assert_array_max_ulp(y, y_sorted, maxulp=1)
 
     return [x_sorted, y_sorted]
+
+
+def test_find_nearest_point():
+    """Tests a small function that attempts to find the nearest point to a set of """
+    # Setup some input data
+    y = np.repeat(np.arange(5), 2).reshape(5, 2)  # 5 points spaced equally along y=x
+    x = (y**2)[:3]  # The squaring makes it so the first and second points match, but then the last matches to y[4]
+    desired_result = np.array([0, 1, 4])
+    desired_distances = np.array([[0, 0], [0, 0], [0, 0]])
+
+    # Call the function, both with and without raw distances
+    result = ocelot.isochrone.interpolate.find_nearest_point(x, y)
+    result_distances, distances = ocelot.isochrone.interpolate.find_nearest_point(x, y, return_raw_distances=True)
+
+    # Test that result is right
+    np.testing.assert_array_equal(result, desired_result)
+
+    # Test that result is right when distances are returned
+    np.testing.assert_array_equal(result_distances, desired_result)
+
+    # Test that the distances are correct
+    np.testing.assert_array_equal(distances, desired_distances)
+
+    # Test that giving it an array with the wrong amount of points raises an error
+    with pytest.raises(ValueError, match="Input arrays must be two dimensional."):
+        ocelot.isochrone.interpolate.find_nearest_point(x[0], y)
+
+    # Test that giving an array with the wrong number of features raises an error
+    with pytest.raises(ValueError, match="Number of features mismatch between points_to_match and points_on_line."):
+        ocelot.isochrone.interpolate.find_nearest_point(x[:, 0:1], y)
+
+
+def test_proximity_to_line_sort():
+    """Tests the proximity to line sorting (which is mostly just a wrapper to
+    ocelot.isochrone.interpolate.find_nearest_point)."""
+    # Setup some input data
+    y = np.repeat(np.arange(5), 2).reshape(5, 2)  # 5 points spaced equally along y=x
+    x = np.array([[0, 0], [1.1, 1.1], [0.9, 0.8], [4.5, 3.8], [4.0, 3.7]])
+    desired_result = np.array([0, 2, 1, 4, 3])
+
+    # Run the function
+    result = ocelot.isochrone.interpolate.proximity_to_line_sort(x, y)
+
+    # Test that result is right
+    np.testing.assert_array_equal(result, desired_result)
 
 
 # Run tests manually if the file is ran
@@ -183,6 +230,8 @@ if __name__ == '__main__':
     #isochrones_long = test_read_cmd_isochrone_multiple_isochrones()
     interpolator, interpolator_output_x, interpolator_output_y = test_isochrone_interpolation()
     nn_x_sorted, nn_y_sorted = test_nn_graph_sort()
+    test_find_nearest_point()
+    test_proximity_to_line_sort()
 
 
     # Plot the results of the nearest neighbour graph sort

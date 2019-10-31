@@ -1,6 +1,6 @@
 """Classes and systems to handle interpolation of isochrones, given a grid of input points."""
 
-from typing import Union, Optional
+from typing import Union, Optional, List
 
 import networkx as nx
 import numpy as np
@@ -25,6 +25,7 @@ def sum_along_curve(x: Union[np.ndarray, pd.Series], y: Union[np.ndarray, pd.Ser
 
     Returns:
         a np.ndarray or a pd.Series, depending on the input type.
+
     """
 
     # Calculate the difference between consecutive points
@@ -46,19 +47,91 @@ def sum_along_curve(x: Union[np.ndarray, pd.Series], y: Union[np.ndarray, pd.Ser
     return cumulative_distance_between_points
 
 
-def proximity_to_line_sort():
-    """Given a field of unorganised points and an ordered list of points defining a line, this function returns the
-    field of points sorted by order of how close to the points on the line they are.
+def find_nearest_point(points_to_match: np.ndarray, points_on_line: np.ndarray,
+                       return_raw_distances: bool = False) -> Union[np.ndarray, List[np.ndarray]]:
+    """Given a first and a second set of points, this function will find which second point is nearest to each first
+    point, and return an array detailing these findings with the same shape as the first set of points.
 
-    This function was made to sort unordered CMDs.
+    Args:
+        points_to_match (np.ndarray): points to match to the line. Should have shape (n_match_points, n_features).
+        points_on_line (np.ndarray): points to cross-match the points_to_match with. Should have shape
+            (n_line_points, n_features).
+        return_raw_distances (bool): whether to return the raw distances to each point as well or not.
 
-
-
-
+    Returns:
+        return_raw_distances = False:
+            An array of length n_match_points where each value is the nearest point in points_on_line to that
+            point_to_match.
+        return_raw_distances = True:
+            Same as above, but also the raw distances too (tagged on as the second item in a list).
 
     """
-    # Todo: still needed?
-    pass
+    # Raise an error if one of the arrays isn't 2D
+    if len(points_to_match.shape) != 2 or len(points_on_line.shape) != 2:
+        raise ValueError('Input arrays must be two dimensional.')
+
+    # Raise an error if the last shape of the arrays isn't the same
+    if points_to_match.shape[1] != points_on_line.shape[1]:
+        raise ValueError('Number of features mismatch between points_to_match and points_on_line.')
+
+    # Given that points_to_match has shape (a, n) and points_on_line has shape (b, n), we tile both arrays to have shape
+    # (b, a, n) so that they can be acted on together.
+    points_on_line_tiled = np.tile(points_on_line, (points_to_match.shape[0], 1, 1))
+    points_to_match_tiled = (np.repeat(points_to_match, points_on_line.shape[0], axis=0)
+                             .reshape(points_on_line_tiled.shape))
+
+    # Then, we find the Euclidean distance between each point, and use the smallest one to match points to the line.
+    raw_distances = points_to_match_tiled - points_on_line_tiled
+    raw_distances_squared = np.sum(raw_distances**2, axis=2)
+    closest_point = np.argmin(raw_distances_squared, axis=1)
+
+    # Return raw distances to each closest point too if desired
+    # Todo: is this still needed? It isn't really if I still sort
+    if return_raw_distances:
+        return [closest_point, raw_distances[np.arange(points_to_match.shape[0]), closest_point, :]]
+    else:
+        return closest_point
+
+
+def proximity_to_line_sort(points_to_match: np.ndarray, points_on_line: np.ndarray) -> np.ndarray:
+    """Given a field of unorganised points and an ordered list of points defining a line, this function returns the
+    field of points sorted by order of how close to the points on the line they are. The final step is to sort matches
+    to the same point based on their last axis distance from the point (in 2D, that will be the y axis.)
+
+    Todo: is it ok to just oversample this, or should I improve the final sorting scoring step? This isn't an issue if
+        the line has enough points, but that may often not be the case...
+        Instead, it could use the derivative of the points on the line to work out which way the line is going, and then
+        use that to work out if points_to_match are above or below the direction of travel. Fucking hard though!
+
+    Notes:
+        - This function was made to sort unordered CMDs.
+        - Make sure the line has enough points, as the final sorting step between points matched to the same line point
+            is ONLY done on y values, which will cause icky discontinuities if the line doesn't have a high enough
+            resolution.
+
+    Args:
+        points_to_match (np.ndarray): points to match to the line. Should have shape (n_match_points, n_features).
+        points_on_line (np.ndarray): points to cross-match the points_to_match with. Should have shape
+            (n_line_points, n_features).
+
+    Returns:
+        The optimum set of arguments to sort the set of points along the line.
+
+    """
+    # Get both the nearest point to the line *and* how far away from that point it is
+    closest_point, raw_distances = find_nearest_point(points_to_match, points_on_line, return_raw_distances=True)
+
+    # Grab all the y distances from the points, and normalise them to be in the range [-0.495, 0.495]
+    y_distances = raw_distances[:, -1]
+    min_y = np.min(y_distances)
+    max_y = np.max(y_distances)
+    normalised_y_distances = ((y_distances - min_y) / (max_y - min_y) - 0.5) * 0.99
+
+    # Add the y distances to the closest point ordering, and then sort the points given that we're sorting on both point
+    # along the line (integer steps) and how above/below the point each one is (float steps)
+    sort_args = np.argsort(closest_point + normalised_y_distances)
+
+    return sort_args
 
 
 def nn_graph_sort(x, y):
@@ -74,6 +147,11 @@ def nn_graph_sort(x, y):
             noisy data.
 
     Args:
+        x (np.ndarray): x of points to sort.
+        y (np.ndarray): y of points to sort.
+
+    Returns:
+        The optimum set of arguments to sort the path.
 
 
     """
@@ -88,23 +166,22 @@ def nn_graph_sort(x, y):
     # Extract the best paths between all the points
     # Todo optimise this steaming pile of for-loop dogshit!!!1!
 
-    print(len(nx_graph))
+    list_of_all_paths = [list(nx.dfs_preorder_nodes(nx_graph, source=i)) for i in range(x.size)]
 
-    paths = [list(nx.dfs_preorder_nodes(nx_graph, source=i)) for i in range(x.size)]
-
-    mindist = np.inf
-    minidx = None
+    # Cycle over all paths and find the one with the smallest cost
+    minimum_distance = np.inf
+    path_with_minimum_distance = None
 
     for i in range(len(points)):
-        p = paths[i]  # order of nodes
-        ordered = points[p]  # ordered nodes
+        a_path = list_of_all_paths[i]  # order of nodes
+        ordered = points[a_path]  # ordered nodes
         # Find cost of that order by the sum of euclidean distances between points (i) and (i+1),
         cost = (((ordered[:-1] - ordered[1:]) ** 2).sum(1)).sum()
-        if cost < mindist:
-            mindist = cost
-            minidx = i
+        if cost < minimum_distance:
+            minimum_distance = cost
+            path_with_minimum_distance = i
 
-    return paths[minidx]
+    return list_of_all_paths[path_with_minimum_distance]
 
 
 class IsochroneInterpolator:
@@ -114,8 +191,8 @@ class IsochroneInterpolator:
         isochrones, marginalised over the specified argument_parameters. Yay!
 
         Todo: consider removing RadialBasisFunction interpolation, as it can't use duplicated co-ordinates of any kind
-        which is... pretty crappy.
-        See: https://stackoverflow.com/questions/27295853/rbf-interpolation-fails-linalgerror-singular-matrix
+            which is... pretty crappy.
+            See: https://stackoverflow.com/questions/27295853/rbf-interpolation-fails-linalgerror-singular-matrix
 
         Args:
             data_isochrone (pd.DataFrame): the data for the isochrones, in the same format as CMD 3.3 (so: a long
@@ -357,8 +434,6 @@ class CMDInterpolator:
             filter_window_length = int(np.round(data_colour.size * filter_window_fraction / 2) * 2 + 1)
 
             # Apply the filter!
-
-            print(sort_args)
             data_colour = savgol_filter(data_colour, filter_window_length, filter_order)
             data_magnitude = savgol_filter(data_magnitude, filter_window_length, filter_order)
 
@@ -405,7 +480,6 @@ class CMDInterpolator:
             range_to_evaluate = np.linspace(0, 1, resolution)
 
         return self.evaluate(range_to_evaluate)
-
 
 
 class IsochroneDistanceInterpolator:
