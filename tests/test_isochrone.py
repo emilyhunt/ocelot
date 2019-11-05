@@ -112,7 +112,7 @@ def test_cmd_interpolation():
                          'mbolmag', 'G', 'G_BP', 'G_RP']
 
     # Cull the dataset to only include the most massive stars
-    bad_stars = np.asarray(data_gaia['Mass'] < 0.8).nonzero()[0]
+    bad_stars = np.asarray(data_gaia['Mass'] < 0.5).nonzero()[0]
     data_gaia = data_gaia.drop(bad_stars).reset_index(drop=True)
 
     # Add some noise
@@ -122,22 +122,32 @@ def test_cmd_interpolation():
 
     # Time to fucking interpolate!!!
     spline_me_up_scotty = ocelot.isochrone.CMDInterpolator(
-        data_gaia,
         parameters=['G_BP-RP', 'G'],
         curve_parameterisation_type='summed',
-        data_sorted_on='nearest_neighbour_graph',
+        data_sorted_on='proximity_to_line',
         filter_input=True,
-        filter_window_fraction=0.1,
+        filter_window_size=15,
         filter_order=3,
         interp_type='UnivariateSpline',
-        interp_smoothing=None,
-        interp_order=2)
+        interp_smoothing=0.5,
+        interp_order=3)
+    spline_me_up_scotty.fit(data_gaia, max_repeats=20, print_current_step=False)
 
     # Time to fucking see the results!!!
     interpolated_cmd_x, interpolated_cmd_y = spline_me_up_scotty(resolution=100)
 
-    # Todo add an actual test once this is finalised!
-    # Todo: this currently fails because nearest_neighbour_graph sorting has issues.
+    # Check that the output values are what we expect
+    desired_y = np.asarray([-1.58247131, 2.6352361, 6.23856108, 9.11628436])
+    desired_x = np.asarray([1.94389926, 0.75030174, 1.17974861, 2.20645386])
+
+    actual_y = interpolated_cmd_y[[0, 10, 50, 99]]
+    actual_x = interpolated_cmd_x[[0, 10, 50, 99]]
+
+    assert np.allclose(desired_y, actual_y, rtol=0.0, atol=1e-8)
+    assert np.allclose(desired_x, actual_x, rtol=0.0, atol=1e-8)
+
+    # Todo: If this algorithm gets improved, this quick n' shit unit test should be improved.
+    #    (nb at time of writing it didn't look like development would continue any further on this)
 
     return [data_gaia, interpolated_cmd_x, interpolated_cmd_y]
 
@@ -177,7 +187,7 @@ def test_nn_graph_sort():
 
 
 def test_find_nearest_point():
-    """Tests a small function that attempts to find the nearest point to a set of """
+    """Tests a small function that attempts to find the nearest point on a line to a set of data."""
     # Setup some input data
     y = np.repeat(np.arange(5), 2).reshape(5, 2)  # 5 points spaced equally along y=x
     x = (y**2)[:3]  # The squaring makes it so the first and second points match, but then the last matches to y[4]
@@ -226,18 +236,17 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     # Run soem tests!!!
-    #isochrones = test_read_cmd_isochrone()
-    #isochrones_long = test_read_cmd_isochrone_multiple_isochrones()
-    interpolator, interpolator_output_x, interpolator_output_y = test_isochrone_interpolation()
-    nn_x_sorted, nn_y_sorted = test_nn_graph_sort()
-    test_find_nearest_point()
-    test_proximity_to_line_sort()
+    # isochrones = test_read_cmd_isochrone()
+    # isochrones_long = test_read_cmd_isochrone_multiple_isochrones()
+    # interpolator, interpolator_output_x, interpolator_output_y = test_isochrone_interpolation()
+    # nn_x_sorted, nn_y_sorted = test_nn_graph_sort()
+    # test_find_nearest_point()
+    # test_proximity_to_line_sort()
 
-
-    # Plot the results of the nearest neighbour graph sort
-    plt.plot(nn_x_sorted, nn_y_sorted)
-    plt.title('A sorted sine wave that began its life unsorted')
-    plt.show()
+    # # Plot the results of the nearest neighbour graph sort
+    # plt.plot(nn_x_sorted, nn_y_sorted)
+    # plt.title('A sorted sine wave that began its life unsorted')
+    # plt.show()
 
 
     # Some plotting code for cmd spline fitting

@@ -347,12 +347,12 @@ class IsochroneInterpolator:
 
 
 class CMDInterpolator:
-    def __init__(self, data_gaia: pd.DataFrame,
+    def __init__(self,
                  parameters: Union[list, tuple] = ('B-R', 'G'),
                  curve_parameterisation_type: str = 'summed',
                  data_sorted_on: str = 'y_values',
                  filter_input: bool = False,
-                 filter_window_fraction: float = 0.1,
+                 filter_window_size: int = 5,
                  filter_order: int = 3,
                  interp_type: str = 'UnivariateSpline',
                  interp_weights: Optional[str] = None,
@@ -365,8 +365,6 @@ class CMDInterpolator:
             - Will get slow if an especially big cluster is passed to the method.
 
         Args:
-            data_gaia (pd.DataFrame): the Gaia data, which ought to contain magnitude information (including a blue -
-                red column.)
             parameters (list, tuple): the parameters in data_gaia that define the blue-red and total magnitudes.
             curve_parameterisation_type (string): how to parameterise the curve. Options:
                 linear: parameterise with a sequence from 0 to 1 for all data points. Easiest to do,
@@ -389,66 +387,164 @@ class CMDInterpolator:
             interp_order (int): order of the polynomial to fit.
                 Default: 3
         """
+        # Define some useful stuff to keep class-side
+        self.fits_completed = 0
+
         # Set the parameter names to the class
         self.parameters = parameters
+        self.weight_parameter = interp_weights
 
-        # Kill The Panda, It's Time For X and Y Arrays
-        data_colour = np.asarray(data_gaia[parameters[0]])
-        data_magnitude = np.asarray(data_gaia[parameters[1]])
+        # Write Useful stuff to the class
+        self.sort_method = data_sorted_on
+        self.curve_parameterisation_type = curve_parameterisation_type
+        self.curve_parameter = None
+        self.filter_input = filter_input
+        self.filter_window_size = filter_window_size
+        self.filter_order = filter_order
 
-        # Decide on what the weights for the curve fitting will be
-        if interp_weights is not None:
-            star_weights = data_gaia[interp_weights]
-        else:
-            star_weights = None  # Aka no weights will be passed to functions
+        # Stuff we'll need to set later to do with interpolation
+        self.x_interpolator = None
+        self.y_interpolator = None
+        self.interpolation_type = interp_type
 
-        # Decide on how we're gonna initially sort the data
-        # Sort x and y based on y values
-        if data_sorted_on == 'y_values':
-            sort_args = np.argsort(data_magnitude)
-        # Sort x and y based on x values
-        elif data_sorted_on == 'x_values':
-            sort_args = np.argsort(data_colour)
-        # Create a nearest neighbour graph and sort using it
-        elif data_sorted_on == 'nearest_neighbour_graph':
-            sort_args = nn_graph_sort(data_colour, data_magnitude)
-        else:
-            raise ValueError('Specified method for sorting the data not recognised!')
-
-        # Apply the sort
-        data_colour = data_colour[sort_args]
-        data_magnitude = data_magnitude[sort_args]
-
-        # Decide on how we're gonna parameterise the curve
-        if curve_parameterisation_type == 'linear':
-            self.curve_parameter = np.linspace(0, 1, data_magnitude.size)
-        elif curve_parameterisation_type == 'summed':
-            self.curve_parameter = sum_along_curve(data_colour, data_magnitude, normalise=True)
-        else:
-            raise ValueError('Specified method for curve_parameterisation_type of the curve not recognised!')
-
-        # Filter the data using a Savitsky-Golay filter and based on the curve parameterisation
-        if filter_input:
-
-            # Set the filter window length to be some fraction of the dataset size, making sure that it's an odd number
-            filter_window_length = int(np.round(data_colour.size * filter_window_fraction / 2) * 2 + 1)
-
-            # Apply the filter!
-            data_colour = savgol_filter(data_colour, filter_window_length, filter_order)
-            data_magnitude = savgol_filter(data_magnitude, filter_window_length, filter_order)
-
-        # Interpolation time!
-        if interp_type == 'UnivariateSpline':
-            self.x_interpolator = UnivariateSpline(self.curve_parameter, data_colour, w=star_weights,
-                                                   s=interp_smoothing, k=interp_order)
-            self.y_interpolator = UnivariateSpline(self.curve_parameter, data_magnitude, w=star_weights,
-                                                   s=interp_smoothing, k=interp_order)
+        if self.interpolation_type == 'UnivariateSpline':
+            self.interpolation_arguments = {'s': interp_smoothing, 'k': interp_order}
 
             # Set __call__ to use this function!
             self.evaluate = self.evaluate_univariate_spline
 
         else:
             raise ValueError('Specified interpolation method not recognised!')
+
+    def fit(self, data_gaia, max_repeats: int = 1, print_current_step: bool = False):
+        """Fits a spline to the CMD data. Depending on the sort method chosen, this may be done iteratively to improve
+        the quality of the fit.
+
+        Args:
+            data_gaia (pd.DataFrame): the Gaia data, which ought to contain magnitude information (including a blue -
+                red column.)
+            max_repeats (int): how many times to re-run the fitting.
+
+
+        """
+        # Kill The Panda, It's Time For X and Y Arrays
+        data_colour = np.asarray(data_gaia[self.parameters[0]])
+        data_magnitude = np.asarray(data_gaia[self.parameters[1]])
+
+        # Decide on what the weights for the curve fitting will be
+        if self.weight_parameter is not None:
+            star_weights = data_gaia[self.weight_parameter]
+        else:
+            star_weights = None  # Aka no weights will be passed to functions
+
+        while self.fits_completed < max_repeats:
+            # Sort the data
+            data_colour, data_magnitude = self._input_sort(data_colour, data_magnitude)
+
+            # Make a parameter to describe the 2D curve with
+            self.curve_parameter = self._input_parameterisation(data_colour, data_magnitude)
+
+            # Filter the input (assuming that filtering was turned on during __init__)
+            filtered_data_colour, filtered_data_magnitude = self._input_filter(data_colour, data_magnitude)
+
+            # Interpolate!
+            self._input_interpolate(filtered_data_colour, filtered_data_magnitude, star_weights)
+
+            self.fits_completed += 1
+
+            if print_current_step:
+                print(self.fits_completed)
+
+    def _input_sort(self, data_colour, data_magnitude):
+        """Sorts input values to the class."""
+
+        # Decide on how we're gonna initially sort the data
+        # Sort x and y based on y values
+        if self.sort_method == 'y_values':
+            sort_args = np.argsort(data_magnitude)
+            self.fits_completed = np.inf  # This sort method is non-iterable!
+
+        # Sort x and y based on x values
+        elif self.sort_method == 'x_values':
+            sort_args = np.argsort(data_colour)
+            self.fits_completed = np.inf  # This sort method is non-iterable!
+
+        # Create a nearest neighbour graph and sort using it
+        elif self.sort_method == 'nearest_neighbour_graph':
+            sort_args = nn_graph_sort(data_colour, data_magnitude)
+            self.fits_completed = np.inf  # This sort method is non-iterable!
+
+        # Sort based on proximity to a pre-established line
+        elif self.sort_method == 'proximity_to_line':
+            # If this is our first run, then we have to sort on y values first instead
+            if self.fits_completed == 0:
+                sort_args = np.argsort(data_magnitude)
+            else:
+                # Grab data to feed to the sorter
+                points_to_match = np.vstack([data_colour, data_magnitude]).T
+
+                # Use a resoltuion of 100 or twice the length of the array & grab interpolated points
+                resolution = np.max([1 * data_colour.size, 100])
+                points_on_line = np.vstack(self(resolution=resolution)).T
+
+                sort_args = proximity_to_line_sort(points_to_match, points_on_line)
+        else:
+            raise ValueError("Selected sort_method not recognised!")
+
+        data_colour = data_colour[sort_args]
+        data_magnitude = data_magnitude[sort_args]
+
+        return [data_colour, data_magnitude]
+
+    def _input_parameterisation(self, data_colour, data_magnitude):
+        """Parameterise the CMD."""
+        # Decide on how we're gonna parameterise the curve
+        if self.curve_parameterisation_type == 'linear':
+            curve_parameter = np.linspace(0, 1, data_magnitude.size)
+        elif self.curve_parameterisation_type == 'summed':
+            curve_parameter = sum_along_curve(data_colour, data_magnitude, normalise=True)
+        else:
+            raise ValueError('Specified method for curve_parameterisation_type of the curve not recognised!')
+
+        return curve_parameter
+
+    def _input_filter(self, data_colour, data_magnitude):
+        """Filters the input data."""
+
+        if self.filter_input:
+
+            # # Adapt the filtering strength based on how many fits we've already made
+            # self.filter_window_fraction /= self.fits_completed + 1
+
+            # Set the filter window length to be some fraction of the dataset size, making sure that it's an odd number
+            # filter_window_length = int(data_colour.size * self.filter_window_fraction)
+            #
+            # # Make sure it isn't less than the polyorder
+            # if filter_window_length <= self.filter_order:
+            #     filter_window_length = self.filter_order + 1
+            #
+            # # Make sure it's odd
+            # filter_window_length += (1 - filter_window_length % 2)
+            # filter_window_size = filter_window_length
+
+            # Apply the filter!
+            data_colour = savgol_filter(data_colour, self.filter_window_size, self.filter_order)
+            data_magnitude = savgol_filter(data_magnitude, self.filter_window_size, self.filter_order)
+
+        return data_colour, data_magnitude
+
+    def _input_interpolate(self, data_colour, data_magnitude, star_weights):
+        """Interpolates, given settings in the class"""
+        if self.interpolation_type == 'UnivariateSpline':
+            self.x_interpolator = UnivariateSpline(self.curve_parameter, data_colour, w=star_weights,
+                                                   **self.interpolation_arguments)
+            self.y_interpolator = UnivariateSpline(self.curve_parameter, data_magnitude, w=star_weights,
+                                                   **self.interpolation_arguments)
+
+        else:
+            raise ValueError('Specified interpolation method not recognised!')
+
+        return [data_colour, data_magnitude]
 
     def evaluate_univariate_spline(self, input_data: np.ndarray) -> list:
         """Evaluation function in the case that the class's interpolator is a scipy.interpolate.UnivariateSpline.

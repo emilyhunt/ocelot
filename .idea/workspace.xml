@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1.">
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_isochrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_isochrone.py" afterDir="false" />
@@ -51,7 +51,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$USER_HOME$/Pictures" />
-    <property name="settings.editor.selected.configurable" value="preferences.keymap" />
+    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -232,7 +232,8 @@
       <workItem from="1571298604508" duration="17208000" />
       <workItem from="1572252389851" duration="3331000" />
       <workItem from="1572421878152" duration="18131000" />
-      <workItem from="1572511940929" duration="11347000" />
+      <workItem from="1572511940929" duration="12130000" />
+      <workItem from="1572956705693" duration="8820000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -311,7 +312,14 @@
       <option name="project" value="LOCAL" />
       <updated>1572517572994</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1.">
+      <created>1572534359512</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1572534359512</updated>
+    </task>
+    <option name="localTasksCounter" value="13" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
