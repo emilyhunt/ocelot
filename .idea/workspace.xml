@@ -4,7 +4,6 @@
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_isochrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_isochrone.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -144,6 +143,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -233,7 +235,11 @@
       <workItem from="1572252389851" duration="3331000" />
       <workItem from="1572421878152" duration="18131000" />
       <workItem from="1572511940929" duration="12130000" />
-      <workItem from="1572956705693" duration="8820000" />
+      <workItem from="1572956705693" duration="9583000" />
+      <workItem from="1573027529472" duration="1560000" />
+      <workItem from="1573112298931" duration="675000" />
+      <workItem from="1574419267765" duration="1826000" />
+      <workItem from="1578393306098" duration="1180000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -319,7 +325,14 @@
       <option name="project" value="LOCAL" />
       <updated>1572534359512</updated>
     </task>
-    <option name="localTasksCounter" value="13" />
+    <task id="LOCAL-00013" summary="Implemented the new proximity_to_line sorting system in CMD interpolation.&#10;- Re-factored ocelot.isochrone.CMDInterpolator to use a .fit() method&#10;- Added support for iterative proximity to line sorting&#10;- Implemented test_cmd_interpolation unit test &#10;&#10;Notes:&#10;- The CMD interpolation is such a struggle. Proximity to line sorting (and trying to use the momentum of spline fits to converge on an optimum fit) just isn't working how I'd like it to.&#10;- A totally different approach is probably needed to get this more precise - as it stands, it just isn't really working.&#10;- Could just fit a polynomial to the main sequence? Or fit to where the gradient doesn't turn up (aka where the MS stops)&#10;- Docs still need work!&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1.">
+      <created>1572966925707</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1572966925707</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -353,7 +366,8 @@
     <MESSAGE value="Final work on isochrone plotting&#10;- Completed ocelot.plot.isochrone documentation&#10;- Added functionality to ocelot.isochrone.read_cmd_isochrone allowing it to be given a directory of files or a list of files, where each file is a separate set of isochrones.&#10;- Isochrone interpolation issues for sharp corners (e.g. logAge ~ 6.7) will be investigated later.&#10;&#10;This release completes the requirements for 2.0.0 feature b1." />
     <MESSAGE value="Implemented CMDInterpolator, a class for interpolating CMDs directly with a spline.&#10;- System is working well!&#10;- Unit tests are *nearly* finished, now also using a new synthetic open cluster from CMD 3.3 for testing&#10;- Also added a nearest neighbour search routine, although I don't think it will be useful enough to keep&#10;- Still in need of a better way to sort CMDs - although that may come later&#10;- Also still in need of an actual routine for then calculating scatter.&#10;&#10;This release completes the requirements for 0.2.0 feature c." />
     <MESSAGE value="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
+    <MESSAGE value="Implemented the new proximity_to_line sorting system in CMD interpolation.&#10;- Re-factored ocelot.isochrone.CMDInterpolator to use a .fit() method&#10;- Added support for iterative proximity to line sorting&#10;- Implemented test_cmd_interpolation unit test &#10;&#10;Notes:&#10;- The CMD interpolation is such a struggle. Proximity to line sorting (and trying to use the momentum of spline fits to converge on an optimum fit) just isn't working how I'd like it to.&#10;- A totally different approach is probably needed to get this more precise - as it stands, it just isn't really working.&#10;- Could just fit a polynomial to the main sequence? Or fit to where the gradient doesn't turn up (aka where the MS stops)&#10;- Docs still need work!&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
+    <option name="LAST_COMMIT_MESSAGE" value="Implemented the new proximity_to_line sorting system in CMD interpolation.&#10;- Re-factored ocelot.isochrone.CMDInterpolator to use a .fit() method&#10;- Added support for iterative proximity to line sorting&#10;- Implemented test_cmd_interpolation unit test &#10;&#10;Notes:&#10;- The CMD interpolation is such a struggle. Proximity to line sorting (and trying to use the momentum of spline fits to converge on an optimum fit) just isn't working how I'd like it to.&#10;- A totally different approach is probably needed to get this more precise - as it stands, it just isn't really working.&#10;- Could just fit a polynomial to the main sequence? Or fit to where the gradient doesn't turn up (aka where the MS stops)&#10;- Docs still need work!&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>

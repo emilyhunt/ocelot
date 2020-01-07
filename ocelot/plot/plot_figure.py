@@ -63,7 +63,7 @@ def location(data_gaia: pd.DataFrame,
 
     """
     # Initialise the figure and add stuff to the axes
-    fig, ax = plt.subplots(nrows=2, ncols=2, figure_size=figure_size)
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size)
 
     ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
         ax[0, 0],
@@ -155,7 +155,7 @@ def clustering_result(data_gaia: pd.DataFrame,
 
     """
     # Initialise the figure and add stuff to the axes
-    fig, ax = plt.subplots(nrows=2, ncols=2, figure_size=figure_size)
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size)
 
     ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
         ax[0, 0], ax[0, 1], data_gaia, open_cluster_pm_to_mark=open_cluster_pm_to_mark,

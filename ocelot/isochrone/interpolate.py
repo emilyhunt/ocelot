@@ -494,7 +494,7 @@ class CMDInterpolator:
         data_colour = data_colour[sort_args]
         data_magnitude = data_magnitude[sort_args]
 
-        return [data_colour, data_magnitude]
+        return data_colour, data_magnitude
 
     def _input_parameterisation(self, data_colour, data_magnitude):
         """Parameterise the CMD."""
@@ -544,9 +544,9 @@ class CMDInterpolator:
         else:
             raise ValueError('Specified interpolation method not recognised!')
 
-        return [data_colour, data_magnitude]
+        return data_colour, data_magnitude
 
-    def evaluate_univariate_spline(self, input_data: np.ndarray) -> list:
+    def evaluate_univariate_spline(self, input_data: np.ndarray) -> tuple:
         """Evaluation function in the case that the class's interpolator is a scipy.interpolate.UnivariateSpline.
 
         Args:
@@ -555,10 +555,10 @@ class CMDInterpolator:
         Returns:
             a list containing [x_data, y_data] for the requested points.
         """
-        return [self.x_interpolator(input_data), self.y_interpolator(input_data)]
+        return self.x_interpolator(input_data), self.y_interpolator(input_data)
 
     def __call__(self, range_to_evaluate: Union[str, np.ndarray] = 'full isochrone',
-                 resolution: int = 100) -> list:
+                 resolution: int = 100) -> tuple:
         """Evaluate the interpolator and re-produce all (or part of) the interpolated isochrone. Contains systems to
         automate a lot of the process for you, because it's kind like that. =)
 
