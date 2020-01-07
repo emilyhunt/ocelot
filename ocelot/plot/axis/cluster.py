@@ -20,7 +20,8 @@ def position_and_pmotion(
         open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
         pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
         pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
-        plot_std_limit: float = 1.5):
+        plot_std_limit: float = 1.5,
+        cluster_marker_radius: float = 1.0):
     """Makes a scatter plot of position and proper motion for a given cluster,
     using plot_helper_calculate_alpha to prevent over-saturation of the
     figures.
@@ -44,6 +45,9 @@ def position_and_pmotion(
             plot limits.
         plot_std_limit (float): standard deviation of proper motion to use to find plotting limits if none are
             explicitly specified. Default: 1.5
+        cluster_marker_radius (float): radius of the cluster marker. Useful to increase when clusters are hard to see
+            against background points.
+            Default: 1.0
 
     Returns:
         axis_1 (matplotlib axis): the modified position axis.
@@ -94,9 +98,9 @@ def position_and_pmotion(
             # them in a new colour erri time =)
             stars_in_this_cluster = cluster_labels == a_cluster
             axis_1.plot(data_gaia.loc[stars_in_this_cluster, 'ra'], data_gaia.loc[stars_in_this_cluster, 'dec'],
-                        '.', ms=1, alpha=1.0)
+                        '.', ms=cluster_marker_radius, alpha=1.0)
             axis_2.plot(data_gaia.loc[stars_in_this_cluster, 'pmra'], data_gaia.loc[stars_in_this_cluster, 'pmdec'],
-                        '.', ms=1, alpha=1.0)
+                        '.', ms=cluster_marker_radius, alpha=1.0)
 
     # Add a red cross at a defined location on the pmra/pmdec plot if desired
     if open_cluster_pm_to_mark is not None:
@@ -207,7 +211,8 @@ def color_magnitude_diagram(fig,
                             cluster_indices: Optional[Union[list, np.ndarray]] = None,
                             plot_std_limit: float = 3.0,
                             x_limits: Optional[Union[list, np.ndarray]] = None,
-                            y_limits: Optional[Union[list, np.ndarray]] = None):
+                            y_limits: Optional[Union[list, np.ndarray]] = None,
+                            cluster_marker_radius: float = 1.0):
     """Makes a colour magnitude diagram plot of a given star field, and may
     also overplot star clusters within that field.
 
@@ -232,6 +237,9 @@ def color_magnitude_diagram(fig,
             plotting limits.
         y_limits (list-like, optional): the minimum and maximum absolute
             magnitude plotting limits.
+        cluster_marker_radius (float): radius of the cluster marker. Useful to increase when clusters are hard to see
+            against background points.
+            Default: 1.0
 
     Returns:
         axis (matplotlib axis): the modified colour magnitude diagram axis.
@@ -283,6 +291,6 @@ def color_magnitude_diagram(fig,
             stars_in_this_cluster = np.where(cluster_labels == a_cluster)[0]
             axis.plot(bp_minus_rp_colour[stars_in_this_cluster],
                       apparent_magnitude[stars_in_this_cluster],
-                      '.', ms=1, alpha=1.0)
+                      '.', ms=cluster_marker_radius, alpha=1.0)
 
     return axis

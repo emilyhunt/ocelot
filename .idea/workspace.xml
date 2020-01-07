@@ -2,14 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/tests/test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/blanco_1_gaia_dr2_gmag_18_cut_LABELS.pickle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/isochrone/interpolate.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/utilities.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_plot.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -243,7 +237,7 @@
       <workItem from="1573027529472" duration="1560000" />
       <workItem from="1573112298931" duration="675000" />
       <workItem from="1574419267765" duration="1826000" />
-      <workItem from="1578393306098" duration="8279000" />
+      <workItem from="1578393306098" duration="8685000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -343,7 +337,14 @@
       <option name="project" value="LOCAL" />
       <updated>1578394624310</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="Unit tests added for ocelot.plot along with a number of bugfixes">
+      <created>1578405531737</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1578405531737</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -380,7 +381,8 @@
     <MESSAGE value="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
     <MESSAGE value="Implemented the new proximity_to_line sorting system in CMD interpolation.&#10;- Re-factored ocelot.isochrone.CMDInterpolator to use a .fit() method&#10;- Added support for iterative proximity to line sorting&#10;- Implemented test_cmd_interpolation unit test &#10;&#10;Notes:&#10;- The CMD interpolation is such a struggle. Proximity to line sorting (and trying to use the momentum of spline fits to converge on an optimum fit) just isn't working how I'd like it to.&#10;- A totally different approach is probably needed to get this more precise - as it stands, it just isn't really working.&#10;- Could just fit a polynomial to the main sequence? Or fit to where the gradient doesn't turn up (aka where the MS stops)&#10;- Docs still need work!&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
     <MESSAGE value="Small bugfix in plot_figure - figure_size keyword in matplotlib calls (incorrect) changed to figsize" />
-    <option name="LAST_COMMIT_MESSAGE" value="Small bugfix in plot_figure - figure_size keyword in matplotlib calls (incorrect) changed to figsize" />
+    <MESSAGE value="Unit tests added for ocelot.plot along with a number of bugfixes" />
+    <option name="LAST_COMMIT_MESSAGE" value="Unit tests added for ocelot.plot along with a number of bugfixes" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
