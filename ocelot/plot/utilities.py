@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def calculate_alpha(n_points: int, area: float, marker_radius: int, dpi: int = 300, desired_max_density: float = 0.03):
+def calculate_alpha(fig, ax, n_points: int, marker_radius: int, dpi: int = 300, desired_max_density: float = 0.03):
     """Calculates the optimum alpha value for points to make the plot not be
     over-saturated. Relies on the area value being correctly calculated
     prior to input, which should be the value in inches for the figure. It also
@@ -11,8 +11,9 @@ def calculate_alpha(n_points: int, area: float, marker_radius: int, dpi: int = 3
     (which they often are not), so the input area number may need tweaking.
 
     Args:
+        fig (matplotlib figure): the figure element. Required to calculate alpha values precisely.
+        ax (matplotlib axis): the figure element. Required to calculate alpha values precisely.
         n_points (int): the number of points to plot.
-        area (float): the area, in inches, of the axes.
         marker_radius (px): the radius of the marker. Note that plt.scatter()
             specifies marker *area* but plt.plot() uses marker size, which is
             analogous to the marker radius.
@@ -25,12 +26,20 @@ def calculate_alpha(n_points: int, area: float, marker_radius: int, dpi: int = 3
     Returns:
         float: A recommended alpha value to use on these axes.
 
+    Todo: could still consider if the data are clumped or not
+
     """
+    # We calculate the area of the figure with some fancy magic
+    # See https://stackoverflow.com/questions/19306510/determine-matplotlib-axis-size-in-pixels
+    bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
+    area = bbox.width * bbox.height
+
     # We aim to have a maximum density of uniform_max_density, assuming that
     # n_points are distributed evenly across the area.
     marker_area = n_points * np.pi * marker_radius ** 2  # In units of px
     total_area = area * dpi ** 2
     current_max_density = marker_area / total_area
+
     return np.clip(desired_max_density / current_max_density, 0., 1.)
 
 

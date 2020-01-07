@@ -202,7 +202,7 @@ class IsochroneInterpolator:
                 Default: None, which uses ['logZini', 'logAge'] as default.
             parameters_to_infer (str, optional): parameters to infer with the interpolator. There must be two due to the
                 design of this implementation!
-                Default: None, which uses ['G_BP-RP', 'Gmag'] as default.
+                Default: ('G_BP-RP', 'Gmag')
             interpolation_type (str): type of interpolation to use.
                 Implemented: 'LinearND' : scipy.interpolate.LinearNDInterpolator
                              'RadialBasisFunction' : scipy.interpolate.Rbf

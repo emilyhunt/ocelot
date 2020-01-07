@@ -66,6 +66,7 @@ def location(data_gaia: pd.DataFrame,
     fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size)
 
     ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
+        fig,
         ax[0, 0],
         ax[0, 1],
         data_gaia,
@@ -91,7 +92,7 @@ def location(data_gaia: pd.DataFrame,
 
     # Plot a title - we use text instead of the title UI so that it can be long and multi-line.
     if figure_title is not None:
-        ax[0, 0].text(0., 1.10, transform=ax[0, 0].transAxes, va="bottom")
+        ax[0, 0].text(0., 1.10, figure_title, transform=ax[0, 0].transAxes, va="bottom")
 
     # Output time
     if save_name is not None:
@@ -100,7 +101,7 @@ def location(data_gaia: pd.DataFrame,
     if show_figure is True:
         fig.show()
 
-    return fig
+    return fig, ax
 
 
 def clustering_result(data_gaia: pd.DataFrame,
@@ -158,11 +159,12 @@ def clustering_result(data_gaia: pd.DataFrame,
     fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size)
 
     ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
-        ax[0, 0], ax[0, 1], data_gaia, open_cluster_pm_to_mark=open_cluster_pm_to_mark,
+        fig, ax[0, 0], ax[0, 1], data_gaia, cluster_labels, cluster_indices,
+        open_cluster_pm_to_mark=open_cluster_pm_to_mark,
         pmra_plot_limits=pmra_plot_limits, pmdec_plot_limits=pmdec_plot_limits, plot_std_limit=plot_std_limit)
 
     ax[1, 0] = cluster.color_magnitude_diagram(
-        ax[1, 0], data_gaia, cluster_labels, cluster_indices,
+        fig, ax[1, 0], data_gaia, cluster_labels, cluster_indices,
         x_limits=cmd_plot_x_limits, y_limits=cmd_plot_y_limits, plot_std_limit=cmd_plot_std_limit)
 
     # Beautifying
@@ -179,7 +181,7 @@ def clustering_result(data_gaia: pd.DataFrame,
     if show_figure is True:
         fig.show()
 
-    return fig
+    return fig, ax
 
 
 def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
@@ -325,4 +327,4 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
     if show_figure is True:
         fig.show()
 
-    return fig
+    return fig, ax

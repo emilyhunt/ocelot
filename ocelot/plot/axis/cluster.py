@@ -11,9 +11,12 @@ from .. import utilities
 
 
 def position_and_pmotion(
+        fig,
         axis_1,
         axis_2,
         data_gaia: pd.DataFrame,
+        cluster_labels: np.ndarray = None,
+        cluster_indices: Optional[Union[list, np.ndarray]] = None,
         open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
         pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
         pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
@@ -23,10 +26,16 @@ def position_and_pmotion(
     figures.
 
     Args:
+        fig (matplotlib figure): the figure element. Required to calculate alpha values precisely.
         axis_1 (matplotlib axis): the positional (ra/dec) axis.
         axis_2 (matplotlib axis): the proper motion (pmra/pmdec) axis.
         data_gaia (pandas.DataFrame): the Gaia data read in to a DataFrame.
             Keys should be unchanged from default Gaia source table names.
+        cluster_labels (np.ndarray): the cluster membership labels for
+            clustered stars. This should be the default sklearn.cluster output.
+        cluster_indices (list-like, optional): the clusters to plot in
+            cluster_labels. For instance, you may not want to plot '-1'
+            clusters (which are noise) produced by algorithm like DBSCAN.
         open_cluster_pm_to_mark (list-like, optional): the co-ordinates (pmra, pmdec) of a point to mark on the proper
             motion diagram, such as a literature value.
         pmra_plot_limits (list-like, optional): the minimum and maximum proper motion in the right ascension direction
@@ -55,31 +64,44 @@ def position_and_pmotion(
     pmra_range = pmra_plot_limits
     pmdec_range = pmdec_plot_limits
 
+    # Work out how many points will fall in the pm range
+    good_ra = np.logical_and(data_gaia['pmra'] > pmra_range[0], data_gaia['pmra'] < pmra_range[1])
+    good_dec = np.logical_and(data_gaia['pmdec'] > pmdec_range[0], data_gaia['pmdec'] < pmdec_range[1])
+    pm_plot_points = np.count_nonzero(np.logical_and(good_ra, good_dec))
+
     # Calculate a rough guess at a good alpha value
-    alpha_estimate = utilities.calculate_alpha(
-        data_gaia.shape[0], np.pi * 1.2 ** 2, 1)
+    alpha_estimate_1 = utilities.calculate_alpha(fig, axis_1, data_gaia.shape[0], 1)
+    alpha_estimate_2 = utilities.calculate_alpha(fig, axis_1, pm_plot_points, 1)
 
     # Ra/dec plot
-    axis_1.plot(data_gaia.ra, data_gaia.dec,
-                '.', ms=1, alpha=alpha_estimate, c='k')
+    axis_1.plot(data_gaia['ra'], data_gaia['dec'], '.', ms=1, alpha=alpha_estimate_1, c='k')
     axis_1.set_xlabel('ra')
     axis_1.set_ylabel('dec')
     axis_1.set_title('position')
 
     # Proper motion plot
-    axis_2.plot(data_gaia.pmra, data_gaia.pmdec,
-                '.', ms=1, alpha=alpha_estimate * 0.5, c='k')
+    axis_2.plot(data_gaia['pmra'], data_gaia['pmdec'], '.', ms=1, alpha=alpha_estimate_2, c='k')
     axis_2.set_xlabel('pmra')
     axis_2.set_ylabel('pmdec')
     axis_2.set_xlim(pmra_range)
     axis_2.set_ylim(pmdec_range)
-
     axis_2.set_title('proper motion')
+
+    # Plot clusters if labels have been specified
+    if cluster_labels is not None:
+        for a_cluster in cluster_indices:
+            # We cycle over the clusters, grabbing their indices and plotting
+            # them in a new colour erri time =)
+            stars_in_this_cluster = cluster_labels == a_cluster
+            axis_1.plot(data_gaia.loc[stars_in_this_cluster, 'ra'], data_gaia.loc[stars_in_this_cluster, 'dec'],
+                        '.', ms=1, alpha=1.0)
+            axis_2.plot(data_gaia.loc[stars_in_this_cluster, 'pmra'], data_gaia.loc[stars_in_this_cluster, 'pmdec'],
+                        '.', ms=1, alpha=1.0)
 
     # Add a red cross at a defined location on the pmra/pmdec plot if desired
     if open_cluster_pm_to_mark is not None:
         axis_2[0, 1].plot(open_cluster_pm_to_mark[0], open_cluster_pm_to_mark[1],
-                      'rx', ms=6)
+                          'rx', ms=6)
 
     return [axis_1, axis_2]
 
@@ -154,7 +176,7 @@ def density_position_and_pmotion(axis_1,
     axis_1.contourf(mesh_ra, mesh_dec,
                     density_ra_dec,
                     levels=plotting_resolution,
-                    cmap=plt.cm.Reds)
+                    cmap=plt.get_cmap('Reds'))
     axis_1.set_xlabel('ra')
     axis_1.set_ylabel('dec')
     axis_1.text(0.02, 1.02, f'bw={kde_bandwidth_radec:.4f}',
@@ -166,7 +188,7 @@ def density_position_and_pmotion(axis_1,
     axis_2.contourf(mesh_pmra, mesh_pmdec,
                     density_pmotion,
                     levels=plotting_resolution,
-                    cmap=plt.cm.Blues)
+                    cmap=plt.get_cmap('Blues'))
     axis_2.set_xlabel('pmra')
     axis_2.set_ylabel('pmdec')
     axis_2.text(0.02, 1.02, f'bw={kde_bandwidth_pmotion:.4f}',
@@ -178,7 +200,8 @@ def density_position_and_pmotion(axis_1,
     return [axis_1, axis_2]
 
 
-def color_magnitude_diagram(axis,
+def color_magnitude_diagram(fig,
+                            axis,
                             data_gaia: pd.DataFrame,
                             cluster_labels: np.ndarray = None,
                             cluster_indices: Optional[Union[list, np.ndarray]] = None,
@@ -193,6 +216,7 @@ def color_magnitude_diagram(axis,
         is too crowded.
 
     Args:
+        fig (matplotlib figure): the figure element. Required to calculate alpha values precisely.
         axis (matplotlib axis): the colour magnitude diagram axis.
         data_gaia (pandas.DataFrame): the Gaia data read in to a DataFrame.
             Keys should be unchanged from default Gaia source table names.
@@ -232,20 +256,24 @@ def color_magnitude_diagram(axis,
                     + np.std(apparent_magnitude)
                     * np.array([-plot_std_limit, plot_std_limit]))
 
+    # Work out how many points will fall in the pm range
+    good_x = np.logical_and(bp_minus_rp_colour > x_limits[0], bp_minus_rp_colour < x_limits[1])
+    good_y = np.logical_and(apparent_magnitude > y_limits[0], apparent_magnitude < y_limits[1])
+    n_points = np.count_nonzero(np.logical_and(good_x, good_y))
+
     # Calculate a rough guess at a good alpha value
-    alpha_estimate = utilities.calculate_alpha(
-        data_gaia.shape[0], np.pi * 1.2 ** 2, 1)
+    alpha_estimate = utilities.calculate_alpha(fig, axis, n_points, 1)
 
     # CMD plot
     axis.plot(bp_minus_rp_colour, apparent_magnitude,
               '.', ms=1, alpha=alpha_estimate, c='k')
-    axis.invert_yaxis()
 
     axis.set_xlabel(r'm_{bp} - m_{gp}')
     axis.set_ylabel(r'm_{G}')
     axis.set_title('colour magnitude diagram (Gaia photometry)')
     axis.set_xlim(x_limits)
     axis.set_ylim(y_limits)
+    axis.invert_yaxis()
 
     # Plot clusters if labels have been specified
     if cluster_labels is not None:
