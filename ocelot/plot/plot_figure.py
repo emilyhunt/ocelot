@@ -96,7 +96,7 @@ def location(data_gaia: pd.DataFrame,
 
     # Output time
     if save_name is not None:
-        fig.save(save_name, dpi=300)
+        fig.savefig(save_name, dpi=300)
 
     if show_figure is True:
         fig.show()
@@ -118,7 +118,7 @@ def clustering_result(data_gaia: pd.DataFrame,
                       cmd_plot_y_limits: Optional[Union[list, np.ndarray]] = None,
                       plot_std_limit: float = 1.5,
                       cmd_plot_std_limit: float = 3.0,
-                      cluster_marker_radius: float = 1.0):
+                      cluster_marker_radius: Union[tuple, list] = (1., 1., 1.)):
     """A figure for evaluating the results of a clustering algorithm.
 
     Args:
@@ -144,9 +144,10 @@ def clustering_result(data_gaia: pd.DataFrame,
             explicitly specified, for the colour magnitude diagram plot. This is a separate parameter, as a higher
             value is often more suitable here.
             Default: 3.0
-        cluster_marker_radius (float): radius of the cluster marker. Useful to increase when clusters are hard to see
-            against background points.
-            Default: 1.0
+        cluster_marker_radius (list-like): radius of the cluster markers. Useful to increase when clusters are hard to
+            see against background points. Specified as a length 3 tuple, giving the radius for the position, pm and
+            CMD plots.
+            Default: (1., 1., 1.)
 
         --- Module standard ---
         show_figure (bool): whether or not to show the figure at the end of plotting. Default: True
@@ -166,12 +167,12 @@ def clustering_result(data_gaia: pd.DataFrame,
         fig, ax[0, 0], ax[0, 1], data_gaia, cluster_labels, cluster_indices,
         open_cluster_pm_to_mark=open_cluster_pm_to_mark,
         pmra_plot_limits=pmra_plot_limits, pmdec_plot_limits=pmdec_plot_limits, plot_std_limit=plot_std_limit,
-        cluster_marker_radius=cluster_marker_radius)
+        cluster_marker_radius=cluster_marker_radius[0:2])
 
     ax[1, 0] = cluster.color_magnitude_diagram(
         fig, ax[1, 0], data_gaia, cluster_labels, cluster_indices,
         x_limits=cmd_plot_x_limits, y_limits=cmd_plot_y_limits, plot_std_limit=cmd_plot_std_limit,
-        cluster_marker_radius=cluster_marker_radius)
+        cluster_marker_radius=cluster_marker_radius[2])
 
     # Beautifying
     fig.subplots_adjust(hspace=0.25, wspace=0.25)
@@ -182,7 +183,7 @@ def clustering_result(data_gaia: pd.DataFrame,
 
     # Output time
     if save_name is not None:
-        fig.save(save_name, dpi=300)
+        fig.savefig(save_name, dpi=300)
 
     if show_figure is True:
         fig.show()
@@ -328,7 +329,7 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
 
     # Output time
     if save_name is not None:
-        fig.save(save_name, dpi=300)
+        fig.savefig(save_name, dpi=300)
 
     if show_figure is True:
         fig.show()

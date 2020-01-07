@@ -74,7 +74,8 @@ def test_clustering_result_plotting(show_figure=False):
     fig, ax = ocelot.plot.clustering_result(
         data_gaia, labels, unique_labels[1:], show_figure=show_figure,
         figure_title="Blanco 1 should be clearly visible! \nCut at G=18, clustered by DBSCAN",
-        pmra_plot_limits=[14, 24], pmdec_plot_limits=[-2, 8], cmd_plot_y_limits=[6, 18])
+        pmra_plot_limits=[14, 24], pmdec_plot_limits=[-2, 8], cmd_plot_y_limits=[6, 18],
+        cluster_marker_radius=(1., 3., 1.,))
 
     # Friendship ended with excessive memory use,,, now "del" is my friend
     del data_gaia

@@ -21,7 +21,7 @@ def position_and_pmotion(
         pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
         pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
         plot_std_limit: float = 1.5,
-        cluster_marker_radius: float = 1.0):
+        cluster_marker_radius: Union[list, tuple] = (1., 1.)):
     """Makes a scatter plot of position and proper motion for a given cluster,
     using plot_helper_calculate_alpha to prevent over-saturation of the
     figures.
@@ -45,9 +45,10 @@ def position_and_pmotion(
             plot limits.
         plot_std_limit (float): standard deviation of proper motion to use to find plotting limits if none are
             explicitly specified. Default: 1.5
-        cluster_marker_radius (float): radius of the cluster marker. Useful to increase when clusters are hard to see
-            against background points.
-            Default: 1.0
+        cluster_marker_radius (float): radius of the cluster markers. Useful to increase when clusters are hard to
+            see against background points. Specified as a length 2 tuple, giving the radius for the position and pm
+            plots.
+            Default: (1., 1.)
 
     Returns:
         axis_1 (matplotlib axis): the modified position axis.
@@ -69,9 +70,9 @@ def position_and_pmotion(
     pmdec_range = pmdec_plot_limits
 
     # Work out how many points will fall in the pm range
-    good_ra = np.logical_and(data_gaia['pmra'] > pmra_range[0], data_gaia['pmra'] < pmra_range[1])
-    good_dec = np.logical_and(data_gaia['pmdec'] > pmdec_range[0], data_gaia['pmdec'] < pmdec_range[1])
-    pm_plot_points = np.count_nonzero(np.logical_and(good_ra, good_dec))
+    good_pmra = np.logical_and(data_gaia['pmra'] > pmra_range[0], data_gaia['pmra'] < pmra_range[1])
+    good_pmdec = np.logical_and(data_gaia['pmdec'] > pmdec_range[0], data_gaia['pmdec'] < pmdec_range[1])
+    pm_plot_points = np.count_nonzero(np.logical_and(good_pmra, good_pmdec))
 
     # Calculate a rough guess at a good alpha value
     alpha_estimate_1 = utilities.calculate_alpha(fig, axis_1, data_gaia.shape[0], 1)
@@ -98,9 +99,9 @@ def position_and_pmotion(
             # them in a new colour erri time =)
             stars_in_this_cluster = cluster_labels == a_cluster
             axis_1.plot(data_gaia.loc[stars_in_this_cluster, 'ra'], data_gaia.loc[stars_in_this_cluster, 'dec'],
-                        '.', ms=cluster_marker_radius, alpha=1.0)
+                        '.', ms=cluster_marker_radius[0], alpha=1.0)
             axis_2.plot(data_gaia.loc[stars_in_this_cluster, 'pmra'], data_gaia.loc[stars_in_this_cluster, 'pmdec'],
-                        '.', ms=cluster_marker_radius, alpha=1.0)
+                        '.', ms=cluster_marker_radius[1], alpha=1.0)
 
     # Add a red cross at a defined location on the pmra/pmdec plot if desired
     if open_cluster_pm_to_mark is not None:
@@ -163,17 +164,24 @@ def density_position_and_pmotion(axis_1,
     pmra_range = pmra_plot_limits
     pmdec_range = pmdec_plot_limits
 
-    # Perform KDE fits to the data
-    mesh_ra, mesh_dec, density_ra_dec = process.kde_fit_2d(
-        data_gaia[['ra', 'dec']].to_numpy(),
-        kde_bandwidth_radec, kde_resolution=kde_resolution)
+    # Process the datasets - we may want to cut down the pmra/pmdec one
+    data_position = data_gaia[['ra', 'dec']].to_numpy()
 
-    mesh_pmra, mesh_pmdec, density_pmotion = process.kde_fit_2d(
-        data_gaia[['pmra', 'pmdec']].to_numpy(),
-        kde_bandwidth_pmotion,
-        x_limits=pmra_range,
-        y_limits=pmdec_range,
-        kde_resolution=kde_resolution)
+    data_proper_motion = data_gaia[['pmra', 'pmdec']]
+
+    # Drop any bad proper motion points
+    good_pmra = np.logical_and(data_gaia['pmra'] > pmra_range[0], data_gaia['pmra'] < pmra_range[1])
+    good_pmdec = np.logical_and(data_gaia['pmdec'] > pmdec_range[0], data_gaia['pmdec'] < pmdec_range[1])
+    good_stars = np.logical_and(good_pmra, good_pmdec)
+    data_proper_motion = data_proper_motion.loc[good_stars, :].to_numpy()
+
+    # Perform KDE fits to the data
+    mesh_ra, mesh_dec, density_ra_dec = process.kde_fit_2d(data_position, kde_bandwidth_radec,
+                                                           kde_resolution=kde_resolution)
+
+    mesh_pmra, mesh_pmdec, density_pmotion = process.kde_fit_2d(data_proper_motion, kde_bandwidth_pmotion,
+                                                                x_limits=pmra_range, y_limits=pmdec_range,
+                                                                kde_resolution=kde_resolution)
 
     # Plot the results
     # Ra/dec
