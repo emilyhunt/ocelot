@@ -1,2 +1,2 @@
 # ocelot
-The Open ClustEr vaLidatiOn Tool. Its results are better than its acronyms.
+The Open ClustEr muLti-purpOse Toolkit. Its results are better than its acronyms.
