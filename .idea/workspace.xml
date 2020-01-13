@@ -2,10 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/nearest_neighbor.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/__init__.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -75,7 +77,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.test_plot">
+  <component name="RunManager" selected="Python.test_cluster">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -142,6 +144,25 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <configuration name="test_cluster" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="ocelot" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/test_cluster.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="true" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="test_isochrone" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -168,6 +189,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -204,9 +228,11 @@
       <item itemvalue="Python.test_isochrone" />
       <item itemvalue="Python.spline_fit_to_random_data" />
       <item itemvalue="Python.test_plot" />
+      <item itemvalue="Python.test_cluster" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test_cluster" />
         <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.test_isochrone" />
         <item itemvalue="Python.spline_fit_to_random_data" />
@@ -239,7 +265,10 @@
       <workItem from="1573027529472" duration="1560000" />
       <workItem from="1573112298931" duration="675000" />
       <workItem from="1574419267765" duration="1826000" />
-      <workItem from="1578393306098" duration="11005000" />
+      <workItem from="1578393306098" duration="13857000" />
+      <workItem from="1578573793802" duration="729000" />
+      <workItem from="1578644684986" duration="631000" />
+      <workItem from="1578901987001" duration="9862000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -353,7 +382,14 @@
       <option name="project" value="LOCAL" />
       <updated>1578405938513</updated>
     </task>
-    <option name="localTasksCounter" value="17" />
+    <task id="LOCAL-00017" summary="Little fix to figure saving in ocelot.plot - we had the wrong method written (.save() instead of .savefig())">
+      <created>1578408465043</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1578408465043</updated>
+    </task>
+    <option name="localTasksCounter" value="18" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -392,7 +428,8 @@
     <MESSAGE value="Small bugfix in plot_figure - figure_size keyword in matplotlib calls (incorrect) changed to figsize" />
     <MESSAGE value="Unit tests added for ocelot.plot along with a number of bugfixes" />
     <MESSAGE value="Added a cluster_marker_radius parameter to ocelot.plot.clustering_result" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added a cluster_marker_radius parameter to ocelot.plot.clustering_result" />
+    <MESSAGE value="Little fix to figure saving in ocelot.plot - we had the wrong method written (.save() instead of .savefig())" />
+    <option name="LAST_COMMIT_MESSAGE" value="Little fix to figure saving in ocelot.plot - we had the wrong method written (.save() instead of .savefig())" />
     <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>
