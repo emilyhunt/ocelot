@@ -5,13 +5,12 @@ DBSCAN/OPTICS epsilon parameters.
 import numpy as np
 
 from sklearn.neighbors import NearestNeighbors
-from typing import Union, Optional, List
 
 
 def precalculate_nn_distances(data: np.ndarray, n_neighbors: int = 10, n_jobs: int = -1,
-                              return_knn_distance_array: bool = False, **kwargs):
+                              return_sparse_matrix: bool = True, return_knn_distance_array: bool = False, **kwargs):
     """Pre-calculates nearest neighbor (nn) distances for direct plugging into a sklearn clustering algorithm with
-    metric=pre-computed.
+    metric=pre-computed. Basically just a wrapper for sklearn.neighbors.NearestNeighbors.
 
     Args:
         data (np.ndarray): dataset of shape (n_samples, n_features) to calculate nearest neighbor distances for.
@@ -20,9 +19,13 @@ def precalculate_nn_distances(data: np.ndarray, n_neighbors: int = 10, n_jobs: i
             Default: 10
         n_jobs (int): number of jobs to use to calculate nearest neighbor distances.
             Default: -1 (uses all CPUs)
+        return_sparse_matrix (bool): whether or not to return an (n_samples, n_samples) sparse matrix of nearest
+            neighbor distances for feeding into a clustering algorithm (e.g. DBSCAN, HDBSCAN*, OPTICS...)
+            Default: True
         return_knn_distance_array (bool): whether or not to also return an (n_samples, n_neighbors) distance array,
             useful for determining epsilon for DBSCAN or making nearest neighbor plots.
             Default: False
+        **kwargs: any keyword arguments to pass to the sklearn.neighbors.NearestNeighbors constructor.
 
     Returns:
         a sparse matrix of nearest neighbor distances,
@@ -33,19 +36,19 @@ def precalculate_nn_distances(data: np.ndarray, n_neighbors: int = 10, n_jobs: i
     neighbor_calculator = NearestNeighbors(n_neighbors=n_neighbors, n_jobs=n_jobs, **kwargs)
     neighbor_calculator.fit(data)
 
-    # Create a sparse matrix of distances to the nearest neighbors that can be fed to clustering algorithms
-    sparse_matrix = neighbor_calculator.kneighbors_graph(mode='distance')
-
-    # If requested, also return the distances to the nearest points but in sorted order. This is useful for making plots
-    # of nearest neighbor distances for a given field, e.g. for DBSCAN epsilon determination.
+    # Return as requested
     if return_knn_distance_array:
         distances, indices = neighbor_calculator.kneighbors()
-        return sparse_matrix, distances
-    else:
+
+        if return_sparse_matrix:
+            sparse_matrix = neighbor_calculator.kneighbors_graph(mode='distance')
+            return sparse_matrix, distances
+        else:
+            return distances
+
+    elif return_sparse_matrix:
+        sparse_matrix = neighbor_calculator.kneighbors_graph(mode='distance')
         return sparse_matrix
 
-
-def calculate_epsilon():
-    """A method for calculating a number of different optimum epsilon values for a nearest neighbor field. Can also
-    produce nearest neighbor plots if desired, calling functionality from ocelot.plot"""
-    pass
+    else:
+        raise ValueError("Nothing was specified for return. That's probably not intentional!")

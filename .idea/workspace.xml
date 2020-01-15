@@ -2,8 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/plot/axis/nn_statistics.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/nearest_neighbor.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/nearest_neighbor.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -264,7 +271,7 @@
       <workItem from="1578393306098" duration="13857000" />
       <workItem from="1578573793802" duration="729000" />
       <workItem from="1578644684986" duration="631000" />
-      <workItem from="1578901987001" duration="15619000" />
+      <workItem from="1578901987001" duration="26623000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -392,7 +399,14 @@
       <option name="project" value="LOCAL" />
       <updated>1578921227669</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added precalculate_nn_distances to precalculate kth nearest neighbor distance matrices for algorithms like DBSCAN.&#10;- Still need to unit test this!&#10;This releases partially satisfies 0.3.0 feature b.">
+      <created>1578927323955</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1578927323955</updated>
+    </task>
+    <option name="localTasksCounter" value="20" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -433,7 +447,7 @@
     <MESSAGE value="Added a cluster_marker_radius parameter to ocelot.plot.clustering_result" />
     <MESSAGE value="Little fix to figure saving in ocelot.plot - we had the wrong method written (.save() instead of .savefig())" />
     <MESSAGE value="Work on ocelot.cluster preprocessing functionality.&#10;- Added ocelot.cluster.cut_dataset, which is able to make (clear comparative) cuts on Gaia-style data&#10;- Added ocelot.cluster.rescale_dataset, which wraps sklearn rescaling options and prevents nasty errors&#10;- Both of the above have unit tests and appear to be working well.&#10;This releases satisfies 0.3.0 feature a." />
-    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.cluster preprocessing functionality.&#10;- Added ocelot.cluster.cut_dataset, which is able to make (clear comparative) cuts on Gaia-style data&#10;- Added ocelot.cluster.rescale_dataset, which wraps sklearn rescaling options and prevents nasty errors&#10;- Both of the above have unit tests and appear to be working well.&#10;This releases satisfies 0.3.0 feature a." />
-    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
+    <MESSAGE value="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added precalculate_nn_distances to precalculate kth nearest neighbor distance matrices for algorithms like DBSCAN.&#10;- Still need to unit test this!&#10;This releases partially satisfies 0.3.0 feature b." />
+    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added precalculate_nn_distances to precalculate kth nearest neighbor distance matrices for algorithms like DBSCAN.&#10;- Still need to unit test this!&#10;This releases partially satisfies 0.3.0 feature b." />
   </component>
 </project>

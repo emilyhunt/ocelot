@@ -2,4 +2,4 @@ from . import cluster
 from . import isochrone
 from . import plot
 
-version = '0.2.0-unstable'
+version = '0.3.0-alpha'

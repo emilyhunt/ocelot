@@ -335,3 +335,11 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
         fig.show()
 
     return fig, ax
+
+
+def nearest_neighbor_distances():
+    """A function for plotting statistics about the kth nearest neighbor distance.
+
+    todo
+    """
+    pass
