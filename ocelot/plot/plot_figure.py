@@ -9,6 +9,7 @@ import pandas as pd
 from ocelot.isochrone import IsochroneInterpolator
 from .axis import ax_isochrone
 from .axis import cluster
+from .axis import nn_statistics
 
 
 def location(data_gaia: pd.DataFrame,
@@ -337,9 +338,54 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
     return fig, ax
 
 
-def nearest_neighbor_distances():
-    """A function for plotting statistics about the kth nearest neighbor distance.
+def nearest_neighbor_distances(distances: np.ndarray,
+                               number_of_derivatives: int = 0,
+                               show_figure: bool = True,
+                               save_name: Optional[str] = None,
+                               figure_size: Union[list, np.ndarray] = (6, 6),
+                               figure_title: str = None,
+                               **kwargs):
+    """A function for plotting statistics about the kth nearest neighbor distance. Wraps the function
+    ocelot.plot.axis.nn_statistics.point_number_vs_nn_distance.
 
-    todo
+    Args:
+        --- Function unique: for plotting on the axes ---
+        distances (np.ndarray): the kth nearest neighbor distance array, of shape (n_samples, n_neighbors_calculated.))
+        number_of_derivatives (int): the number of derivatives to plot.
+            Default: 0 (just plots the nn distances themselves)
+        **kwargs: additional keyword arguments to pass to ocelot.plot.axis.nn_statistics.point_number_vs_nn_distance
+
+        --- Module standard ---
+        show_figure (bool): whether or not to show the figure at the end of plotting.
+            Default: True
+        save_name (string, optional): whether or not to save the figure at the end of plotting.
+            Default: None (no figure is saved)
+        figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib.
+            Default: (6, 6).
+        figure_title (string, optional): the desired title of the figure.
+
+    Returns:
+        a list of the matplotlib figure, the matplotlib axis
+
     """
-    pass
+
+    fig, ax = plt.subplots(nrows=number_of_derivatives + 1, ncols=1, figsize=figure_size)
+
+    # Do the plotty thing
+    ax = nn_statistics.point_number_vs_nn_distance(ax, distances, **kwargs)
+
+    # Plot a title - we use text instead of the title api so that it can be long and multi-line.
+    if figure_title is not None:
+        if type(ax) is np.ndarray:
+            ax[0].text(0., 1.10, figure_title, transform=ax[0].transAxes, va="bottom")
+        else:
+            ax.text(0., 1.10, figure_title, transform=ax.transAxes, va="bottom")
+
+    # Output time
+    if save_name is not None:
+        fig.savefig(save_name, dpi=300)
+
+    if show_figure is True:
+        fig.show()
+
+    return fig, ax

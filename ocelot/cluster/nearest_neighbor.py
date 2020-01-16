@@ -31,6 +31,8 @@ def precalculate_nn_distances(data: np.ndarray, n_neighbors: int = 10, n_jobs: i
         a sparse matrix of nearest neighbor distances,
         (a np.ndarray distance array iff return_knn_distance_array is True)
 
+    todo add a way to save output
+
     """
     # Initialise & fit
     neighbor_calculator = NearestNeighbors(n_neighbors=n_neighbors, n_jobs=n_jobs, **kwargs)

@@ -1,5 +1,7 @@
 """Some little friends to help with various odd jobs in OCELOT's plotting submod."""
 
+from typing import Union
+
 import numpy as np
 
 
@@ -41,6 +43,24 @@ def calculate_alpha(fig, ax, n_points: int, marker_radius: int, dpi: int = 300, 
     current_max_density = marker_area / total_area
 
     return np.clip(desired_max_density / current_max_density, 0., 1.)
+
+
+def normalise_a_curve(x_values: np.ndarray, y_values: np.ndarray, normalisation_constant: Union[int, float]):
+    """Wrapper for np.trapz intended for use with ocelot.plot.axis.nn_statistics.point_number_vs_nn_distance.
+
+    Args:
+        x_values (np.ndarray): x values of the curve.
+        y_values (np.ndarray): y values of the curve.
+        normalisation_constant (float): area to set the curve to have. If zero, the curve will not be normalised.
+
+    Returns:
+        normalised y_values (or unmodified y_values if normalisation_constant is 0)
+
+    """
+    if normalisation_constant == 0:
+        return y_values
+    else:
+        return y_values * normalisation_constant / np.trapz(y_values, x=x_values)
 
 
 def generate_figure_title():

@@ -101,8 +101,58 @@ def test_location_plotting(show_figure=False):
     return fig, ax
 
 
+def test_curve_normalisation():
+    """Tests the curve normalisation function ocelot.plot.utilities.normalise_a_curve."""
+    # Make a shitty little sine wave
+    x_range = np.linspace(0, 10, num=100)
+    y_range = np.sin(x_range)
+
+    # Calculate some areas
+    true_area = np.trapz(y_range, x=x_range)
+    normalised_area = np.trapz(ocelot.plot.utilities.normalise_a_curve(x_range, y_range, 2.5), x=x_range)
+    unnormalised_area = np.trapz(ocelot.plot.utilities.normalise_a_curve(x_range, y_range, 0.0), x=x_range)
+
+    # Test that normalisation works to an arbitrary number
+    assert np.allclose(2.5, normalised_area, rtol=0.0, atol=1e-8)
+
+    # Test that normalisation can be turned off
+    assert np.allclose(true_area, unnormalised_area, rtol=0.0, atol=1e-8)
+
+
+def test_nearest_neighbour_plotting(show_figure=True):
+    """Tests the functionality of ocelot.plot.nearest_neighbor_distances."""
+    # Create some bullshit data that looks about right with a beta distribution
+    distances = (np.sort(np.random.beta(4, 4, size=1000)) + 0.1).reshape(-1, 1)
+
+    # Also make a thing to fit this with using an analytical beta distribution
+    x_range = distances[::10, 0]
+    y_range = np.linspace(0, 999, num=x_range.shape[0]) + 1
+
+    fitting_func = {'x': x_range,
+                    'y': y_range,
+                    'style': 'r-',
+                    'label': 'fit',
+                    'differentiate': True}
+
+    line = {'x': np.asarray([0.5, 0.5]),
+            'y': np.asarray([0.00001, 1000]),
+            'style': 'b--',
+            'label': 'nn = 0.5',
+            'differentiate': False}
+
+    normalisation_constants = [1., 1., 0]
+
+    ocelot.plot.nearest_neighbor_distances(distances, number_of_derivatives=2, figure_size=[6, 8],
+                                           show_figure=show_figure, figure_title="messing with a beta function",
+                                           normalisation_constants=normalisation_constants,
+                                           functions_to_overplot=[fitting_func, line],
+                                           show_numerical_derivatives=False)
+
+
 # Run tests manually if the file is ran
 if __name__ == '__main__':
-    iso = test_isochrone_plotting(show_figure=True)
-    clustering_result = test_clustering_result_plotting(show_figure=True)
-    location = test_location_plotting(show_figure=True)
+    # iso = test_isochrone_plotting(show_figure=True)
+    # clustering_result = test_clustering_result_plotting(show_figure=True)
+    # location = test_location_plotting(show_figure=True)
+    # test_curve_normalisation()
+    test_nearest_neighbour_plotting(True)
