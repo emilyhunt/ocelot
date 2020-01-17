@@ -6,6 +6,7 @@
       <w>matplotlib</w>
       <w>ndarray</w>
       <w>pytest</w>
+      <w>scipy</w>
       <w>univariate</w>
     </words>
   </dictionary>
