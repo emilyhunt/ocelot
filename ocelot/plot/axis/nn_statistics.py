@@ -89,36 +89,47 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
         if i_derivative == 0 or show_numerical_derivatives:
             axes[i_derivative].plot(nearest_neighbor_distances, point_numbers, 'k-', label='Field stars')
 
-            # Set y limits based on the points
-            if i_derivative == 0:
-                axes[i_derivative].set_ylim(np.min(point_numbers) - 1, np.max(point_numbers) + 1)
-
             # Take derivatives while we're here, if necessary
             if do_we_need_to_take_derivatives and show_numerical_derivatives:
                 point_numbers = np.gradient(point_numbers, nearest_neighbor_distances)
 
         # Plot the fitting functions
         i = 0
+        fit_minimum = 0
+        fit_maximum = 0
         while i < n_fitting_functions:
             axes[i_derivative].plot(functions_to_overplot[i]['x'], functions_to_overplot[i]['y'],
                                     functions_to_overplot[i]['style'], label=functions_to_overplot[i]['label'])
 
-            # Take derivatives while we're here, if necessary
-            if do_we_need_to_take_derivatives and functions_to_overplot[i]['differentiate']:
-                functions_to_overplot[i]['y'] = np.gradient(functions_to_overplot[i]['y'],
-                                                            functions_to_overplot[i]['x'])
+            # Only base the limits off of the stuff we're diffr'ing
+            if functions_to_overplot[i]['differentiate']:
+                fit_minimum = np.min([fit_minimum, functions_to_overplot[i]['y'].min()])
+                fit_maximum = np.max([fit_maximum, functions_to_overplot[i]['y'].max()])
+
+                # Take derivatives while we're here, if necessary
+                if do_we_need_to_take_derivatives:
+                    functions_to_overplot[i]['y'] = np.gradient(functions_to_overplot[i]['y'],
+                                                                functions_to_overplot[i]['x'])
             i += 1
+
+        print(fit_minimum, fit_maximum)
+
+        # Set y limits based on the points for 0 derivative/no fits, or based on the fitting functions if not
+        if i_derivative == 0 or i == 0:
+            axes[i_derivative].set_ylim(np.min(point_numbers) - 1, np.max(point_numbers) + 1)
+        else:
+            axes[i_derivative].set_ylim((fit_minimum - 1, fit_maximum + 1))
 
         # Axis beautification
         axes[i_derivative].minorticks_on()  # Makes it easier to read!
         axes[i_derivative].set_xlabel(f"log {neighbor_to_plot}th nearest neighbour distance")
-        axes[i_derivative].legend(framealpha=1)
 
         if i_derivative == 0:
             axes[i_derivative].set_ylabel(f"log point number")
         else:
             axes[i_derivative].set_ylabel(f"log point number, {i_derivative}th derivative")
 
+    axes[0].legend(fontsize=8, fancybox=True, edgecolor='black', loc='lower right')
     return axes
 
 

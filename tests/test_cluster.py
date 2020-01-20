@@ -104,7 +104,7 @@ def test_precalculate_nn_distances():
     return sparse_matrix, distance_matrix
 
 
-def test_acg18_epsilon():
+def test_acg18():
     """Tests the OCELOT implementation of the Alfred Castro-Ginard+18 method of determining an optimum value for DBSCAN.
     """
     # Read in data for Blanco 1
@@ -128,7 +128,7 @@ def test_acg18_epsilon():
 
     # Epsilon time
     np.random.seed(42)
-    epsilons, random_distance_matrix = ocelot.cluster.epsilon.acg18_epsilon(
+    epsilons, random_distance_matrix = ocelot.cluster.epsilon.acg18(
         data_rescaled, distance_matrix, n_repeats=2, min_samples='all', return_last_random_distance=True)
 
     # Check that the correct shapes are returned
@@ -142,7 +142,7 @@ def test_acg18_epsilon():
 
     # Check that we just get back one (correct) value if that's all we ask for
     np.random.seed(42)
-    single_epsilon = ocelot.cluster.epsilon.acg18_epsilon(
+    single_epsilon = ocelot.cluster.epsilon.acg18(
         data_rescaled, distance_matrix, n_repeats=2, min_samples=10, return_last_random_distance=False)
     assert type(single_epsilon) == float or np.float
     assert np.allclose(single_epsilon, 0.07344272967449159, rtol=0.0, atol=1e-8)
@@ -153,25 +153,136 @@ def test_acg18_epsilon():
                                          "Allowed values:\n"
                                          "- integer less than max_neighbors_to_calculate and greater than zero\n"
                                          "- 'all', which calculates all values upto max_neighbors_to_calculate\n"):
-        ocelot.cluster.epsilon.acg18_epsilon(
+        ocelot.cluster.epsilon.acg18(
             data_rescaled, distance_matrix, n_repeats=2, min_samples='your mum', return_last_random_distance=False)
 
     # Min_samples greater than the number of neighbours
     with pytest.raises(ValueError, match="min_samples may not be larger than max_neighbors_to_calculate"):
-        ocelot.cluster.epsilon.acg18_epsilon(
+        ocelot.cluster.epsilon.acg18(
             data_rescaled, distance_matrix, n_repeats=2, min_samples=100, return_last_random_distance=False)
 
     # Min_samples less than one
     with pytest.raises(ValueError, match="min_samples may not be larger than max_neighbors_to_calculate"):
-        ocelot.cluster.epsilon.acg18_epsilon(
+        ocelot.cluster.epsilon.acg18(
             data_rescaled, distance_matrix, n_repeats=2, min_samples=0, return_last_random_distance=False)
 
     return epsilons, random_distance_matrix
 
+
+def test__summed_kth_nn_distribution_one_cluster():
+    """Tests ocelot.cluster.epsilon_summed_kth_nn_distribution_one_cluster (and by extension, _kth_nn_distribution)."""
+    # Set some parameters to play with
+    field_constant = 0.3
+    field_dimension = 5
+    cluster_constant = 0.05
+    cluster_dimension = 3
+    cluster_fraction = 0.01
+    parameters = np.asarray([field_constant, field_dimension, cluster_constant, cluster_dimension, cluster_fraction])
+
+    # Calculate some residuals
+    residual_inf = ocelot.cluster.epsilon._summed_kth_nn_distribution_one_cluster(
+        parameters, 10, np.linspace(0.0, 1, num=50), y_range=np.linspace(1, 1000, num=50) ** 2, minimisation_mode=True)
+
+    residual_good = ocelot.cluster.epsilon._summed_kth_nn_distribution_one_cluster(
+        parameters, 10, np.linspace(0.1, 1, num=50), y_range=np.linspace(1, 1000, num=50) ** 2, minimisation_mode=True)
+
+    # Check that the bad residual is inf
+    assert residual_inf == np.inf
+
+    # Check that the good residual is... good
+    assert np.allclose(residual_good, 10316599967493.814, rtol=0.001, atol=1e-8)
+
+    # Calculate a field
+    y_fields = ocelot.cluster.epsilon._summed_kth_nn_distribution_one_cluster(
+        parameters, 10, np.linspace(0, 1, num=50), minimisation_mode=False)
+
+    # Check the shape
+    assert y_fields.shape == (3, 50)
+
+    # Check that we get np.inf on the first value, showing that my log comprehension works
+    assert np.allclose(y_fields[:, 0], np.inf, rtol=0.0, atol=1e-8)
+
+    # Check that the mean of everything else is right, and by extension it's... probably right
+    assert np.allclose(np.mean(y_fields[:, 1:]), -1.4524090935710814, rtol=0.0, atol=1e-8)
+
+    return 0
+
+
+def test__find_sign_change_epsilons():
+    """Tests ocelot.cluster.epsilon._find_sign_change_epsilons, a function that finds the biggest second derivative
+    bump.
+
+    Diagnostic code to plot what the function sees:
+
+    import numpy as np
+    import matplotlib.pyplot as plt
+    x = np.linspace(0, 4 * np.pi, num=200)
+    y = (np.sin(x) * np.exp(-x/10))**2 - 0.2
+    plt.plot(x, np.gradient(np.gradient(y, x), x), 'r-')
+    plt.show()
+
+    """
+
+    # Make some fake data - a squared sine wave that gets exponentially smaller
+    x = np.linspace(0, 4 * np.pi, num=200)
+    y = (np.sin(x) * np.exp(-x / 10)) ** 2 - 0.2
+
+    # Call the function and hope for a good result lol
+    main_sign_changes, all_sign_changes = ocelot.cluster.epsilon._find_sign_change_epsilons(
+        x, y, return_all_sign_changes=True)
+
+    # Check that it got the right number of sign changes
+    assert all_sign_changes.shape == (8,)
+
+    # Check that the main sign changes are right (could be sensitive to setting changes in the resolution of x)
+    target = [2.273313276969499, 2.9679367782657344, 3.8520030526427615]
+    assert np.allclose(main_sign_changes, target, rtol=0.0, atol=1e-8)
+
+
+def test_field_model(show_figure=False):
+    """Tests ocelot.cluster.epsilon.field_model using data of Blanco 1. It can be worth testing this manually too,
+    as it does quite a lot of funky stuff that's worth looking at."""
+    # Read in data for Blanco 1
+    with open(path_to_blanco_1, 'rb') as handle:
+        data_gaia = pickle.load(handle)
+
+    # Re-scale the data with standard scaling and check that it has zero mean, unit variance
+    data_rescaled = ocelot.cluster.rescale_dataset(data_gaia, scaling_type='robust')
+
+    # Calculate some nearest neighbor distances baby!
+    distance_matrix = ocelot.cluster.precalculate_nn_distances(
+        data_rescaled, n_neighbors=10, return_sparse_matrix=False, return_knn_distance_array=True)
+
+    # Specify some plot options
+    optimiser = 'Powell'
+    plot_options = {'number_of_derivatives': 2,
+                    'figure_size': (6, 8),
+                    'show_figure': show_figure,
+                    'figure_title': 'Optimiser: ' + optimiser,
+                    }
+
+    # See what the field model fit thinks of this
+    success, epsilon_values, parameters, n_cluster_members = ocelot.cluster.epsilon.field_model(
+        distance_matrix, min_samples=10, optimiser=optimiser, min_cluster_size=1, make_diagnostic_plot=True,
+        **plot_options)
+
+    # Test that the results are good
+    assert success is True
+
+    target_epsilon = [0.16152585445393247, 0.18055026971912808, 0.2281113078821171]
+    assert np.allclose(epsilon_values, target_epsilon, rtol=0.0, atol=1e-8)
+
+    target_parameters = [0.11350206, 1.62003995, 0.08976613, 3.74414335, 0.0140394]
+    assert np.allclose(parameters, target_parameters, rtol=0.0, atol=1e-8)
+
+    assert n_cluster_members == 197
 
 
 if __name__ == '__main__':
     #gaia, rescaled = test_rescale_dataset()
     #cut = test_cut_dataset()
     #spar, dist = test_precalculate_nn_distances()
-    eps, ran = test_acg18_epsilon()
+    #eps, ran = test_acg18()
+    #test__summed_kth_nn_distribution_one_cluster()
+    #test__find_sign_change_epsilons()
+    test_field_model(show_figure=True)

@@ -369,7 +369,7 @@ def nearest_neighbor_distances(distances: np.ndarray,
 
     """
 
-    fig, ax = plt.subplots(nrows=number_of_derivatives + 1, ncols=1, figsize=figure_size)
+    fig, ax = plt.subplots(nrows=number_of_derivatives + 1, ncols=1, figsize=figure_size, sharex='all')
 
     # Do the plotty thing
     ax = nn_statistics.point_number_vs_nn_distance(ax, distances, **kwargs)
