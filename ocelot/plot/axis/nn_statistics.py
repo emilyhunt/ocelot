@@ -112,8 +112,6 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
                                                                 functions_to_overplot[i]['x'])
             i += 1
 
-        print(fit_minimum, fit_maximum)
-
         # Set y limits based on the points for 0 derivative/no fits, or based on the fitting functions if not
         if i_derivative == 0 or i == 0:
             axes[i_derivative].set_ylim(np.min(point_numbers) - 1, np.max(point_numbers) + 1)
@@ -131,11 +129,3 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
 
     axes[0].legend(fontsize=8, fancybox=True, edgecolor='black', loc='lower right')
     return axes
-
-
-def nn_distance_histogram():
-    """Produces a histogram of nearest neighbor distances. Comes appropriately pre-scaled for optimum viewing.
-
-    todo
-    """
-    pass

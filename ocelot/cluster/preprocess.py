@@ -30,6 +30,9 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
     Returns:
         a cut data_gaia with reset indexing.
 
+    todo this should return the original indices of whatever was dropped, which also need saving so that crossmatching
+        can be done later
+
     """
 
     if parameter_cuts is not None:

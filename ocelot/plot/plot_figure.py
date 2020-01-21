@@ -17,6 +17,7 @@ def location(data_gaia: pd.DataFrame,
              save_name: Optional[str] = None,
              figure_size: Union[list, np.ndarray] = (10, 10),
              figure_title: str = None,
+             dpi: int = 100,
              open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
              pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
              pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
@@ -58,13 +59,15 @@ def location(data_gaia: pd.DataFrame,
             Default: None (no figure is saved)
         figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib. Default: (10, 10).
         figure_title (string, optional): the desired title of the figure.
+        dpi (integer): dpi for display and saving. 300 is nice for high quality figures or when you need to see detail.
+            Default: 100
 
     Returns:
         The generated figure.
 
     """
     # Initialise the figure and add stuff to the axes
-    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size)
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size, dpi=dpi)
 
     ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
         fig,
@@ -97,7 +100,7 @@ def location(data_gaia: pd.DataFrame,
 
     # Output time
     if save_name is not None:
-        fig.savefig(save_name, dpi=300)
+        fig.savefig(save_name, dpi=dpi)
 
     if show_figure is True:
         fig.show()
@@ -112,6 +115,7 @@ def clustering_result(data_gaia: pd.DataFrame,
                       save_name: Optional[str] = None,
                       figure_size: Union[list, np.ndarray] = (10, 10),
                       figure_title: str = None,
+                      dpi: int = 100,
                       open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
                       pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
                       pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
@@ -156,13 +160,15 @@ def clustering_result(data_gaia: pd.DataFrame,
             Default: None (no figure is saved)
         figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib. Default: (10, 10).
         figure_title (string, optional): the desired title of the figure.
+        dpi (integer): dpi for display and saving. 300 is nice for high quality figures or when you need to see detail.
+            Default: 100
 
     Returns:
         The generated figure.
 
     """
     # Initialise the figure and add stuff to the axes
-    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size)
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size, dpi=dpi)
 
     ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
         fig, ax[0, 0], ax[0, 1], data_gaia, cluster_labels, cluster_indices,
@@ -184,7 +190,7 @@ def clustering_result(data_gaia: pd.DataFrame,
 
     # Output time
     if save_name is not None:
-        fig.savefig(save_name, dpi=300)
+        fig.savefig(save_name, dpi=dpi)
 
     if show_figure is True:
         fig.show()
@@ -206,7 +212,8 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
               show_figure: bool = True,
               save_name: Optional[str] = None,
               figure_size: Union[list, np.ndarray] = (6, 6),
-              figure_title: str = None,):
+              figure_title: str = None,
+              dpi: int = 100,):
     """A figure showing a number of different isochrones - both interpolated and not. Can be configured to plot as
     many different isochrones as required, working with CMD 3.3-style isochrone tables and the
     ocelot.isochrone.IsochroneInterpolator class.
@@ -262,12 +269,14 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
         figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib.
             Default: (6, 6).
         figure_title (string, optional): the desired title of the figure.
+        dpi (integer): dpi for display and saving. 300 is nice for high quality figures or when you need to see detail.
+            Default: 100
 
     Returns:
         a Matplotlib figure instance.
     """
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figure_size)
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=figure_size, dpi=dpi)
 
     # Plot literature isochrones, if requested
     if data_isochrone is not None:
@@ -330,7 +339,7 @@ def isochrone(data_isochrone: Optional[pd.DataFrame] = None,
 
     # Output time
     if save_name is not None:
-        fig.savefig(save_name, dpi=300)
+        fig.savefig(save_name, dpi=dpi)
 
     if show_figure is True:
         fig.show()
@@ -344,6 +353,7 @@ def nearest_neighbor_distances(distances: np.ndarray,
                                save_name: Optional[str] = None,
                                figure_size: Union[list, np.ndarray] = (6, 6),
                                figure_title: str = None,
+                               dpi: int = 100,
                                **kwargs):
     """A function for plotting statistics about the kth nearest neighbor distance. Wraps the function
     ocelot.plot.axis.nn_statistics.point_number_vs_nn_distance.
@@ -363,13 +373,15 @@ def nearest_neighbor_distances(distances: np.ndarray,
         figure_size (list-like): the 2D size of the figure in inches, ala Matplotlib.
             Default: (6, 6).
         figure_title (string, optional): the desired title of the figure.
+        dpi (integer): dpi for display and saving. 300 is nice for high quality figures or when you need to see detail.
+            Default: 100
 
     Returns:
         a list of the matplotlib figure, the matplotlib axis
 
     """
 
-    fig, ax = plt.subplots(nrows=number_of_derivatives + 1, ncols=1, figsize=figure_size, sharex='all')
+    fig, ax = plt.subplots(nrows=number_of_derivatives + 1, ncols=1, figsize=figure_size, sharex='all', dpi=dpi)
 
     # Do the plotty thing
     ax = nn_statistics.point_number_vs_nn_distance(ax, distances, **kwargs)
@@ -383,7 +395,7 @@ def nearest_neighbor_distances(distances: np.ndarray,
 
     # Output time
     if save_name is not None:
-        fig.savefig(save_name, dpi=300)
+        fig.savefig(save_name, dpi=dpi)
 
     if show_figure is True:
         fig.show()

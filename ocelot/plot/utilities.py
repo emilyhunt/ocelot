@@ -39,7 +39,7 @@ def calculate_alpha(fig, ax, n_points: int, marker_radius: int, dpi: int = 300, 
     # We aim to have a maximum density of uniform_max_density, assuming that
     # n_points are distributed evenly across the area.
     marker_area = n_points * np.pi * marker_radius ** 2  # In units of px
-    total_area = area * dpi ** 2
+    total_area = area * fig.dpi ** 2
     current_max_density = marker_area / total_area
 
     return np.clip(desired_max_density / current_max_density, 0., 1.)
