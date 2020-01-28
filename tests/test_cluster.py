@@ -214,29 +214,52 @@ def test__find_sign_change_epsilons():
 
     Diagnostic code to plot what the function sees:
 
-    import numpy as np
     import matplotlib.pyplot as plt
-    x = np.linspace(0, 4 * np.pi, num=200)
-    y = (np.sin(x) * np.exp(-x/10))**2 - 0.2
+    x = np.log10(x)
     plt.plot(x, np.gradient(np.gradient(y, x), x), 'r-')
     plt.show()
+
+    print(epsilon_values, all_sign_changes)
 
     """
 
     # Make some fake data - a squared sine wave that gets exponentially smaller
-    x = np.linspace(0, 4 * np.pi, num=200)
-    y = (np.sin(x) * np.exp(-x / 10)) ** 2 - 0.2
+    x = np.geomspace(0.1, 40 * np.pi, num=200)
+    y = (np.sin(np.log10(x)) * np.exp(-x / 10)) ** 2 - 0.2
 
     # Call the function and hope for a good result lol
-    main_sign_changes, all_sign_changes = ocelot.cluster.epsilon._find_sign_change_epsilons(
+    epsilon_values, all_sign_changes = ocelot.cluster.epsilon._find_sign_change_epsilons(
         x, y, return_all_sign_changes=True)
 
     # Check that it got the right number of sign changes
-    assert all_sign_changes.shape == (8,)
+    assert all_sign_changes.shape == (3,)
 
     # Check that the main sign changes are right (could be sensitive to setting changes in the resolution of x)
-    target = [2.273313276969499, 2.9679367782657344, 3.8520030526427615]
-    assert np.allclose(main_sign_changes, target, rtol=0.0, atol=1e-8)
+    target = [0.15938995421984642, 0.6934124282589442, 2.2642842494315762]
+    assert np.allclose(epsilon_values, target, rtol=0.0, atol=1e-8)
+
+
+def test__find_curve_absolute_maximum_epsilons():
+    """Tests ocelot.cluster.epsilon._find_curve_absolute_maximum_epsilons
+
+    Test plotting code that shows what the function sees::
+
+    import matplotlib.pyplot as plt
+    x = np.log10(x)
+    plt.plot(x, np.abs(np.gradient(np.gradient(y, x, ), x, )))
+    plt.show()
+
+    print(maximum_x)
+
+    """
+    # Make some fake data
+    x = np.linspace(0, 10, num=200)
+    y = x**2 * np.exp(-x) - 1
+
+    # Call time
+    maximum_x = ocelot.cluster.epsilon._find_curve_absolute_maximum_epsilons(x, y)
+
+    assert np.allclose(maximum_x, 2.361809045226131, rtol=0.0, atol=1e-8)
 
 
 def test_field_model(show_figure=False):
@@ -254,28 +277,27 @@ def test_field_model(show_figure=False):
         data_rescaled, n_neighbors=10, return_sparse_matrix=False, return_knn_distance_array=True)
 
     # Specify some plot options
-    optimiser = 'Powell'
     plot_options = {'number_of_derivatives': 2,
                     'figure_size': (6, 8),
                     'show_figure': show_figure,
-                    'figure_title': 'Optimiser: ' + optimiser,
+                    'figure_title': 'Unit test of ocelot.cluster.epsilon.field_model',
                     }
 
     # See what the field model fit thinks of this
     success, epsilon_values, parameters, n_cluster_members = ocelot.cluster.epsilon.field_model(
-        distance_matrix, min_samples=10, optimiser=optimiser, min_cluster_size=1, make_diagnostic_plot=True,
+        distance_matrix, min_samples=10, min_cluster_size=1, make_diagnostic_plot=True,
         **plot_options)
 
     # Test that the results are good
     assert success is True
 
-    target_epsilon = [0.16152585445393247, 0.18055026971912808, 0.2281113078821171]
+    target_epsilon = [0.13765954, 0.1809968, 0.22433406, 0.25747432, 0.28968726]
     assert np.allclose(epsilon_values, target_epsilon, rtol=0.0, atol=1e-8)
 
-    target_parameters = [0.11350206, 1.62003995, 0.08976613, 3.74414335, 0.0140394]
+    target_parameters = [0.26971331, 9.40067326, 0.08953837, 3.36263488, 0.02072574]
     assert np.allclose(parameters, target_parameters, rtol=0.0, atol=1e-8)
 
-    assert n_cluster_members == 197
+    assert n_cluster_members == 291
 
 
 if __name__ == '__main__':
@@ -284,5 +306,6 @@ if __name__ == '__main__':
     #spar, dist = test_precalculate_nn_distances()
     #eps, ran = test_acg18()
     #test__summed_kth_nn_distribution_one_cluster()
-    #test__find_sign_change_epsilons()
+    test__find_sign_change_epsilons()
+    test__find_curve_absolute_maximum_epsilons()
     test_field_model(show_figure=True)

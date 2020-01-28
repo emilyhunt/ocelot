@@ -15,6 +15,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 # Path towards the test isochrones
 max_label = 0
@@ -24,6 +25,74 @@ path_to_test_isochrones = Path('./test_data/isochrones.dat')
 # Path towards blanco 1 data and clustering produced by DBSCAN
 path_to_blanco_1 = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle')
 path_to_blanco_1_cluster_labels = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut_LABELS.pickle')
+
+
+def test_curve_normalisation():
+    """Tests the curve normalisation function ocelot.plot.utilities.normalise_a_curve."""
+    # Make a shitty little sine wave
+    x_range = np.linspace(0, 10, num=100)
+    y_range = np.sin(x_range)
+
+    # Calculate some areas
+    true_area = np.trapz(y_range, x=x_range)
+    normalised_area = np.trapz(ocelot.plot.utilities.normalise_a_curve(x_range, y_range, 2.5), x=x_range)
+    unnormalised_area = np.trapz(ocelot.plot.utilities.normalise_a_curve(x_range, y_range, 0.0), x=x_range)
+
+    # Test that normalisation works to an arbitrary number
+    assert np.allclose(2.5, normalised_area, rtol=0.0, atol=1e-8)
+
+    # Test that normalisation can be turned off
+    assert np.allclose(true_area, unnormalised_area, rtol=0.0, atol=1e-8)
+
+
+def test_percentile_based_plot_limits():
+    """Tests the function ocelot.plot.utilities.percentile_based_plot_limits, also testing the function
+    ocelot.plot.utilities.good_points_plot_limits at the same time."""
+    # Make some test data
+    x = np.linspace(0, 100, num=101)
+    y = x**2
+
+    # -------------
+    # Set some limits based on x, also test the padding
+    x_percentiles = [0, 30]
+    target_x = np.asarray([-1.5, 31.5])
+    target_y = np.asarray([-45., 945.])
+    x_limits, y_limits = ocelot.plot.utilities.percentile_based_plot_limits(
+        x, y, x_percentiles=x_percentiles, range_padding=0.05)
+
+    # Check x and y
+    assert np.allclose(x_limits, target_x, rtol=0.0, atol=1e-8)
+    assert np.allclose(y_limits, target_y, rtol=0.0, atol=1e-8)
+
+    # -------------
+    # Set some limits based on y
+    y_percentiles = [50, 100]
+    target_x = np.asarray([50., 100.])
+    target_y = np.asarray([2500., 10000.])
+    x_limits, y_limits = ocelot.plot.utilities.percentile_based_plot_limits(
+        x, y, y_percentiles=y_percentiles, range_padding=None)
+
+    # Check x and y
+    assert np.allclose(x_limits, target_x, rtol=0.0, atol=1e-8)
+    assert np.allclose(y_limits, target_y, rtol=0.0, atol=1e-8)
+
+    # -------------
+    # Set some limits based on x and y at the same time
+    x_percentiles = [0, 50]
+    y_percentiles = [0, 10]
+    target_x = np.asarray([0., 50.])
+    target_y = np.asarray([0., 100.])
+    x_limits, y_limits = ocelot.plot.utilities.percentile_based_plot_limits(
+        x, y, x_percentiles=x_percentiles, y_percentiles=y_percentiles, range_padding=None)
+
+    # Check x and y
+    assert np.allclose(x_limits, target_x, rtol=0.0, atol=1e-8)
+    assert np.allclose(y_limits, target_y, rtol=0.0, atol=1e-8)
+
+    # -------------
+    # Check that specifying nothing raises a value error
+    with pytest.raises(ValueError, match="One or both of x_percentiles and y_percentiles must be specified."):
+        ocelot.plot.utilities.percentile_based_plot_limits(x, y)
 
 
 def test_isochrone_plotting(show_figure=False):
@@ -101,24 +170,6 @@ def test_location_plotting(show_figure=False):
     return fig, ax
 
 
-def test_curve_normalisation():
-    """Tests the curve normalisation function ocelot.plot.utilities.normalise_a_curve."""
-    # Make a shitty little sine wave
-    x_range = np.linspace(0, 10, num=100)
-    y_range = np.sin(x_range)
-
-    # Calculate some areas
-    true_area = np.trapz(y_range, x=x_range)
-    normalised_area = np.trapz(ocelot.plot.utilities.normalise_a_curve(x_range, y_range, 2.5), x=x_range)
-    unnormalised_area = np.trapz(ocelot.plot.utilities.normalise_a_curve(x_range, y_range, 0.0), x=x_range)
-
-    # Test that normalisation works to an arbitrary number
-    assert np.allclose(2.5, normalised_area, rtol=0.0, atol=1e-8)
-
-    # Test that normalisation can be turned off
-    assert np.allclose(true_area, unnormalised_area, rtol=0.0, atol=1e-8)
-
-
 def test_nearest_neighbour_plotting(show_figure=True):
     """Tests the functionality of ocelot.plot.nearest_neighbor_distances."""
     # Create some bullshit data that looks about right with a beta distribution
@@ -151,8 +202,9 @@ def test_nearest_neighbour_plotting(show_figure=True):
 
 # Run tests manually if the file is ran
 if __name__ == '__main__':
+    # test_curve_normalisation()
+    test_percentile_based_plot_limits()
     # iso = test_isochrone_plotting(show_figure=True)
     # clustering_result = test_clustering_result_plotting(show_figure=True)
     # location = test_location_plotting(show_figure=True)
-    # test_curve_normalisation()
-    test_nearest_neighbour_plotting(True)
+    # test_nearest_neighbour_plotting(True)

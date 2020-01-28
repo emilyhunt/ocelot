@@ -4,14 +4,15 @@ from typing import Optional, Union
 
 import numpy as np
 
-from ..utilities import normalise_a_curve
+from ..utilities import normalise_a_curve, percentile_based_plot_limits
 
 
 def point_number_vs_nn_distance(axes, distances: np.ndarray,
                                 neighbor_to_plot: int = 1,
                                 normalisation_constants: Union[list, tuple, np.ndarray] = (1.,),
                                 functions_to_overplot: Optional[list] = None,
-                                show_numerical_derivatives: bool = False):
+                                show_numerical_derivatives: bool = False,
+                                y_percentile_limits: Optional[np.ndarray] = None, ):
     """Plots point number vs nearest neighbor distance, with the option to add multiple regions to the plot (like
     highlighting an area of maximum curvature.)
 
@@ -42,6 +43,9 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
         show_numerical_derivatives (bool): whether or not to show the numerical derivatives of the field curve. They are
             typically very noisy so this isn't desired behaviour.
             Default: False
+        y_percentile_limits (optional, list-like): percentile limits to apply to each derivative axis. Should be a
+            np.ndarray of shape (n_axes - 1, 2), containing floats in the range [0, 100] and strictly ascending. Will be
+            ignored for all axes that contain real points.
 
     Returns:
          the modified matplotlib axis.
@@ -57,6 +61,14 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
     else:
         n_fitting_functions = 0
 
+    # Make sure that y_percentile_limits exists if it needs to if the user hasn't already specified limits
+    if show_numerical_derivatives is False and n_fitting_functions > 0:
+        infer_percentile_limits = True
+        if y_percentile_limits is None:
+            y_percentile_limits = np.tile(np.asarray([0, 100]), (n_fitting_functions, 1))
+    else:
+        infer_percentile_limits = False
+
     # Make sure the axes are a list and count the number of axes
     if type(axes) is not np.ndarray:
         axes = np.asarray([axes])
@@ -71,16 +83,43 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
     nearest_neighbor_distances = np.log10(nearest_neighbor_distances)
     point_numbers = np.log10(point_numbers)
 
-    # Normalise and log the fitting functions too!
+    # Normalise and log the fitting functions too! We do this safely as there are more ways in which this could be
+    # passed an invalid value expected (instead of the actually-physical real distances).
     i = 0
     while i < n_fitting_functions:
-        functions_to_overplot[i]['y'] = np.log10(normalise_a_curve(
+        # We'll only want to work on good stars
+        good_stars = np.logical_and(
+            np.logical_and(np.isfinite(functions_to_overplot[i]['x']), np.asarray(functions_to_overplot[i]['x']) > 0),
+            np.logical_and(np.isfinite(functions_to_overplot[i]['y']), np.asarray(functions_to_overplot[i]['y']) > 0))
+
+        functions_to_overplot[i]['x'] = np.asarray(functions_to_overplot[i]['x'])[good_stars]
+        functions_to_overplot[i]['y'] = np.asarray(functions_to_overplot[i]['y'])[good_stars]
+
+        # Normalise the y values
+        functions_to_overplot[i]['y'] = np.asarray(normalise_a_curve(
             functions_to_overplot[i]['x'], functions_to_overplot[i]['y'], normalisation_constants[i + 1]))
-        functions_to_overplot[i]['x'] = np.log10(functions_to_overplot[i]['x'])
+        functions_to_overplot[i]['x'] = np.asarray(functions_to_overplot[i]['x'])
+
+        # We'll only want to work on good stars (checking again just to be super safe lol)
+        good_y_values = functions_to_overplot[i]['y'] > 0
+        good_x_values = functions_to_overplot[i]['x'] > 0
+
+        # Take logs only where log() is defined, otherwise replace with -np.inf
+        functions_to_overplot[i]['y'] = np.where(
+            good_y_values, np.log10(functions_to_overplot[i]['y'], where=good_y_values), -np.inf)
+
+        functions_to_overplot[i]['x'] = np.where(
+            good_x_values, np.log10(functions_to_overplot[i]['x'], where=good_x_values), -np.inf)
+
         i += 1
 
     # Cycle over axes, making my way downtown (to the-plot-is-done-land)
+    x_limits = None  # Just here to shut the fucking LINTER UP
     for i_derivative, an_axis in enumerate(axes):
+        # We keep hold of all the x and y data in a single array each round so that the limits can be correctly
+        # calculated in a moment
+        all_x_data = []
+        all_y_data = []
 
         # We only need to take derivatives if we aren't on the final axis
         do_we_need_to_take_derivatives = i_derivative < n_axes - 1
@@ -95,28 +134,42 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
 
         # Plot the fitting functions
         i = 0
-        fit_minimum = 0
-        fit_maximum = 0
         while i < n_fitting_functions:
             axes[i_derivative].plot(functions_to_overplot[i]['x'], functions_to_overplot[i]['y'],
                                     functions_to_overplot[i]['style'], label=functions_to_overplot[i]['label'])
 
             # Only base the limits off of the stuff we're diffr'ing
             if functions_to_overplot[i]['differentiate']:
-                fit_minimum = np.min([fit_minimum, functions_to_overplot[i]['y'].min()])
-                fit_maximum = np.max([fit_maximum, functions_to_overplot[i]['y'].max()])
+                all_x_data.append(functions_to_overplot[i]['x'].flatten())
+                all_y_data.append(functions_to_overplot[i]['y'].flatten())
 
-                # Take derivatives while we're here, if necessary
+                # Take derivatives while we're here, if necessary (aka if this isn't the last axis) and remove any
+                # gradient values that will have become inf
                 if do_we_need_to_take_derivatives:
+                    good_stars = np.logical_and(np.isfinite(functions_to_overplot[i]['x']),
+                                                np.isfinite(functions_to_overplot[i]['y']))
+                    functions_to_overplot[i]['x'] = (functions_to_overplot[i]['x'])[good_stars]
+                    functions_to_overplot[i]['y'] = (functions_to_overplot[i]['y'])[good_stars]
+
                     functions_to_overplot[i]['y'] = np.gradient(functions_to_overplot[i]['y'],
                                                                 functions_to_overplot[i]['x'])
             i += 1
 
-        # Set y limits based on the points for 0 derivative/no fits, or based on the fitting functions if not
+        # Set y and x limits based on the points if they're in the plot (always the case in the first one,) or based on
+        # the fitting functions if not
         if i_derivative == 0 or i == 0:
-            axes[i_derivative].set_ylim(np.min(point_numbers) - 1, np.max(point_numbers) + 1)
+            x_limits = [np.min(nearest_neighbor_distances)-0.1, np.max(nearest_neighbor_distances)+0.1]
+            y_limits = [np.min(point_numbers) - 1, np.max(point_numbers) + 1]
+        elif infer_percentile_limits is False:
+            y_limits = [np.min(point_numbers) - 1, np.max(point_numbers) + 1]
         else:
-            axes[i_derivative].set_ylim((fit_minimum - 1, fit_maximum + 1))
+            all_x_data = np.concatenate(all_x_data)
+            all_y_data = np.concatenate(all_y_data)
+            x_limits_from_percentiles, y_limits = percentile_based_plot_limits(
+                all_x_data, all_y_data, y_percentiles=y_percentile_limits[i_derivative - 1])
+
+        axes[i_derivative].set_xlim(x_limits)
+        axes[i_derivative].set_ylim(y_limits)
 
         # Axis beautification
         axes[i_derivative].minorticks_on()  # Makes it easier to read!
@@ -125,7 +178,7 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
         if i_derivative == 0:
             axes[i_derivative].set_ylabel(f"log point number")
         else:
-            axes[i_derivative].set_ylabel(f"log point number, {i_derivative}th derivative")
+            axes[i_derivative].set_ylabel(f"log point number\n{i_derivative}th derivative")
 
     axes[0].legend(fontsize=8, fancybox=True, edgecolor='black', loc='lower right')
     return axes

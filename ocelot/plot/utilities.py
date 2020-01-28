@@ -1,6 +1,7 @@
 """Some little friends to help with various odd jobs in OCELOT's plotting submod."""
 
-from typing import Union
+from typing import Union, Optional
+from scipy.stats import iqr
 
 import numpy as np
 
@@ -63,54 +64,82 @@ def normalise_a_curve(x_values: np.ndarray, y_values: np.ndarray, normalisation_
         return y_values * normalisation_constant / np.trapz(y_values, x=x_values)
 
 
-def generate_figure_title():
-    # Todo: a helper function to quickly grab information from... somewhere... and make a nicely formatted figure title, including all information of the run.
-    pass
-
-
-"""
-# TODO: this function sucks. get rid of it
-def add_text(my_axis, x: float, y: float, text: Union[str, List[str]], ha: str = 'center', va: str = 'center',
-             mode: str = 'relative', separator: str = '\n', fontsize: str = 'small', ):
-    ""Adds text to an axis at the specified location. Has lots of convenience use-cases, as adding text to an axis is
-    often an absolute pain in the backside! Mirrors the axis.text method as much as possible, but with a few extra
-    features:
-    1. text can be a list of strings, separated by separator
-    2. the text is automatically plotted in a mode relative to the axis
-    3. the box is by default
+def _good_points_plot_limits(target_points: np.ndarray, constraint_points: np.ndarray, constraint_limits: np.ndarray):
+    """Finds appropriate plot limits for a target array of points based on the limits of a constraint set of points.
+    Solves the issue with matplotlib limits being set on one dimension but not cropping out blank space on the other.
 
     Args:
-        my_axis (matplotlib.axis): axis to add text to.
-        x (float): x location of the text to add.
-        y (float): y location of the text to add.
-        ha (string): the horizontal alignment of the text, ala matplotlib.
-        va (string): the vertical alignment of the text, ala matplotlib.
-        text (string, list of strings): text to add to the axis. If a list, it will join the list first for you.
-            How kind? =)
-        mode (string): the mode to using when choosing where to put the text. Allowed values: 'relative' (default) or
-            'absolute'.
+        target_points (np.ndarray): points to find limits for
+        constraint_points (np.ndarray): the points that already have a cut-off constraint
+        constraint_limits (np.ndarray): the limits for the pre-constrained points.
 
     Returns:
-        The modified axis.
-    ""
-    # Join the list of text together if the input is a list
-    if type(text) is list:
-        text = separator.join(text)
+        target_point_limits (np.ndarray): limits for the target points that will remove blank space.
 
-    if style_box is None:
-        dict(boxstyle='round', facecolor='w', alpha=0.8))
+    """
+    good_points = np.logical_and(constraint_points >= constraint_limits[0], constraint_points <= constraint_limits[1])
+    return np.asarray([target_points[good_points].min(), target_points[good_points].max()])
 
-    # Put the text in a different spot depending on where the user specified
-    if mode == 'relative':
-        my_axis.text(x, y, text,
-                     ha=ha, va=va, transform=my_axis.transAxes,
-                     fontsize=fontsize,
-                     bbox=dict(boxstyle='round', facecolor='w', alpha=0.8))
-    elif mode == 'absolute':
-        my_axis.text(x, y, text,
-                     ha=ha, va=va,
-                     fontsize=fontsize,
-                     bbox=dict(boxstyle='round', facecolor='w', alpha=0.8))
 
-    pass
-"""
+def percentile_based_plot_limits(x: np.ndarray,
+                                 y: np.ndarray,
+                                 x_percentiles: Optional[Union[tuple, list, np.ndarray]] = None,
+                                 y_percentiles: Optional[Union[tuple, list, np.ndarray]] = None,
+                                 range_padding: Optional[float] = 0.05):
+    """Derives appropriate limits for a 2D plot based on percentiles of the data. May use just one or both of x or y
+    data to infer plot limits. When only one is used, the unused axis will be cropped to remove blank space (which
+    solves the issue with matplotlib limits being set on one dimension but not cropping out blank space on the other.)
+
+    Args:
+        x (np.ndarray): x points to base plotting limits from.
+        y (np.ndarray): y points to base plotting limits from.
+        x_percentiles (list-like): length two array of x percentiles to plot. Values within must be in the range
+            [0, 100]. If None, x plot limits are inferred from the x range of valid y points.
+        y_percentiles (np.ndarray, list): length two array of y percentiles to plot. Values within must be in the range
+            [0, 100]. If None, y plot limits are inferred from the y range of valid x points.
+        range_padding (list-like): padding factor to apply based on the valid range of the data. Stops plots from
+            being cropped exactly on the points at hand. Remember padding is added individually around all ends of the
+            data! May be set to "None" to be turned off.
+            Default: 0.05
+
+    """
+    # Make sure the inputs are flat numpy arrays
+    x = np.asarray(x).flatten()
+    y = np.asarray(y).flatten()
+
+    # First, we make some actual limits
+    if x_percentiles is not None:
+        x_plot_limits = np.percentile(x, x_percentiles)
+
+        # When x and y specified
+        if y_percentiles is not None:
+            y_plot_limits = np.percentile(y, y_percentiles)
+
+        # When only x specified
+        else:
+            y_plot_limits = _good_points_plot_limits(y, x, x_plot_limits)
+
+    # When only y specified
+    elif y_percentiles is not None:
+        y_plot_limits = np.percentile(y, y_percentiles)
+        x_plot_limits = _good_points_plot_limits(x, y, y_plot_limits)
+
+    # When neither specified: value error!
+    else:
+        raise ValueError("One or both of x_percentiles and y_percentiles must be specified.")
+
+    # We can also add some padding if requested
+    if range_padding is not None:
+        # Grab the stars within the ranges
+        good_x = np.logical_and(x >= x_plot_limits[0], x <= x_plot_limits[1])
+        good_y = np.logical_and(y >= y_plot_limits[0], y <= y_plot_limits[1])
+
+        # Find the statistical range/peak to peak (ptp) value of the good stars
+        x_padding = np.ptp(x[good_x]) * range_padding
+        y_padding = np.ptp(y[good_y]) * range_padding
+
+        # Apply the padding to the limits
+        x_plot_limits += np.asarray([-x_padding, x_padding])
+        y_plot_limits += np.asarray([-y_padding, y_padding])
+
+    return x_plot_limits, y_plot_limits

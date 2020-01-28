@@ -2,14 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/ocelot/calculate/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/calculate/calculate.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/nn_statistics.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/nn_statistics.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/plot/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/utilities.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_plot.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -79,7 +80,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.test_plot">
+  <component name="RunManager" selected="Python.test_cluster">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -150,9 +151,6 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -237,8 +235,8 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.test_cluster" />
+        <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.test_isochrone" />
         <item itemvalue="Python.spline_fit_to_random_data" />
         <item itemvalue="Python.io" />
@@ -277,7 +275,11 @@
       <workItem from="1579160296451" duration="16891000" />
       <workItem from="1579247643454" duration="7613000" />
       <workItem from="1579507319404" duration="19386000" />
-      <workItem from="1579593167295" duration="14294000" />
+      <workItem from="1579593167295" duration="15807000" />
+      <workItem from="1579679327987" duration="4379000" />
+      <workItem from="1579770573812" duration="1312000" />
+      <workItem from="1579851759982" duration="11629000" />
+      <workItem from="1580197297407" duration="16336000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -440,7 +442,14 @@
       <option name="project" value="LOCAL" />
       <updated>1579529425272</updated>
     </task>
-    <option name="localTasksCounter" value="24" />
+    <task id="LOCAL-00024" summary="Work on ocelot.cluster epsilon determination.&#10;- Added a dpi parameter to ocelot.plot figures&#10;- Fixed a bug in acg epsilon determination&#10;This release fixes bugs in 0.3.0 feature b.">
+      <created>1579616115834</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1579616115834</updated>
+    </task>
+    <option name="localTasksCounter" value="25" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -485,6 +494,7 @@
     <MESSAGE value="Work on ocelot.cluster nearest neighbor plotting.&#10;- Added ocelot.plot.nearest_neighbor_distance and various functions to contribute to it&#10;- Implemented unit tests for the above &#10;This releases partially satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Began adding epsilon determination via model fitting &amp; differentiation.&#10;This releases partially satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Finished adding epsilon determination via model fitting &amp; differentiation.&#10;- Added and verified unit tests for the above.&#10;This releases satisfies 0.3.0 feature b." />
-    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.cluster epsilon determination.&#10;- Finished adding epsilon determination via model fitting &amp; differentiation.&#10;- Added and verified unit tests for the above.&#10;This releases satisfies 0.3.0 feature b." />
+    <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Added a dpi parameter to ocelot.plot figures&#10;- Fixed a bug in acg epsilon determination&#10;This release fixes bugs in 0.3.0 feature b." />
+    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.cluster epsilon determination.&#10;- Added a dpi parameter to ocelot.plot figures&#10;- Fixed a bug in acg epsilon determination&#10;This release fixes bugs in 0.3.0 feature b." />
   </component>
 </project>

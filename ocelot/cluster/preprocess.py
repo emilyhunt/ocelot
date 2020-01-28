@@ -12,6 +12,9 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
     """A function for cutting a dataset based on certain requirements: either on allowed parameter ranges or based on
     geometric cuts (such as selecting a circle from the data.)
 
+    Todo: this function should be able to move clusters that are on an ra boundary.
+        E.g. Blanco 1, which always gets messed up!
+
     Notes:
         - This function will do nothing if parameter_cuts and geometric_cuts are both None (the default settings!).
         - Currently, geometric_cuts is applied first, as this could drastically reduce the dataset size (and speed up
