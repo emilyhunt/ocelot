@@ -301,11 +301,12 @@ def test_field_model(show_figure=False):
 
 
 if __name__ == '__main__':
+    print('uncomment something ya frikin jabroni')
     #gaia, rescaled = test_rescale_dataset()
     #cut = test_cut_dataset()
     #spar, dist = test_precalculate_nn_distances()
     #eps, ran = test_acg18()
     #test__summed_kth_nn_distribution_one_cluster()
-    test__find_sign_change_epsilons()
-    test__find_curve_absolute_maximum_epsilons()
-    test_field_model(show_figure=True)
+    #test__find_sign_change_epsilons()
+    #test__find_curve_absolute_maximum_epsilons()
+    #test_field_model(show_figure=True)
