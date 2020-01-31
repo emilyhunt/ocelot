@@ -2,13 +2,15 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/ocelot/calculate/constants.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_calculate.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/blanco_1_gaia_dr2_gmag_18_cut_cluster_only.pickle" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/crossmatch/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/crossmatch/catalogue.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/crossmatch/crossmatch.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_crossmatch.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/mwsc_ii_catalogue" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/calculate/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/__init__.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/calculate/calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/calculate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/nn_statistics.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/nn_statistics.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -127,6 +129,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -279,7 +284,8 @@
       <workItem from="1579851759982" duration="11629000" />
       <workItem from="1580197297407" duration="16368000" />
       <workItem from="1580285198202" duration="13931000" />
-      <workItem from="1580374248844" duration="11356000" />
+      <workItem from="1580374248844" duration="13432000" />
+      <workItem from="1580457409100" duration="17384000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -463,7 +469,14 @@
       <option name="project" value="LOCAL" />
       <updated>1580311397040</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="Work on ocelot.calculate.&#10;- Implemented a basic version of .radius&#10;- Wrote unit tests for all functions in the submodule&#10;- Fixed a handful of small bugs in the implementations&#10;- Re-factored .all_statistics() so it can use different modes in the future. Eventually, it would be lovely to infer many of these parameters in a Bayesian way&#10;- All functions pass all tests =)&#10;This release satisfies 0.3.0 feature c.">
+      <created>1580390826872</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1580390826872</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -485,7 +498,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board" />
     <MESSAGE value="0.1-unstable&#10;- Basic plotting functionality ported from the Jupyter notebook,&#10;- Minimal testing completed!&#10;- Releasing early as I want to work on other things - ocelot.plot will have changes and more refactoring in the future." />
     <MESSAGE value="Implemented ocelot.isochrone.io.read_cmd_isochrone()&#10;- It reads in isochrones from CMD 3.3!&#10;- Unit test written &amp; passed.&#10;&gt; This satisfies feature(s) [a] for future release 0.2.0" />
     <MESSAGE value="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io" />
@@ -510,6 +522,8 @@
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Added a dpi parameter to ocelot.plot figures&#10;- Fixed a bug in acg epsilon determination&#10;This release fixes bugs in 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Improved field model curve fit stability&#10;- Added a new epsilon c, epsilon f&#10;This release fixes bugs in 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented basic versions of .mean_distance, .mean_proper_motion, .internal_velocity_dispersion and .all_statistics&#10;- Radius and sky position stuff will need work&#10;- All the above is awaiting testing.&#10;This release partially satisfies 0.3.0 feature c." />
-    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.calculate.&#10;- Implemented basic versions of .mean_distance, .mean_proper_motion, .internal_velocity_dispersion and .all_statistics&#10;- Radius and sky position stuff will need work&#10;- All the above is awaiting testing.&#10;This release partially satisfies 0.3.0 feature c." />
+    <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented a basic version of .radius&#10;- Wrote unit tests for all functions in the submodule&#10;- Fixed a handful of small bugs in the implementations&#10;- Re-factored .all_statistics() so it can use different modes in the future. Eventually, it would be lovely to infer many of these parameters in a Bayesian way&#10;- All functions pass all tests =)&#10;This release satisfies 0.3.0 feature c." />
+    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.calculate.&#10;- Implemented a basic version of .radius&#10;- Wrote unit tests for all functions in the submodule&#10;- Fixed a handful of small bugs in the implementations&#10;- Re-factored .all_statistics() so it can use different modes in the future. Eventually, it would be lovely to infer many of these parameters in a Bayesian way&#10;- All functions pass all tests =)&#10;This release satisfies 0.3.0 feature c." />
+    <option name="OPTIMIZE_IMPORTS_BEFORE_PROJECT_COMMIT" value="true" />
   </component>
 </project>

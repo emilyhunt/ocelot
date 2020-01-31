@@ -165,7 +165,9 @@ def mean_radius(data_gaia: pd.DataFrame,
     estimates towards being dominated by large, centrally-located stars within clusters (that have generally lower
     velocities.) Hence, estimates here will be less precise but hopefully more accurate.
 
-    Todo: add error on velocity dispersion estimation to this function (hard)
+    Todo: add error estimation to this function (hard)
+
+    Todo: add galactic l, b to the output of this function  
 
     Args:
         data_gaia (pd.DataFrame): Gaia data for the cluster in the standard format (e.g. as in DR2.)

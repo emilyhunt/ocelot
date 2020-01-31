@@ -44,7 +44,7 @@ def point_number_vs_nn_distance(axes, distances: np.ndarray,
             typically very noisy so this isn't desired behaviour.
             Default: False
         y_percentile_limits (optional, list-like): percentile limits to apply to each derivative axis. Should be a
-            np.ndarray of shape (n_axes - 1, 2), containing floats in the range [0, 100] and strictly ascending. Will be
+            np.ndarray of shape (n_extra_features - 1, 2), containing floats in the range [0, 100] and strictly ascending. Will be
             ignored for all axes that contain real points.
 
     Returns:
