@@ -2,11 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/tests/test_data/mwsc_ii_perturbed" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/crossmatch_match_all_axes" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/crossmatch_match_position_only" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/crossmatch_summary_all_axes" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/crossmatch_summary_position_only" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/calculate/constants.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/constants.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_crossmatch.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_crossmatch.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -55,7 +57,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$USER_HOME$/Desktop" />
-    <property name="settings.editor.selected.configurable" value="preferences.pluginManager" />
+    <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors.Properties" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -280,7 +282,7 @@
       <workItem from="1580285198202" duration="13931000" />
       <workItem from="1580374248844" duration="13432000" />
       <workItem from="1580457409100" duration="17638000" />
-      <workItem from="1580715602889" duration="4290000" />
+      <workItem from="1580715602889" duration="20361000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -478,7 +480,14 @@
       <option name="project" value="LOCAL" />
       <updated>1580484154813</updated>
     </task>
-    <option name="localTasksCounter" value="29" />
+    <task id="LOCAL-00029" summary="Work on ocelot.crossmatch&#10;- Basic bugfixing to ocelot.crossmatch.Catalogue (it now works as written and intended), but I'd like to refactor it to work in more sensible ways (e.g. using an estimated systematic error on position to calculate positional probabilities instead of using the tidal radius as a proxy.)&#10;- Next commit will be quite different!&#10;This commit partially satisfies 0.3.0 feature d.">
+      <created>1580720634049</created>
+      <option name="number" value="00029" />
+      <option name="presentableId" value="LOCAL-00029" />
+      <option name="project" value="LOCAL" />
+      <updated>1580720634049</updated>
+    </task>
+    <option name="localTasksCounter" value="30" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -500,7 +509,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Implemented ocelot.isochrone.io.read_cmd_isochrone()&#10;- It reads in isochrones from CMD 3.3!&#10;- Unit test written &amp; passed.&#10;&gt; This satisfies feature(s) [a] for future release 0.2.0" />
     <MESSAGE value="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io" />
     <MESSAGE value="Some testing of a new way to spline fit random data, &amp; beginning development on isochrone.IsochroneInterpolator &#10;- I should be able to try just finding scatter about an interpolated curve of random data - a new test script has been written for this.&#10;- Began working on the IsochroneInterpolator class by adding a cumulative sum along a curve function." />
     <MESSAGE value="Mostly finished implementing the IsochroneInterpolator class.&#10;- Runtime is high - can it be sped up with a way to selectively ignore some data points? &#10;- Unit test needs finishing&#10;- Needs more checking in general - a plotting utility would help (see feature 0.2.0 b1)&#10;&gt; This satisfies feature(s) [b] for future release 0.2.0" />
@@ -525,6 +533,7 @@
     <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented basic versions of .mean_distance, .mean_proper_motion, .internal_velocity_dispersion and .all_statistics&#10;- Radius and sky position stuff will need work&#10;- All the above is awaiting testing.&#10;This release partially satisfies 0.3.0 feature c." />
     <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented a basic version of .radius&#10;- Wrote unit tests for all functions in the submodule&#10;- Fixed a handful of small bugs in the implementations&#10;- Re-factored .all_statistics() so it can use different modes in the future. Eventually, it would be lovely to infer many of these parameters in a Bayesian way&#10;- All functions pass all tests =)&#10;This release satisfies 0.3.0 feature c." />
     <MESSAGE value="Work on ocelot.crossmatch&#10;- Have now written a basic crossmatch utility in the form of a class with methods, ocelot.crossmatch.Catalogue&#10;- It should be able to crossmatch with an arbitrary number of features, depending on the catalogue to be matched against&#10;- It requires testing!&#10;This commit partially satisfies 0.3.0 feature d." />
-    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.crossmatch&#10;- Have now written a basic crossmatch utility in the form of a class with methods, ocelot.crossmatch.Catalogue&#10;- It should be able to crossmatch with an arbitrary number of features, depending on the catalogue to be matched against&#10;- It requires testing!&#10;This commit partially satisfies 0.3.0 feature d." />
+    <MESSAGE value="Work on ocelot.crossmatch&#10;- Basic bugfixing to ocelot.crossmatch.Catalogue (it now works as written and intended), but I'd like to refactor it to work in more sensible ways (e.g. using an estimated systematic error on position to calculate positional probabilities instead of using the tidal radius as a proxy.)&#10;- Next commit will be quite different!&#10;This commit partially satisfies 0.3.0 feature d." />
+    <option name="LAST_COMMIT_MESSAGE" value="Work on ocelot.crossmatch&#10;- Basic bugfixing to ocelot.crossmatch.Catalogue (it now works as written and intended), but I'd like to refactor it to work in more sensible ways (e.g. using an estimated systematic error on position to calculate positional probabilities instead of using the tidal radius as a proxy.)&#10;- Next commit will be quite different!&#10;This commit partially satisfies 0.3.0 feature d." />
   </component>
 </project>
