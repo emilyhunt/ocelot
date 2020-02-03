@@ -205,7 +205,7 @@ class Catalogue:
                 (self.extra_axes_data_errors[i_axis])[id_catalog]**2 + extra_axes[id_clusters, 2*i_axis + 1]**2)
 
             # Make axis names
-            an_axis_name = self.extra_axes_catalogue_column_names[i_axis] + "_sep"
+            an_axis_name = extra_axes_keys[i_axis] + "_sep"
             an_axis_name_sigma = an_axis_name + "_sigma"
             list_of_sigmas.append(an_axis_name_sigma)
 
