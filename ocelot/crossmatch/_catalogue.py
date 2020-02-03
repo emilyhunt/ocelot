@@ -19,8 +19,7 @@ class Catalogue:
                  key_name: str = "Name",
                  key_ra: str = "ra",
                  key_dec: str = "dec",
-                 extra_axes: Optional[Union[list, tuple, np.ndarray]] = None,
-                 store_kd_tree: bool = True):
+                 extra_axes: Optional[Union[list, tuple, np.ndarray]] = None,):
         """Storage system for existing catalogues that handles cross-matching too.
 
         Args:
@@ -47,7 +46,6 @@ class Catalogue:
         self.catalogue_name = catalogue_name
         self.names = data[key_name].to_numpy()
         self.coords = SkyCoord(ra=data[key_ra].to_numpy() << u.deg, dec=data[key_dec].to_numpy() << u.deg)
-        self.store_kd_tree = store_kd_tree
 
         # Read in any extra axes
         if extra_axes is None:
@@ -86,7 +84,7 @@ class Catalogue:
                    names: Union[np.ndarray, pd.Series],
                    ra: Union[np.ndarray, pd.Series],
                    dec: Union[np.ndarray, pd.Series],
-                   tidal_radii: Optional[Union[np.ndarray, pd.Series]] = None,
+                   tidal_radii: Union[np.ndarray, pd.Series],
                    extra_axes: Optional[Union[np.ndarray, pd.DataFrame]] = None,
                    max_separation: float = 1.,
                    best_match_on: str = "all",
@@ -102,9 +100,7 @@ class Catalogue:
             ra (np.ndarray, pd.Series): ras of the possible clusters to match against.
             dec (np.ndarray, pd.Series): declinations of the possible clusters to match against.
             tidal_radii (np.ndarray, pd.Series, optional): tidal radii of the clusters to match against in degrees.
-                When specified, the distance from the match will also be given in dimensionless units of the tidal
-                radius.
-                Default: None
+                The distance from the matches will also be given in dimensionless units of the tidal radius.
             extra_axes (np.ndarray, pd.DataFrame): array of data of all the extra axes, in the order originally
                 specified upon class creation, in the shape (n_samples, 2 * n_features), where every second axis is the
                 error on the prior axis (which may simply be an array of zeros).
@@ -211,11 +207,13 @@ class Catalogue:
             raise ValueError("specified best_match_on invalid: may only be one of 'all' or 'just_position'.")
 
         # Cycle over clusters with matches, storing things about their best matches
-        i_cluster = 0
         for i_cluster in cluster_has_a_match.index:
             # Make a new DataFrame of the current matches and get a sorted list of the best IDs
-            current_matches = match_data.loc[match_data["name"] == names_of_clusters_with_matches[i_cluster], :]
+            current_matches = match_data.loc[
+                match_data["name"] == names_of_clusters_with_matches[i_cluster], :].reset_index(drop=True)
             best_match_ids = current_matches[best_match_column].sort_values().index
+
+            print(current_matches)
 
             # Add these matches to the main DataFrame
             i_match = 0
@@ -224,11 +222,13 @@ class Catalogue:
                 an_id = best_match_ids[i_match]
                 match = f"match_{i_match}"
 
+                print(an_id)
+
                 # And now, write the data to the overall DataFrame
-                summary_match_data.loc[i_cluster, [match, match + "_angular_sep", match + "_total_prob"]] = [
-                    current_matches.loc[an_id, ["name", "angular_sep", best_match_column]]]
+                summary_match_data.loc[i_cluster, [match, match + "_angular_sep", match + "_total_prob"]] = (
+                    current_matches.loc[an_id, ["name_match", "angular_sep", best_match_column]]).values
                 i_match += 1
 
-            i_cluster += 1
+            # i_cluster += 1
 
         return match_data, summary_match_data

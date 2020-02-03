@@ -1,1 +1,1 @@
-from .catalogue import Catalogue
+from ._catalogue import Catalogue
