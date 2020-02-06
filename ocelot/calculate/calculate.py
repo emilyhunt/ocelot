@@ -32,7 +32,8 @@ def mean_distance(data_gaia: pd.DataFrame,
                   key_r_est: str = "r_est",
                   key_r_low: str = "r_lo",
                   key_r_high: str = "r_hi",
-                  key_result_flag: str = "result_flag"):
+                  key_result_flag: str = "result_flag",
+                  **kwargs):
     """Produces mean parallax and distance statistics, including a basic handling of error.
 
     Done in a very basic, frequentist way, whereby means are weighted based on the magnitude of the inverse errors on
@@ -105,7 +106,8 @@ def mean_proper_motion(data_gaia: pd.DataFrame,
                        key_pmra: str = "pmra",
                        key_pmra_error: str = "pmra_error",
                        key_pmdec: str = "pmdec",
-                       key_pmdec_error: str = "pmdec_error"):
+                       key_pmdec_error: str = "pmdec_error",
+                       **kwargs):
     """Calculates the weighted mean proper motion of a cluster, including error.
 
     Done in a very basic, frequentist way, whereby means are weighted based on the magnitude of the inverse errors on
@@ -154,7 +156,8 @@ def mean_radius(data_gaia: pd.DataFrame,
                 key_ra_error: str = "ra_error",
                 key_dec: str = "dec",
                 key_dec_error: str = "dec_error",
-                distance_to_use: str = "inverse_parallax"):
+                distance_to_use: str = "inverse_parallax",
+                **kwargs):
     """Produces various radius statistics on a given cluster, finding its sky location and three radii: the core, tidal
     and 50% radius.
 
@@ -258,7 +261,8 @@ def mean_internal_velocity_dispersion(data_gaia: pd.DataFrame,
                                       key_pmra_error: str = "ra_error",
                                       key_pmdec: str = "dec",
                                       key_pmdec_error: str = "dec_error",
-                                      distance_to_use: str = "inverse_parallax"):
+                                      distance_to_use: str = "inverse_parallax",
+                                      **kwargs):
     """Estimates the internal velocity dispersion of a cluster.
 
     Done in a very basic, frequentist way, whereby means are weighted based on the membership probabilities (if

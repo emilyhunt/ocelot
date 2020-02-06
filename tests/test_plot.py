@@ -19,7 +19,7 @@ import pytest
 
 # Path towards the test isochrones
 max_label = 0
-path_to_test_isochrones = Path('./test_data/isochrones.dat')
+path_to_test_isochrones = Path('./test_data/isochrones/isochrones.dat')
 #path_to_test_isochrone = Path('../../../data/isochrones/191015_isochrones_z-2_8_to_1_2/z_-2.8_1.2_1young_age.dat')
 
 # Path towards blanco 1 data and clustering produced by DBSCAN
@@ -202,9 +202,9 @@ def test_nearest_neighbour_plotting(show_figure=True):
 
 # Run tests manually if the file is ran
 if __name__ == '__main__':
-    # test_curve_normalisation()
+    test_curve_normalisation()
     test_percentile_based_plot_limits()
-    # iso = test_isochrone_plotting(show_figure=True)
-    # clustering_result = test_clustering_result_plotting(show_figure=True)
-    # location = test_location_plotting(show_figure=True)
-    # test_nearest_neighbour_plotting(True)
+    iso = test_isochrone_plotting(show_figure=True)
+    clustering_result = test_clustering_result_plotting(show_figure=True)
+    location = test_location_plotting(show_figure=True)
+    test_nearest_neighbour_plotting(True)

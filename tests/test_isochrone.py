@@ -19,9 +19,10 @@ from astropy.io import ascii
 
 # Path towards the test isochrones
 max_label = 7
-path_to_test_isochrone = Path('./test_data/isochrones.dat')
-path_to_test_isochrones = Path('./test_data/')
-list_of_paths_to_test_isochrones = [Path('./test_data/isochrones.dat'), Path('./test_data/isochrones_2.dat')]
+path_to_test_isochrone = Path('./test_data/isochrones/isochrones.dat')
+path_to_test_isochrones = Path('./test_data/isochrones/')
+list_of_paths_to_test_isochrones = [Path('./test_data/isochrones/isochrones.dat'),
+                                    Path('./test_data/isochrones/isochrones_2.dat')]
 path_to_simulated_population = Path('./test_data/simulated_population.dat')
 
 
@@ -236,12 +237,12 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     # Run soem tests!!!
-    # isochrones = test_read_cmd_isochrone()
-    # isochrones_long = test_read_cmd_isochrone_multiple_isochrones()
-    # interpolator, interpolator_output_x, interpolator_output_y = test_isochrone_interpolation()
-    # nn_x_sorted, nn_y_sorted = test_nn_graph_sort()
-    # test_find_nearest_point()
-    # test_proximity_to_line_sort()
+    isochrones = test_read_cmd_isochrone()
+    isochrones_long = test_read_cmd_isochrone_multiple_isochrones()
+    interpolator, interpolator_output_x, interpolator_output_y = test_isochrone_interpolation()
+    nn_x_sorted, nn_y_sorted = test_nn_graph_sort()
+    test_find_nearest_point()
+    test_proximity_to_line_sort()
 
     # # Plot the results of the nearest neighbour graph sort
     # plt.plot(nn_x_sorted, nn_y_sorted)

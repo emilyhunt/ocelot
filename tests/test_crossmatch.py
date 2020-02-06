@@ -28,29 +28,6 @@ def test_catalogue():
     """Tests ocelot.crossmatch.Catalogue, the primary tool for cross-matching open clusters by comparing them against
     a known literature catalogue with arbitrary matchable parameters.
 
-    -------------------
-
-    The test catalogue was made from the MWSC one, with:
-
-    data_cut = data_mwsc[data_mwsc["Name"].isin(list_of_10_ocs)].sort_values("MWSC").reset_index()
-    data_fiddled = data_cut.copy()
-
-    np.random.seed(42)
-    data_fiddled[["RAJ2000", "DEJ2000"]] += np.random.normal(loc=0.0, scale=0.25, size=(10, 2))
-    data_fiddled[["pmRA", "pmDE"]] += np.random.normal(loc=0.0, scale=0.5, size=(10, 2))
-    data_fiddled["d"] += np.random.normal(loc=0.0, scale=0.1, size=10) * data_fiddled["d"]
-    data_fiddled.loc[5, "RAJ2000"] += 2
-    data_fiddled.loc[9, "d"] -= 4000
-    data_fiddled["e_d"] = data_fiddled["d"] * 0.1
-
-    data_fiddled.to_csv("mwsc_ii_perturbed")
-
-    -------------------
-
-    All clusters have been lightly perturbed in position space and proper motion space. However, cluster 5 (ASCC 79)
-    has been offset in RA by 2 degrees, and cluster 9 (King 9) has been offset by 4kpc, making both of these clusters
-    into outliers.
-
     """
     # Read in the catalogues
     list_of_10_ocs = ['Blanco_1', 'Stock_10', 'Kharchenko_1', 'NGC_2516', 'Trumpler_19',
@@ -58,7 +35,10 @@ def test_catalogue():
 
     data_mwsc = pd.read_csv(location_mwsc)
 
-    # ... and make a perturbed version
+    # ... and make a perturbed version.
+    # All clusters have been lightly perturbed in position space and proper motion space. However, cluster 5 (ASCC 79)
+    # has been offset in RA by 2 degrees, and cluster 9 (King 9) has been offset by 4kpc, making both of these clusters
+    # into outliers.
     data_perturbed = data_mwsc[data_mwsc["Name"].isin(list_of_10_ocs)].sort_values("MWSC").reset_index().copy()
 
     np.random.seed(42)

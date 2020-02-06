@@ -2,9 +2,19 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/metrics.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/isochrones/isochrones.dat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/isochrones/isochrones_2.dat" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_data/crossmatch_match_all_axes" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_data/crossmatch_match_all_axes" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/calculate/calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/calculate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_crossmatch.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_crossmatch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/isochrones.dat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_data/isochrones_2.dat" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_isochrone.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_isochrone.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_plot.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -52,7 +62,7 @@
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$USER_HOME$/Desktop" />
-    <property name="settings.editor.selected.configurable" value="reference.settingsdialog.IDE.editor.colors.Properties" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -74,7 +84,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.test_crossmatch">
+  <component name="RunManager" selected="Python.test_plot">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -145,6 +155,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -229,11 +242,11 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test_crossmatch" />
-        <item itemvalue="Python.test_calculate" />
-        <item itemvalue="Python.test_cluster" />
         <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.test_isochrone" />
+        <item itemvalue="Python.test_calculate" />
+        <item itemvalue="Python.test_crossmatch" />
+        <item itemvalue="Python.test_cluster" />
       </list>
     </recent_temporary>
   </component>
@@ -277,7 +290,11 @@
       <workItem from="1580285198202" duration="13931000" />
       <workItem from="1580374248844" duration="13432000" />
       <workItem from="1580457409100" duration="17638000" />
-      <workItem from="1580715602889" duration="21548000" />
+      <workItem from="1580715602889" duration="23430000" />
+      <workItem from="1580803164628" duration="3705000" />
+      <workItem from="1580889049201" duration="2598000" />
+      <workItem from="1580909540634" duration="834000" />
+      <workItem from="1580974968822" duration="4670000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -489,7 +506,14 @@
       <option name="project" value="LOCAL" />
       <updated>1580740898896</updated>
     </task>
-    <option name="localTasksCounter" value="31" />
+    <task id="LOCAL-00031" summary="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d.">
+      <created>1580741443028</created>
+      <option name="number" value="00031" />
+      <option name="presentableId" value="LOCAL-00031" />
+      <option name="project" value="LOCAL" />
+      <updated>1580741443028</updated>
+    </task>
+    <option name="localTasksCounter" value="32" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -511,7 +535,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Some testing of a new way to spline fit random data, &amp; beginning development on isochrone.IsochroneInterpolator &#10;- I should be able to try just finding scatter about an interpolated curve of random data - a new test script has been written for this.&#10;- Began working on the IsochroneInterpolator class by adding a cumulative sum along a curve function." />
     <MESSAGE value="Mostly finished implementing the IsochroneInterpolator class.&#10;- Runtime is high - can it be sped up with a way to selectively ignore some data points? &#10;- Unit test needs finishing&#10;- Needs more checking in general - a plotting utility would help (see feature 0.2.0 b1)&#10;&gt; This satisfies feature(s) [b] for future release 0.2.0" />
     <MESSAGE value="IsochroneInterpolator unit testing&#10;- Added more unit testing and did more output checking.&#10;- Changed to using a significantly smaller isochrone table to speed up testing results. &#10;&gt; This further satisfies feature(s) [b] for future release 0.2.0" />
     <MESSAGE value="More work on isochrone plotting&#10;- Completed ocelot.plot.isochrone&#10;- Still need to do some documentation, but I'm nearly there on 2.0.0 feature b1" />
@@ -536,6 +559,7 @@
     <MESSAGE value="Work on ocelot.crossmatch&#10;- Have now written a basic crossmatch utility in the form of a class with methods, ocelot.crossmatch.Catalogue&#10;- It should be able to crossmatch with an arbitrary number of features, depending on the catalogue to be matched against&#10;- It requires testing!&#10;This commit partially satisfies 0.3.0 feature d." />
     <MESSAGE value="Work on ocelot.crossmatch&#10;- Basic bugfixing to ocelot.crossmatch.Catalogue (it now works as written and intended), but I'd like to refactor it to work in more sensible ways (e.g. using an estimated systematic error on position to calculate positional probabilities instead of using the tidal radius as a proxy.)&#10;- Next commit will be quite different!&#10;This commit partially satisfies 0.3.0 feature d." />
     <MESSAGE value="Final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Added a systematic position error estimate parameter to the Catalogue class at __init__&#10;- Changed Catalogue.crossmatch() to be much simpler to call and to now use ocelot standard parameter names, which are now stored in ocelot.calculate.constants &#10;- These parameter names can be overriden (or even added to!) with Catalogue.override_default_ocelot_parameter_names()&#10;- Increased the stats in the crossmatch process - now powered only by sigma values, ignoring tidal radii and looking for the mean or max sigma to pick a best match&#10;- Catalogue.crossmatch() is now unit tested (more of an integration test =p) after lots of checking values by hand and looking for bugs!&#10;This commit satisfies 0.3.0 feature d." />
-    <option name="LAST_COMMIT_MESSAGE" value="Final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Added a systematic position error estimate parameter to the Catalogue class at __init__&#10;- Changed Catalogue.crossmatch() to be much simpler to call and to now use ocelot standard parameter names, which are now stored in ocelot.calculate.constants &#10;- These parameter names can be overriden (or even added to!) with Catalogue.override_default_ocelot_parameter_names()&#10;- Increased the stats in the crossmatch process - now powered only by sigma values, ignoring tidal radii and looking for the mean or max sigma to pick a best match&#10;- Catalogue.crossmatch() is now unit tested (more of an integration test =p) after lots of checking values by hand and looking for bugs!&#10;This commit satisfies 0.3.0 feature d." />
+    <MESSAGE value="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d." />
+    <option name="LAST_COMMIT_MESSAGE" value="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d." />
   </component>
 </project>

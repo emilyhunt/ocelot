@@ -10,6 +10,7 @@ from scipy.optimize import minimize, curve_fit
 from .nearest_neighbor import precalculate_nn_distances
 from ..plot import nearest_neighbor_distances
 
+from sklearn.metrics import pairwise_distances
 
 def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: int = 10,
           min_samples: Union[str, int] = 10, return_last_random_distance: bool = False):

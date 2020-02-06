@@ -136,16 +136,17 @@ def test_acg18():
     assert epsilons.shape == (10,)
 
     # Check the values against a target set that were correct at first implementation
-    target_epsilons = np.asarray([0.00943362, 0.02696594, 0.04015817, 0.04884566, 0.05278521,
-                                  0.05693874, 0.06477257, 0.06957070, 0.06899090, 0.07156333])
+    target_epsilons = np.asarray([0.01594943, 0.06773323, 0.09449874, 0.10952761, 0.12000926, 0.13023932,
+                                  0.14131321, 0.14809204, 0.15114417, 0.15699153])
     assert np.allclose(epsilons, target_epsilons, rtol=0.0, atol=1e-8)
 
     # Check that we just get back one (correct) value if that's all we ask for
     np.random.seed(42)
     single_epsilon = ocelot.cluster.epsilon.acg18(
         data_rescaled, distance_matrix, n_repeats=2, min_samples=10, return_last_random_distance=False)
+
     assert type(single_epsilon) == float or np.float
-    assert np.allclose(single_epsilon, 0.07344272967449159, rtol=0.0, atol=1e-8)
+    assert np.allclose(single_epsilon, 0.1588709230676416, rtol=0.0, atol=1e-8)
 
     # Throw some errors by being a fuckwit with min_samples
     # Wrong string
@@ -200,7 +201,7 @@ def test__summed_kth_nn_distribution_one_cluster():
     assert y_fields.shape == (3, 50)
 
     # Check that we get np.inf on the first value, showing that my log comprehension works
-    assert np.allclose(y_fields[:, 0], np.inf, rtol=0.0, atol=1e-8)
+    assert np.allclose(y_fields[:, 0], np.asarray([-np.inf, -np.inf, -np.inf]), rtol=0.0, atol=1e-8)
 
     # Check that the mean of everything else is right, and by extension it's... probably right
     assert np.allclose(np.mean(y_fields[:, 1:]), -1.4524090935710814, rtol=0.0, atol=1e-8)
@@ -302,11 +303,11 @@ def test_field_model(show_figure=False):
 
 if __name__ == '__main__':
     print('uncomment something ya frikin jabroni')
-    #gaia, rescaled = test_rescale_dataset()
-    #cut = test_cut_dataset()
-    #spar, dist = test_precalculate_nn_distances()
-    #eps, ran = test_acg18()
-    #test__summed_kth_nn_distribution_one_cluster()
-    #test__find_sign_change_epsilons()
-    #test__find_curve_absolute_maximum_epsilons()
-    #test_field_model(show_figure=True)
+    gaia, rescaled = test_rescale_dataset()
+    cut = test_cut_dataset()
+    spar, dist = test_precalculate_nn_distances()
+    eps, ran = test_acg18()
+    test__summed_kth_nn_distribution_one_cluster()
+    test__find_sign_change_epsilons()
+    test__find_curve_absolute_maximum_epsilons()
+    test_field_model(show_figure=True)
