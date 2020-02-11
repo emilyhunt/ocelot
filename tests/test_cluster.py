@@ -20,6 +20,9 @@ from scipy.sparse.csr import csr_matrix
 
 path_to_blanco_1 = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle')
 
+path_to_one_simulated_population = Path('./test_data/simulated_population.dat')
+path_to_all_simulated_populations = Path('./test_data')
+
 
 def test_cut_dataset():
     """Tests the functionality of dataset cutting at ocelot.cluster.cut_dataset."""
@@ -301,6 +304,28 @@ def test_field_model(show_figure=False):
     assert n_cluster_members == 291
 
 
+def test_read_cmd_simulated_populations():
+    """Tests the function for reading in CMD simulated populations in bulk."""
+    target_columns = ['Z', 'age', 'Mini', 'Mass', 'logL', 'logTe', 'logg', 'label', 'mbolmag',
+                      'phot_g_mean_mag', 'phot_bp_mean_mag', 'phot_rp_mean_mag', 'log_age']
+
+    # Check that we can read in one population ok
+    data_one = ocelot.cluster.read_cmd_simulated_populations(path_to_one_simulated_population)
+
+    assert data_one.shape == (6116, 13)
+    assert np.allclose(data_one.iloc[1500, 5], 3.7996)
+    assert list(data_one.columns) == target_columns
+
+    # Check that we can read in multiple
+    data_all = ocelot.cluster.read_cmd_simulated_populations(path_to_all_simulated_populations, search_pattern="*.dat")
+
+    assert data_all.shape == (2 * 6116, 13)
+    assert np.allclose(data_all.iloc[6116 + 1500, 5], 3.7996)
+    assert list(data_all.columns) == target_columns
+
+    return data_one, data_all
+
+
 if __name__ == '__main__':
     print('uncomment something ya frikin jabroni')
     gaia, rescaled = test_rescale_dataset()
@@ -311,3 +336,4 @@ if __name__ == '__main__':
     test__find_sign_change_epsilons()
     test__find_curve_absolute_maximum_epsilons()
     test_field_model(show_figure=True)
+    one, all = test_read_cmd_simulated_populations()

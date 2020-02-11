@@ -2,8 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/statistic.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/synthetic_.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/simulated_population_2.dat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -50,8 +55,9 @@
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$USER_HOME$/Desktop" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/scripts" />
+    <property name="run.code.analysis.last.selected.profile" value="aDefault" />
+    <property name="settings.editor.selected.configurable" value="reference.settings.project.statistic.project.settings" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -73,7 +79,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.test_plot">
+  <component name="RunManager" selected="Python.test_cluster">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -122,9 +128,6 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -231,11 +234,11 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test_cluster" />
         <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.test_isochrone" />
         <item itemvalue="Python.test_calculate" />
         <item itemvalue="Python.test_crossmatch" />
-        <item itemvalue="Python.test_cluster" />
       </list>
     </recent_temporary>
   </component>
@@ -285,7 +288,8 @@
       <workItem from="1580909540634" duration="834000" />
       <workItem from="1580974968822" duration="5283000" />
       <workItem from="1581062023643" duration="5975000" />
-      <workItem from="1581406503468" duration="2980000" />
+      <workItem from="1581406503468" duration="5236000" />
+      <workItem from="1581423883866" duration="9837000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -511,7 +515,14 @@
       <option name="project" value="LOCAL" />
       <updated>1581002144468</updated>
     </task>
-    <option name="localTasksCounter" value="33" />
+    <task id="LOCAL-00033" summary="Small improvement to epsilon determination with the field model.&#10;- Now have a &quot;model_minimum_drop&quot; parameter that controls how low the model's epsilon values are able to go, helping to prevent floating point errors from taking logs extremely close to or beyond 0.&#10;This commit fixes bugs in 0.3.0 feature b.">
+      <created>1581414872108</created>
+      <option name="number" value="00033" />
+      <option name="presentableId" value="LOCAL-00033" />
+      <option name="project" value="LOCAL" />
+      <updated>1581414872108</updated>
+    </task>
+    <option name="localTasksCounter" value="34" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -533,7 +544,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="IsochroneInterpolator unit testing&#10;- Added more unit testing and did more output checking.&#10;- Changed to using a significantly smaller isochrone table to speed up testing results. &#10;&gt; This further satisfies feature(s) [b] for future release 0.2.0" />
     <MESSAGE value="More work on isochrone plotting&#10;- Completed ocelot.plot.isochrone&#10;- Still need to do some documentation, but I'm nearly there on 2.0.0 feature b1" />
     <MESSAGE value="Final work on isochrone plotting&#10;- Completed ocelot.plot.isochrone documentation&#10;- Added functionality to ocelot.isochrone.read_cmd_isochrone allowing it to be given a directory of files or a list of files, where each file is a separate set of isochrones.&#10;- Isochrone interpolation issues for sharp corners (e.g. logAge ~ 6.7) will be investigated later.&#10;&#10;This release completes the requirements for 2.0.0 feature b1." />
     <MESSAGE value="Implemented CMDInterpolator, a class for interpolating CMDs directly with a spline.&#10;- System is working well!&#10;- Unit tests are *nearly* finished, now also using a new synthetic open cluster from CMD 3.3 for testing&#10;- Also added a nearest neighbour search routine, although I don't think it will be useful enough to keep&#10;- Still in need of a better way to sort CMDs - although that may come later&#10;- Also still in need of an actual routine for then calculating scatter.&#10;&#10;This release completes the requirements for 0.2.0 feature c." />
@@ -558,6 +568,7 @@
     <MESSAGE value="Final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Added a systematic position error estimate parameter to the Catalogue class at __init__&#10;- Changed Catalogue.crossmatch() to be much simpler to call and to now use ocelot standard parameter names, which are now stored in ocelot.calculate.constants &#10;- These parameter names can be overriden (or even added to!) with Catalogue.override_default_ocelot_parameter_names()&#10;- Increased the stats in the crossmatch process - now powered only by sigma values, ignoring tidal radii and looking for the mean or max sigma to pick a best match&#10;- Catalogue.crossmatch() is now unit tested (more of an integration test =p) after lots of checking values by hand and looking for bugs!&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Added a new metrics subpackage to ocelot.cluster.&#10;- Added a very basic (and probably hilariously slow) 5 parameter metric to cluster.epsilon.&#10;This commit is experimental work towards 0.3.0." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added a new metrics subpackage to ocelot.cluster.&#10;- Added a very basic (and probably hilariously slow) 5 parameter metric to cluster.epsilon.&#10;This commit is experimental work towards 0.3.0." />
+    <MESSAGE value="Small improvement to epsilon determination with the field model.&#10;- Now have a &quot;model_minimum_drop&quot; parameter that controls how low the model's epsilon values are able to go, helping to prevent floating point errors from taking logs extremely close to or beyond 0.&#10;This commit fixes bugs in 0.3.0 feature b." />
+    <option name="LAST_COMMIT_MESSAGE" value="Small improvement to epsilon determination with the field model.&#10;- Now have a &quot;model_minimum_drop&quot; parameter that controls how low the model's epsilon values are able to go, helping to prevent floating point errors from taking logs extremely close to or beyond 0.&#10;This commit fixes bugs in 0.3.0 feature b." />
   </component>
 </project>
