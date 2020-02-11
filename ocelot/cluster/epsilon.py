@@ -12,6 +12,7 @@ from ..plot import nearest_neighbor_distances
 
 from sklearn.metrics import pairwise_distances
 
+
 def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: int = 10,
           min_samples: Union[str, int] = 10, return_last_random_distance: bool = False):
     """A method for calculating an optimal epsilon value as in Alfredo Castro-Ginard's 2018 paper (hence the acronym
@@ -469,7 +470,7 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
 
 
 def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_size: int = 1,
-                resolution: int = 500, point_fraction_to_keep: float = 0.95,
+                resolution: int = 500, point_fraction_to_keep: float = 0.95, model_minimum_drop: float = 1.0,
                 optimiser: str ='trf', print_convergence_messages: bool = False,
                 make_diagnostic_plot: bool = False, return_all_sign_changes=False,
                 **kwargs) -> list:
@@ -498,6 +499,10 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
             makes re-sampling the data require far fewer points and ensures the minimiser will focus more on the cluster
             (at low epsilon.) The bottom point_fraction_to_keep fraction of points is kept.
             Default: 0.95 (i.e. 5% of points with the highest epsilon are removed, a good general value)
+        model_minimum_drop (float): a number subtracted from the minimum input log normalised point number that defines
+            how low the total model is sampled. You may want to use a number like 1.0 if turnoffs or details are only
+            just being missed.
+            Default: 0.0, i.e. we'll have the same minimum point value in the model as the input.
         optimiser (string): optimiser to be used by scipy.optimize.curve_fit. trf is great, and lets bounds be used.
             Default: 'trf'
         print_convergence_messages (bool): whether or not to ask scipy.optimize.curve_fit to print convergence messages.
@@ -579,6 +584,15 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     # We'll evaluate the function at the results that were grabbed, for plotting and epsilon purposes
     points_field, points_cluster, points_total = _summed_kth_nn_distribution_one_cluster(
         result, min_samples, distances_sampled, minimisation_mode=False)
+
+    # And we'll only keep valid points for which the total model does not have a point number value less than that
+    # of model_minimum_drop * min(points)
+    good_values = points_total >= np.min(points) - model_minimum_drop
+
+    points_total = points_total[good_values]
+    points_cluster = points_cluster[good_values]
+    points_field = points_field[good_values]
+    distances_sampled = distances_sampled[good_values]
 
     # Calculate the estimated number of cluster members and calculate epsilon if it's equal or above the minimum size
     n_cluster_members = int(np.round(distances.shape[0] * result[-1]))
