@@ -15,6 +15,7 @@ import pickle
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import pytest
 from scipy.sparse.csr import csr_matrix
 
@@ -22,6 +23,8 @@ path_to_blanco_1 = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle')
 
 path_to_one_simulated_population = Path('./test_data/simulated_population.dat')
 path_to_all_simulated_populations = Path('./test_data')
+
+path_to_simulated_population_test_clusters = Path('./test_data/simulated_population_test_clusters')
 
 
 def test_cut_dataset():
@@ -305,35 +308,64 @@ def test_field_model(show_figure=False):
 
 
 def test_read_cmd_simulated_populations():
-    """Tests the function for reading in CMD simulated populations in bulk."""
-    target_columns = ['Z', 'age', 'Mini', 'Mass', 'logL', 'logTe', 'logg', 'label', 'mbolmag',
-                      'phot_g_mean_mag', 'phot_bp_mean_mag', 'phot_rp_mean_mag', 'log_age']
+    """Tests the ability of ocelot.cluster.SimulatedPopulations to read in CMD simulated populations in bulk."""
+    target_columns = ['Z', 'age', 'Mini', 'Mass', 'logL', 'logTe', 'logg', 'cmd_label', 'mbolmag',
+                      'phot_g_mean_mag', 'phot_bp_mean_mag', 'phot_rp_mean_mag', 'log_age', 'log_Z']
 
     # Check that we can read in one population ok
-    data_one = ocelot.cluster.read_cmd_simulated_populations(path_to_one_simulated_population)
+    data_one = ocelot.cluster.SimulatedPopulations(path_to_one_simulated_population).data
 
-    assert data_one.shape == (6116, 13)
+    assert data_one.shape == (6116, 14)
     assert np.allclose(data_one.iloc[1500, 5], 3.7996)
     assert list(data_one.columns) == target_columns
 
     # Check that we can read in multiple
-    data_all = ocelot.cluster.read_cmd_simulated_populations(path_to_all_simulated_populations, search_pattern="*.dat")
+    data_all = ocelot.cluster.SimulatedPopulations(path_to_all_simulated_populations, search_pattern="*.dat").data
 
-    assert data_all.shape == (2 * 6116, 13)
+    assert data_all.shape == (2 * 6116, 14)
     assert np.allclose(data_all.iloc[6116 + 1500, 5], 3.7996)
     assert list(data_all.columns) == target_columns
 
     return data_one, data_all
 
 
+def test_simulated_populations():
+    """Given that ocelot.cluster.SimulatedPopulations reading works (see test_read_cmd_simulated_populations),
+    we next test whether or not it can make some simulated populations!
+
+    Data generated with:
+        data_smol = data_mwsc.loc[clusters_to_plot_mwsc_table_numbers, :]
+        data_smol['extinction_v'] = 3.1 * data_smol['E(B-V)']
+        data_smol['v_int'] = 500
+        data_smol['[Fe/H]'] = 0.
+        data_smol['mass'] = 1e3
+        new_data = pd.DataFrame()
+        new_data[['ra', 'dec', 'l', 'b', 'distance', 'extinction_v', 'pmra', 'pmdec',
+                  'age', 'Z', 'mass', 'radius_c', 'radius_t', 'v_int']] = data_smol[[
+            'RAJ2000', 'DEJ2000', 'GLON', 'GLAT', 'd', 'extinction_v', 'pmRA', 'pmDE',
+            'logt', '[Fe/H]', 'mass', 'rc', 'rt', 'v_int'
+        ]]
+        new_data.to_csv('test_clusters', index=False)
+
+    """
+    test_clusters = pd.read_csv(path_to_simulated_population_test_clusters)
+
+    simulated_populations = ocelot.cluster.SimulatedPopulations(path_to_one_simulated_population)
+
+    simulated_clusters = simulated_populations.get_clusters(test_clusters, concatenate=False, error_on_invalid_request=False)
+
+    return simulated_populations, test_clusters, simulated_clusters
+
+
 if __name__ == '__main__':
     print('uncomment something ya frikin jabroni')
-    gaia, rescaled = test_rescale_dataset()
-    cut = test_cut_dataset()
-    spar, dist = test_precalculate_nn_distances()
-    eps, ran = test_acg18()
-    test__summed_kth_nn_distribution_one_cluster()
-    test__find_sign_change_epsilons()
-    test__find_curve_absolute_maximum_epsilons()
-    test_field_model(show_figure=True)
-    one, all = test_read_cmd_simulated_populations()
+    # gaia, rescaled = test_rescale_dataset()
+    # cut = test_cut_dataset()
+    # spar, dist = test_precalculate_nn_distances()
+    # eps, ran = test_acg18()
+    # test__summed_kth_nn_distribution_one_cluster()
+    # test__find_sign_change_epsilons()
+    # test__find_curve_absolute_maximum_epsilons()
+    # test_field_model(show_figure=True)
+    # one, all = test_read_cmd_simulated_populations()
+    simpop, test_clusters, simcl = test_simulated_populations()

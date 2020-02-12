@@ -2,12 +2,14 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/statistic.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/ocelot/cluster/synthetic_.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/simulated_population_2.dat" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/calculate/dust.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/ocelot/calculate/random.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/simulated_population_test_clusters" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/ehunt.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/calculate/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/calculate/calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/calculate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/synthetic_.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/synthetic_.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -289,7 +291,8 @@
       <workItem from="1580974968822" duration="5283000" />
       <workItem from="1581062023643" duration="5975000" />
       <workItem from="1581406503468" duration="5236000" />
-      <workItem from="1581423883866" duration="9837000" />
+      <workItem from="1581423883866" duration="9896000" />
+      <workItem from="1581493972041" duration="20919000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -522,7 +525,14 @@
       <option name="project" value="LOCAL" />
       <updated>1581414872108</updated>
     </task>
-    <option name="localTasksCounter" value="34" />
+    <task id="LOCAL-00034" summary="Work on synthetic cluster generation.&#10;- Now have a simulated populations class&#10;- Lots of thinking and head scratching about how to do this best&#10;This commit is experimental work for 0.3.0">
+      <created>1581434624565</created>
+      <option name="number" value="00034" />
+      <option name="presentableId" value="LOCAL-00034" />
+      <option name="project" value="LOCAL" />
+      <updated>1581434624565</updated>
+    </task>
+    <option name="localTasksCounter" value="35" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -544,7 +554,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="More work on isochrone plotting&#10;- Completed ocelot.plot.isochrone&#10;- Still need to do some documentation, but I'm nearly there on 2.0.0 feature b1" />
     <MESSAGE value="Final work on isochrone plotting&#10;- Completed ocelot.plot.isochrone documentation&#10;- Added functionality to ocelot.isochrone.read_cmd_isochrone allowing it to be given a directory of files or a list of files, where each file is a separate set of isochrones.&#10;- Isochrone interpolation issues for sharp corners (e.g. logAge ~ 6.7) will be investigated later.&#10;&#10;This release completes the requirements for 2.0.0 feature b1." />
     <MESSAGE value="Implemented CMDInterpolator, a class for interpolating CMDs directly with a spline.&#10;- System is working well!&#10;- Unit tests are *nearly* finished, now also using a new synthetic open cluster from CMD 3.3 for testing&#10;- Also added a nearest neighbour search routine, although I don't think it will be useful enough to keep&#10;- Still in need of a better way to sort CMDs - although that may come later&#10;- Also still in need of an actual routine for then calculating scatter.&#10;&#10;This release completes the requirements for 0.2.0 feature c." />
     <MESSAGE value="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1." />
@@ -569,6 +578,7 @@
     <MESSAGE value="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Added a new metrics subpackage to ocelot.cluster.&#10;- Added a very basic (and probably hilariously slow) 5 parameter metric to cluster.epsilon.&#10;This commit is experimental work towards 0.3.0." />
     <MESSAGE value="Small improvement to epsilon determination with the field model.&#10;- Now have a &quot;model_minimum_drop&quot; parameter that controls how low the model's epsilon values are able to go, helping to prevent floating point errors from taking logs extremely close to or beyond 0.&#10;This commit fixes bugs in 0.3.0 feature b." />
-    <option name="LAST_COMMIT_MESSAGE" value="Small improvement to epsilon determination with the field model.&#10;- Now have a &quot;model_minimum_drop&quot; parameter that controls how low the model's epsilon values are able to go, helping to prevent floating point errors from taking logs extremely close to or beyond 0.&#10;This commit fixes bugs in 0.3.0 feature b." />
+    <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have a simulated populations class&#10;- Lots of thinking and head scratching about how to do this best&#10;This commit is experimental work for 0.3.0" />
+    <option name="LAST_COMMIT_MESSAGE" value="Work on synthetic cluster generation.&#10;- Now have a simulated populations class&#10;- Lots of thinking and head scratching about how to do this best&#10;This commit is experimental work for 0.3.0" />
   </component>
 </project>
