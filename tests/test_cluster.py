@@ -21,10 +21,11 @@ from scipy.sparse.csr import csr_matrix
 
 path_to_blanco_1 = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle')
 
-path_to_one_simulated_population = Path('./test_data/simulated_population.dat')
-path_to_all_simulated_populations = Path('./test_data')
+path_to_one_simulated_population = Path('./test_data/simulated_populations/small/1.dat')
+path_to_all_simulated_populations = Path('./test_data/simulated_populations/small')
+path_to_big_simulated_population = Path('./test_data/simulated_populations/large/2.dat')
 
-path_to_simulated_population_test_clusters = Path('./test_data/simulated_population_test_clusters')
+path_to_simulated_population_test_clusters = Path('./test_data/simulated_populations/test_clusters')
 
 
 def test_cut_dataset():
@@ -348,11 +349,14 @@ def test_simulated_populations():
         new_data.to_csv('test_clusters', index=False)
 
     """
+    np.random.seed(42)
     test_clusters = pd.read_csv(path_to_simulated_population_test_clusters)
 
-    simulated_populations = ocelot.cluster.SimulatedPopulations(path_to_one_simulated_population)
+    simulated_populations = ocelot.cluster.SimulatedPopulations(path_to_big_simulated_population,
+                                                                mass_tolerance=0.01)
 
-    simulated_clusters = simulated_populations.get_clusters(test_clusters, concatenate=False, error_on_invalid_request=False)
+    simulated_clusters = simulated_populations.get_clusters(test_clusters, concatenate=False,
+                                                            error_on_invalid_request=False,)
 
     return simulated_populations, test_clusters, simulated_clusters
 
@@ -368,4 +372,7 @@ if __name__ == '__main__':
     # test__find_curve_absolute_maximum_epsilons()
     # test_field_model(show_figure=True)
     # one, all = test_read_cmd_simulated_populations()
+    import time
+    start = time.time()
     simpop, test_clusters, simcl = test_simulated_populations()
+    print(time.time() - start)
