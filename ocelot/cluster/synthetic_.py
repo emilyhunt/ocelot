@@ -3,11 +3,10 @@
 import numpy as np
 import pandas as pd
 from astropy.io import ascii
-from astropy.coordinates import SkyCoord, CartesianDifferential
+from astropy.coordinates import SkyCoord, CartesianDifferential, CartesianRepresentation
 import astropy.units as u
 from ..calculate.dust import gaia_dr2_a_lambda_over_a_v
-from ..calculate import king_surface_density
-from ..calculate.random import points_on_sphere
+from ..calculate import king_surface_density, king_surface_density_fast
 from scipy.stats import norm
 
 from pathlib import Path
@@ -30,7 +29,9 @@ class SimulatedPopulations:
                  location: Union[Path, str],
                  search_pattern: str = "*.dat",
                  mass_tolerance: float = 0.05,
-                 max_mass_iterations: int = 1000):
+                 max_mass_iterations: int = 1000,
+                 position_oversampling_factor: Union[float, int] = 1.,
+                 limiting_magnitude: float = 22.):
         """Convenience class to read in simulated stellar population output from the CMD 3.3 tool into a DataFrame. Also
         stores useful information about the simulated populations (e.g. available unique values) and provides methods to
         access the population.
@@ -51,6 +52,17 @@ class SimulatedPopulations:
             max_mass_iterations (int): maximum number of times to try and re-draw stars to get a cluster of the correct
                 mass before giving up and raising a ValueError.
                 Default: 1000
+            position_oversampling_factor (float, int): by what factor too many position values do we draw. We calculate
+                the expectation value of successes for a given core & tidal radius, then draw this factor too many
+                to reduce the number of times we have to call again.
+                Set this lower if you're having memory issues!
+                Default: 1 (aka about half of the time we'll already have drawn enough random values to move on.)
+            limiting_magnitude (float, int): what limiting magnitude we'll immediately drop all stars below. Should be
+                set conservatively (and below the actual limiting magnitude) else the far end of clusters will be
+                underpopulated, as stars below the limit could scatter back within the bounds of the limit. Set to
+                np.inf to turn this off.
+                Default: 22., which is very conservative (few stars in Gaia DR2 have photometric errors of more than 0.1
+                    even)
 
         """
         # Store some class stuff
@@ -58,6 +70,8 @@ class SimulatedPopulations:
         self.max_mass_iterations = max_mass_iterations
         self.required_info_on_clusters = ['ra', 'dec', 'distance', 'extinction_v', 'pmra', 'pmdec',
                                           'age', 'Z', 'mass', 'tidal_radius', 'v_int']
+        self.position_oversampling_factor = position_oversampling_factor
+        self.limiting_magnitude = limiting_magnitude
 
         # Cast the path as a pathlib.Path and check that it's real
         location = Path(location)
@@ -89,39 +103,126 @@ class SimulatedPopulations:
         self.unique_log_ages = np.unique(self.data["log_age"].to_numpy())
         self.unique_log_metallicities = np.unique(self.data["log_Z"].to_numpy())
 
-    @staticmethod
-    def _add_positions_to_cluster(new_population: pd.DataFrame, data_cluster: pd.Series):
+    def _add_positions_to_cluster(self, new_population: pd.DataFrame, data_cluster: pd.Series):
         """Gives every star in a cluster a position, randomly assigned by drawing from a King profile in a brute-force
-        Monte-Carlo way."""
+        Monte-Carlo way. Uses self.position_oversampling_factor to control how much we over or under-draw vs. the
+        expected number of cluster member stars.
+
+        Args:
+            new_population (pd.DataFrame): the population of stars to work on, so far.
+            data_cluster (pd.Series): the data for the cluster to work on (see .get_clusters() for full docs), but just
+                for the one cluster.
+
+        Returns:
+            new_population (pd.DataFrame) but with new photometry appended.
+
+        """
         # Find the maximum value of a King profile given these parameters, making our MC in a moment more efficient
+        # This is *NOT* done with the fast version, as the slow version has checks to ensure the values are correct.
         max_king = king_surface_density(0, data_cluster['radius_c'], data_cluster['radius_t'])
+
+        # Calculate the expected acceptance fraction with the area under the curve (aka the inv. normalisation constant)
+        # (since 1/A = (max) / (A * max) = area under the curve)
+        inverse_normalisation_constant = (
+            max_king / king_surface_density(0, data_cluster['radius_c'], data_cluster['radius_t'], normalise=True))
+
+        # The expected acceptance fraction is the ratio of the King curve area to the area of the uniform deviates
+        # square, then cubed as we're in 3D.
+        expected_acceptance_fraction = (inverse_normalisation_constant / (data_cluster['radius_t'] * max_king))**3
 
         # Grab some stats about how many stars we're working with
         total_stars = new_population.shape[0]
         remaining_stars = total_stars
+        completed_stars = 0
 
+        """ OLD WAY - valid only for 1D!
+                # Keep an array of final r values to write to and an array of bools for which r values still need to be re-drawn
+                # (initialised as an array of only True as we have to begin)
+                r_values = np.empty(total_stars, dtype=float)
+                to_draw = np.ones(total_stars, dtype=bool)
+
+                # Loop time! Draw random r values and a number between 0,max_king to decide whether or not to accept the r value
+                while remaining_stars > 0:
+                    # Pull some random deviates from a square
+                    r_values[to_draw] = np.random.rand(remaining_stars) * data_cluster['radius_t']
+                    test_values = np.random.rand(remaining_stars) * max_king
+
+                    # Evaluate the King profile at these points
+                    king_values = king_surface_density(
+                        r_values[to_draw], data_cluster['radius_c'], data_cluster['radius_t'])
+
+                    # Tell the loop whether or not to keep drawing these values or whether to accept them
+                    to_draw[to_draw] = test_values > king_values
+
+                    remaining_stars = np.count_nonzero(to_draw)
+
+                # Draw random angles for all the stars
+                theta, phi = points_on_sphere(total_stars, radians=False, phi_symmetric=True)
+                """
+
+        """
+        # VALID FOR 3D - but slow as fuck!
         # Keep an array of final r values to write to and an array of bools for which r values still need to be re-drawn
         # (initialised as an array of only True as we have to begin)
-        r_values = np.empty(total_stars, dtype=float)
+        r_values = np.empty((total_stars, 3), dtype=float)
         to_draw = np.ones(total_stars, dtype=bool)
 
         # Loop time! Draw random r values and a number between 0,max_king to decide whether or not to accept the r value
         while remaining_stars > 0:
             # Pull some random deviates from a square
-            r_values[to_draw] = np.random.rand(remaining_stars) * data_cluster['radius_t']
-            test_values = np.random.rand(remaining_stars) * max_king
+            r_values[to_draw, :] = (np.random.rand(remaining_stars, 3) * 2 - 1) * data_cluster['radius_t']
+            test_values = np.random.rand(remaining_stars, 3) * max_king
 
             # Evaluate the King profile at these points
-            king_values = king_surface_density(
-                r_values[to_draw], data_cluster['radius_c'], data_cluster['radius_t'])
+            king_values = king_surface_density_fast(
+                np.abs(r_values[to_draw, :]), data_cluster['radius_c'], data_cluster['radius_t'])
 
             # Tell the loop whether or not to keep drawing these values or whether to accept them
-            to_draw[to_draw] = test_values > king_values
+            to_draw[to_draw] = np.any(test_values > king_values, axis=1)
+
+            # print(np.any(test_values > king_values, axis=1))
 
             remaining_stars = np.count_nonzero(to_draw)
+            
 
-        # Draw random angles for all the stars
-        theta, phi = points_on_sphere(total_stars, radians=False, phi_symmetric=True)
+        """
+
+        # Keep an array of final r values to write to and an array of bools for which r values still need to be re-drawn
+        # (initialised as an array of only True as we have to begin)
+        r_values = np.empty((total_stars, 3), dtype=float)
+
+        # Loop time! Draw random r values and a number between 0,max_king to decide whether or not to accept the r value
+        while remaining_stars > 0:
+            # Pull some random deviates from a square - we pull out a lot more than we need so we can rejection sample
+            # in bulk
+            stars_to_draw = int(remaining_stars * self.position_oversampling_factor / expected_acceptance_fraction)
+            test_r_values = ((np.random.rand(stars_to_draw, 3) * 2 - 1)
+                             * data_cluster['radius_t'])
+            test_values = np.random.rand(*test_r_values.shape) * max_king
+
+            # Evaluate the King profile at these points
+            king_values = king_surface_density_fast(
+                np.abs(test_r_values), data_cluster['radius_c'], data_cluster['radius_t'])
+
+            # Find the good values
+            good_test_values = np.all(test_values < king_values, axis=1)
+            n_good_test_values = np.count_nonzero(good_test_values)
+
+            # Clip the number to write, as we don't want to try and write too many!
+            if n_good_test_values > remaining_stars:
+                values_to_write = remaining_stars
+                index_when_we_have_enough_values = ((np.cumsum(good_test_values) == values_to_write).nonzero()[0])[0]
+                good_test_values[index_when_we_have_enough_values + 1:] = False
+            else:
+                values_to_write = n_good_test_values
+
+            # Write as many values as we can
+            r_values[completed_stars: completed_stars + values_to_write] = (
+                test_r_values[good_test_values])
+
+            # Update with however many stars we wrote
+            remaining_stars -= values_to_write
+            completed_stars = total_stars - remaining_stars
 
         # Convert the cluster's stars and the cluster's own position into cartesian coords (we assume that the cluster
         # stars are all around the sun at first, hijacking astropy as a way to go from 3D sphericals to cartesian coords
@@ -129,8 +230,8 @@ class SimulatedPopulations:
             ra=data_cluster['ra'] << u.deg, dec=data_cluster['dec'] << u.deg,
             distance=data_cluster['distance'] << u.pc).cartesian
 
-        cluster_stars = SkyCoord(
-            ra=theta << u.deg, dec=phi << u.deg, distance=r_values << u.pc, frame='icrs').cartesian
+        cluster_stars = CartesianRepresentation(
+            r_values << u.pc, xyz_axis=1)
 
         cluster_stars = SkyCoord(cluster_location + cluster_stars, frame='icrs')
 
@@ -149,7 +250,18 @@ class SimulatedPopulations:
 
     @staticmethod
     def _add_proper_motions_to_cluster(new_population: pd.DataFrame, data_cluster: pd.Series):
-        """Gives every star in a cluster a proper motion. Requires that they already have positions!"""
+        """Gives every star in a cluster a proper motion. Requires that they already have positions!
+
+        Args:
+            new_population (pd.DataFrame): the population of stars to work on, so far. Must contain 'ra', 'dec' and
+                'distance' values!
+            data_cluster (pd.Series): the data for the cluster to work on (see .get_clusters() for full docs), but just
+                for the one cluster.
+
+        Returns:
+            new_population (pd.DataFrame) but with new photometry appended.
+
+        """
         # Convert the cluster location into cartesians.
         cluster_location = SkyCoord(
             ra=data_cluster['ra'] << u.deg, dec=data_cluster['dec'] << u.deg,
@@ -184,7 +296,17 @@ class SimulatedPopulations:
 
     @staticmethod
     def _add_photometry_to_cluster(new_population: pd.DataFrame, data_cluster: pd.Series):
-        """Adds photometry to a cluster."""
+        """Adds Gaia photometry to a cluster's member stars.
+
+        Args:
+            new_population (pd.DataFrame): the population of stars to work on, so far.
+            data_cluster (pd.Series): the data for the cluster to work on (see .get_clusters() for full docs), but just
+                for the one cluster.
+
+        Returns:
+            new_population (pd.DataFrame) but with new photometry appended.
+
+        """
         new_population['phot_g_mean_mag'] += (
                 data_cluster['distance_modulus'] + data_cluster['extinction_v'] * gaia_dr2_a_lambda_over_a_v["G"])
         new_population['phot_bp_mean_mag'] += (
@@ -195,12 +317,23 @@ class SimulatedPopulations:
 
         return new_population
 
-    def _draw_cluster_of_correct_mass(self, current_population: pd.DataFrame, target_mass: float,):
+    def _draw_cluster_of_correct_mass(self, simulated_population: pd.DataFrame, target_mass: float):
+        """Draws random samples from a simulated population and creates a cluster of the desired mass. Uses
+        self.mass_tolerance and self.max_mass_iterations to govern the random sampling. These can be set during class
+        initialisation.
 
+        Args:
+            simulated_population (pd.DataFrame): a simulated stellar population at the required Z, age.
+            target_mass (float): the final mass to aim for when generating a cluster.
+
+        Returns:
+            new_population (pd.DataFrame): a data frame of all the details of the newly generated cluster.
+
+        """
         # Some stuff we'll need
-        n_simulated_stars = current_population.shape[0]
-        total_simulated_mass = np.sum(current_population['Mass'])
-        typical_mass = np.mean(current_population['Mass'])
+        n_simulated_stars = simulated_population.shape[0]
+        total_simulated_mass = np.sum(simulated_population['Mass'])
+        typical_mass = np.mean(simulated_population['Mass'])
 
         # First, we try to get close by randomly selecting stars in the simulated population
         fraction_of_stars_to_draw = target_mass / total_simulated_mass
@@ -209,7 +342,7 @@ class SimulatedPopulations:
             0, high=n_simulated_stars, size=stars_to_draw)
 
         # Now, we'll try to re-sample the cluster until the new mass is within the mass_tolerance of the target mass
-        new_mass = np.sum(current_population.loc[new_indices, 'Mass'])
+        new_mass = np.sum(simulated_population.loc[new_indices, 'Mass'])
         mass_difference = target_mass - new_mass
         iterations = 0
         while np.abs(mass_difference) > target_mass * self.mass_tolerance:
@@ -223,7 +356,7 @@ class SimulatedPopulations:
                 new_indices = np.delete(
                     new_indices, np.random.randint(0, high=new_indices.shape[0], size=n_stars_to_draw))
 
-            new_mass = np.sum(current_population.loc[new_indices, 'Mass'])
+            new_mass = np.sum(simulated_population.loc[new_indices, 'Mass'])
             mass_difference = target_mass - new_mass
 
             iterations += 1
@@ -231,11 +364,23 @@ class SimulatedPopulations:
                 raise ValueError(f"unable to select a cluster of the correct mass after {iterations} iterations! Try "
                                  f"reducing the tolerance of the desired cluster mass.")
 
-        return current_population.loc[new_indices, :].reset_index(drop=True)
+        return simulated_population.loc[new_indices, :].reset_index(drop=True)
 
     def _make_cluster(self, data_cluster: pd.Series, cluster_label: int):
+        """The actual function in the class that iteratively makes clusters one by one! Calls all the other methods
+        around these parts and returns a whole cluster once done.
 
-        # Grab the stars that be good
+        Args:
+            data_cluster (pd.Series): the data for the cluster to work on (see .get_clusters() for full docs), but just
+                for the one cluster.
+            cluster_label (int): the label to append to cluster stars. Useful to keep track of which star belongs
+                where if the overall output of .get_clusters() is concatenated later.
+
+        Returns:
+            new_population (pd.DataFrame): a data frame of all the details of the newly generated cluster.
+
+        """
+        # Grab the stars that be good from the simulated populations
         good_stars = np.logical_and(self.data["log_age"] == data_cluster['age'],
                                     self.data["log_Z"] == data_cluster['Z'])
 
@@ -245,16 +390,18 @@ class SimulatedPopulations:
                              f"was not found in the simulated population!")
 
         # Turn this into a new DataFrame! (I don't want to mess up the old one)
-        new_population = self.data.loc[good_stars, :].copy().reset_index(drop=True)
+        simulated_population = self.data.loc[good_stars, :].copy().reset_index(drop=True)
 
         # Shuffle the DataFrame and create a stellar sample of roughly the required mass
-        new_population = self._draw_cluster_of_correct_mass(new_population, data_cluster['mass'])
+        new_population = self._draw_cluster_of_correct_mass(simulated_population, data_cluster['mass'])
 
-        # Add parameters to the cluster
-        new_population["cluster_label"] = cluster_label
+        # Add parameters to the cluster & perform dropping if requested
+        new_population = self._add_photometry_to_cluster(new_population, data_cluster)
+        new_population = (
+            new_population.loc[new_population['phot_g_mean_mag'] < self.limiting_magnitude, :].reset_index(drop=True))
         new_population = self._add_positions_to_cluster(new_population, data_cluster)
         new_population = self._add_proper_motions_to_cluster(new_population, data_cluster)
-        new_population = self._add_photometry_to_cluster(new_population, data_cluster)
+        new_population["cluster_label"] = cluster_label
 
         return new_population
 

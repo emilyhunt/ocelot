@@ -17,6 +17,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+import matplotlib.pyplot as plt
 from scipy.sparse.csr import csr_matrix
 
 path_to_blanco_1 = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle')
@@ -330,7 +331,7 @@ def test_read_cmd_simulated_populations():
     return data_one, data_all
 
 
-def test_simulated_populations():
+def test_simulated_populations(plot_clusters=False):
     """Given that ocelot.cluster.SimulatedPopulations reading works (see test_read_cmd_simulated_populations),
     we next test whether or not it can make some simulated populations!
 
@@ -358,6 +359,32 @@ def test_simulated_populations():
     simulated_clusters = simulated_populations.get_clusters(test_clusters, concatenate=False,
                                                             error_on_invalid_request=False,)
 
+    # Plot some clustery friends for the user, if requested
+    if plot_clusters:
+
+        # Plot all the clusters
+        for number, a_cluster in enumerate(simulated_clusters):
+            ocelot.plot.clustering_result(a_cluster, plot_std_limit=4., figure_title=f"test cluster {number}")
+
+        # Grab Blanco 1 and correct for its RAs (which straddle 0)
+        test_cluster = simulated_clusters[0]
+        with open(Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut_cluster_only.pickle'), 'rb') as handle:
+            data_gaia = pickle.load(handle)
+        data_gaia['ra'] = np.where(data_gaia['ra'] > 180, data_gaia['ra'] - 360, data_gaia['ra'])
+
+        # Plotting time of the King profile - Blanco 1 vs a simulated version!
+        plt.hist(np.sqrt((test_cluster['ra'] - np.mean(test_cluster['ra'])) ** 2
+                         + (test_cluster['dec'] - np.mean(test_cluster['dec'])) ** 2),
+                 bins='auto', density=True, color='k', alpha=0.5, label='generated', cumulative=False)
+        plt.hist(np.sqrt(
+            (data_gaia['ra'] - np.mean(data_gaia['ra'])) ** 2 + (data_gaia['dec'] - np.mean(data_gaia['dec'])) ** 2),
+                 bins='auto', density=True, color='b', alpha=0.5, label='blanco 1', cumulative=False)
+        plt.yscale('log')
+        plt.legend()
+        plt.xlabel('r')
+        plt.ylabel('log normalised density')
+        plt.show()
+
     return simulated_populations, test_clusters, simulated_clusters
 
 
@@ -372,7 +399,4 @@ if __name__ == '__main__':
     # test__find_curve_absolute_maximum_epsilons()
     # test_field_model(show_figure=True)
     # one, all = test_read_cmd_simulated_populations()
-    import time
-    start = time.time()
-    simpop, test_clusters, simcl = test_simulated_populations()
-    print(time.time() - start)
+    simpop, test_clusters, simcl = test_simulated_populations(plot_clusters=False)
