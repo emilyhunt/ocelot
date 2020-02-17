@@ -1,6 +1,6 @@
 """A number of functions for pre-processing Gaia data before clustering can begin."""
 
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import numpy as np
 import pandas as pd
@@ -73,14 +73,17 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
 
 
 def rescale_dataset(data_gaia: pd.DataFrame,
+                    *args,
                     columns_to_rescale: Union[list, tuple] = ('ra', 'dec', 'pmra', 'pmdec', 'parallax'),
                     column_weights: Union[list, tuple] = (1., 1., 1., 1., 1.),
                     scaling_type: str = 'robust',
-                    **kwargs_for_scaler) -> np.ndarray:
+                    concatenate: bool = True,
+                    **kwargs_for_scaler) -> Union[np.ndarray, List[np.ndarray]]:
     """A wrapper for sklearn's scaling methods that can automatically handle re-scaling data a number of different ways.
 
     Args:
         data_gaia (pd.DataFrame): the data to apply the scaling to.
+        *args (pd.DataFrame): other data frames to apply the same scaling to.
         columns_to_rescale (list, tuple): keys of the columns to re-scale. Should be in the final desired order!
             Default: ('ra', 'dec', 'pmra', 'pmdec', 'parallax')
         column_weights (list, tuple): linear weights to apply to each column after re-scaling, which will reduce their
@@ -89,14 +92,18 @@ def rescale_dataset(data_gaia: pd.DataFrame,
         scaling_type (str): type of scaler to use, choose from: 'robust' (sklearn.preprocessing.RobustScaler) or
             'standard' (sklearn.preprocessing.StandardScaler). Robust scaling is more appropriate for data with outliers
             Default: 'robust'
+        concatenate (bool): whether or not to join all rescaled arrays (assuming multiple args were specified) into one.
+            Default: True, so only one np.array is returned.
         **kwargs_for_scaler: additional keyword arguments will be passed to the selected scaler.
 
     Returns:
-        a np.ndarray of shape (n_stars, n_columns) of the re-scaled data.
+        a np.ndarray of shape (n_stars, n_columns) of the re-scaled data, or a list of separate arrays if
+            concatenate=False and at least one arg was specified.
 
     """
-    # Make sure that the columns_to_rescale are a list (pandas don't like tuples #fact)
+    # Make sure that the columns_to_rescale are a list (pandas don't like tuples #fact) and column weights is np.ndarray
     columns_to_rescale = list(columns_to_rescale)
+    column_weights = np.asarray(column_weights)
 
     # Select the scaler to use
     if scaling_type == 'robust':
@@ -107,13 +114,30 @@ def rescale_dataset(data_gaia: pd.DataFrame,
         raise ValueError("Selected scaling_type not supported!")
 
     # Check that all values are finite
-    if np.any(np.invert(np.isfinite(data_gaia[columns_to_rescale]))):
+    if not np.isfinite(data_gaia[columns_to_rescale].to_numpy()).all():
         raise ValueError("At least one value in data_gaia is not finite! Unable to rescale the data.")
 
-    # Apply the scaling
-    data_cluster = scaler.fit_transform(data_gaia[columns_to_rescale].to_numpy())
+    # Apply the scaling & multiply by column weights
+    to_return = [scaler.fit_transform(data_gaia[columns_to_rescale].to_numpy()) * column_weights]
 
-    # Multiply by column weights
-    data_cluster *= np.asarray(column_weights)
+    # Apply the same scaling scaling to any other data frames, if others have been specified
+    for an_extra_cluster in args:
 
-    return data_cluster
+        # Check that all values are finite
+        if not np.isfinite(an_extra_cluster[columns_to_rescale].to_numpy()).all():
+            raise ValueError("At least one value in args is not finite! Unable to rescale the data.")
+
+        # Re-scale!
+        to_return.append(scaler.transform(an_extra_cluster[columns_to_rescale].to_numpy()) * column_weights)
+
+    # Return a concatenated array
+    if concatenate:
+        return np.concatenate(to_return, axis=0)
+
+    # Or, just return the one array if no args were specified (slightly ugly code so my API doesn't break lololol)
+    elif len(to_return) == 1:
+        return to_return[0]
+
+    # Or, return all arrays separately if we aren't concatenating and have multiple arrays
+    else:
+        return to_return

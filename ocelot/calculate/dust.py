@@ -5,21 +5,6 @@ import pandas as pd
 from typing import Union
 
 
-# Wavelengths of the Gaia DR2 photometry in nanometres
-gaia_dr2_wavelengths = {
-    "G": 643.770,
-    "G_BP": 530.957,
-    "G_RP": 770.985
-}
-
-# A_lambda over A_V for Gaia DR2
-gaia_dr2_a_lambda_over_a_v = {
-    "G": 0.85926,
-    "G_BP": 1.06794,
-    "G_RP": 0.65199
-}
-
-
 def ccm_extinction_law(extinction_v: Union[np.ndarray, pd.Series, list, tuple, float, int],
                        wavelength: Union[float, int],
                        r_v: float = 3.1):

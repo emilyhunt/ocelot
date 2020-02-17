@@ -5,12 +5,12 @@ import pandas as pd
 from astropy.io import ascii
 from astropy.coordinates import SkyCoord, CartesianDifferential, CartesianRepresentation
 import astropy.units as u
-from ..calculate.dust import gaia_dr2_a_lambda_over_a_v
+from ..calculate.constants import gaia_dr2_a_lambda_over_a_v, gaia_dr2_zero_points
 from ..calculate import king_surface_density, king_surface_density_fast
 from scipy.stats import norm
 
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional, Callable
 
 
 def _calculate_m_over_h(z, z_over_x_solar: float = 0.0207, y_constant: float = 0.2485, z_multiplier: float = 1.78):
@@ -31,7 +31,9 @@ class SimulatedPopulations:
                  mass_tolerance: float = 0.05,
                  max_mass_iterations: int = 1000,
                  position_oversampling_factor: Union[float, int] = 1.,
-                 limiting_magnitude: float = 22.):
+                 limiting_magnitude: float = 22.,
+                 binary_offset: float = -0.1,
+                 binary_fraction: float = 0.4):
         """Convenience class to read in simulated stellar population output from the CMD 3.3 tool into a DataFrame. Also
         stores useful information about the simulated populations (e.g. available unique values) and provides methods to
         access the population.
@@ -63,6 +65,11 @@ class SimulatedPopulations:
                 np.inf to turn this off.
                 Default: 22., which is very conservative (few stars in Gaia DR2 have photometric errors of more than 0.1
                     even)
+            binary_offset (float): mean offset of unresolved binary stars to use. Binary offsets are approximated with
+                an exponential distribution of this value.
+                Default: -0.1  (from Yen+19 thesis)
+            binary_fraction (float): fraction of stars with unresolved binaries.
+                Default: 0.4   (typical of many open clusters)
 
         """
         # Store some class stuff
@@ -72,6 +79,8 @@ class SimulatedPopulations:
                                           'age', 'Z', 'mass', 'tidal_radius', 'v_int']
         self.position_oversampling_factor = position_oversampling_factor
         self.limiting_magnitude = limiting_magnitude
+        self.binary_offset = binary_offset
+        self.binary_fraction = binary_fraction
 
         # Cast the path as a pathlib.Path and check that it's real
         location = Path(location)
@@ -294,8 +303,7 @@ class SimulatedPopulations:
 
         return new_population
 
-    @staticmethod
-    def _add_photometry_to_cluster(new_population: pd.DataFrame, data_cluster: pd.Series):
+    def _add_photometry_to_cluster(self, new_population: pd.DataFrame, data_cluster: pd.Series):
         """Adds Gaia photometry to a cluster's member stars.
 
         Args:
@@ -307,13 +315,31 @@ class SimulatedPopulations:
             new_population (pd.DataFrame) but with new photometry appended.
 
         """
+        # Make some binary offsets (just in the first bit of the array, but then shuffled)
+        n_stars = new_population.shape[0]
+        n_binaries = int(self.binary_fraction * n_stars)
+        binary_offsets = np.zeros(n_stars)
+        binary_offsets[:n_binaries] = (
+                np.sign(self.binary_offset) * np.random.exponential(np.abs(self.binary_offset), size=n_binaries))
+        binary_offsets = np.random.permutation(binary_offsets)
+
+        # Make the magnitudes
         new_population['phot_g_mean_mag'] += (
-                data_cluster['distance_modulus'] + data_cluster['extinction_v'] * gaia_dr2_a_lambda_over_a_v["G"])
+                data_cluster['distance_modulus'] + data_cluster['extinction_v'] * gaia_dr2_a_lambda_over_a_v["G"]
+                + binary_offsets)
         new_population['phot_bp_mean_mag'] += (
                 data_cluster['distance_modulus'] + data_cluster['extinction_v'] * gaia_dr2_a_lambda_over_a_v["G_BP"])
         new_population['phot_rp_mean_mag'] += (
                 data_cluster['distance_modulus'] + data_cluster['extinction_v'] * gaia_dr2_a_lambda_over_a_v["G_RP"])
         new_population['bp_rp'] = new_population['phot_bp_mean_mag'] - new_population['phot_rp_mean_mag']
+
+        # Reverse-engineer some fluxes
+        new_population['phot_g_mean_flux'] = 10**(
+                (gaia_dr2_zero_points['G'] - new_population['phot_g_mean_mag'])/2.5)
+        new_population['phot_bp_mean_flux'] = 10**(
+                (gaia_dr2_zero_points['G_BP'] - new_population['phot_bp_mean_mag'])/2.5)
+        new_population['phot_rp_mean_flux'] = 10**(
+                (gaia_dr2_zero_points['G_RP'] - new_population['phot_rp_mean_mag'])/2.5)
 
         return new_population
 
@@ -444,14 +470,15 @@ class SimulatedPopulations:
         metallicity_differences = np.abs(np.asarray(data_clusters['Z']).reshape(-1, 1) - self.unique_log_metallicities)
         indices_best_age = np.argmin(age_differences, axis=1)
         indices_best_metallicity = np.argmin(metallicity_differences, axis=1)
+        n_stars = data_clusters.shape[0]
 
         # Check the user isn't being a numpty
         if error_on_invalid_request:
-            if np.any(np.logical_or(age_differences[indices_best_age] > 1,
-                                    metallicity_differences[indices_best_metallicity] > 1)):
-                raise ValueError("an input age or metallicity value is too different (more than 1) from the values "
-                                 "available in the catalogue! Set error_on_invalid_request=False to disable this "
-                                 "warning, albeit at your own risk as output clusters will not match your "
+            if np.any(np.logical_or(age_differences[np.arange(n_stars), indices_best_age] > 1,
+                                    metallicity_differences[np.arange(n_stars), indices_best_metallicity] > 1)):
+                raise ValueError("an input age or metallicity value is too different (more than 1) from the values \n"
+                                 "available in the catalogue! Set error_on_invalid_request=False to disable this \n"
+                                 "warning, albeit at your own risk as output clusters will not match your \n"
                                  "specifications in age or metallicity.")
 
         # Grab the best values for each based on what's near to the simulated population
@@ -476,24 +503,341 @@ class SimulatedPopulations:
             return clusters_to_return
 
 
+def _c_position_limits_plus_minus_two(data, size, name):
+    return np.asarray([np.min(data[name]) - 2, np.max(data[name]) + 2])
+
+
+def _c_random_value(data, size, name):
+    return np.random.choice(data[name], size=size)
+
+
+def _c_random_cbj_distance(data, size, name):
+    return np.random.choice(data['r_est'], size=size)
+
+
+def _c_median_plus_or_minus_1_sigma(data, size, name):
+    return np.median(data[name]) * np.asarray([+1, -1]) * np.std(data[name])
+
+
+def _c_median(data, size, name):
+    return np.repeat(np.median(data[name]), size)
+
+
+def _c_median_distance(data, size, name):
+    return np.repeat(np.median(1000 / data['parallax']), size)
+
+
+_valid_modes = ['clustering_augmentation', 'generator']
+
+_default_cluster_parameters_augmentation = {
+    # Spatial parameters
+    'ra': _c_position_limits_plus_minus_two,
+    'dec': _c_position_limits_plus_minus_two,
+    'distance': _c_median_distance,
+    'extinction_v': 0.0,
+    'pmra': _c_median_plus_or_minus_1_sigma,
+    'pmdec': _c_median_plus_or_minus_1_sigma,
+    # Internal parameters
+    'age': 7.0,
+    'Z': 0.0,
+    'mass': 1e3,
+    'radius_c': 1.5,
+    'radius_t': 10.0,
+    'v_int': 500.0,
+}
+
+_default_cluster_parameters_generator = {
+    # Spatial parameters
+    'ra': _c_random_value,
+    'dec': _c_random_value,
+    'distance': _c_median_distance,
+    'extinction_v': 0.0,
+    'pmra': _c_random_value,
+    'pmdec': _c_random_value,
+    # Internal parameters
+    'age': 7.0,
+    'Z': 0.0,
+    'mass': 1e3,
+    'radius_c': 1.5,
+    'radius_t': 10.0,
+    'v_int': 500.0,
+}
+
+
+def _setup_cluster_parameter(data_gaia: pd.DataFrame,
+                             parameter_name: str,
+                             desired_parameter_values: Union[np.ndarray, float, int, Callable],
+                             n_clusters: int):
+    """Sets up information for data_cluster (the dataframe of all clusters to make) based on given information, one
+    parameter at a time.
+
+    Args:
+        data_gaia (pd.DataFrame): Gaia data that may be used by a callable arg.
+        parameter_name (str): name (as with standard Gaia names) of the parameter to call. E.g. 'ra'.
+        desired_parameter_values (np.ndarray, float, int, callable): what to set the parameter values to. Type dictates
+            what happens:
+            float/int: set to be the same for all clusters
+            np.ndarray: values are randomly sampled from this array.
+            callable: values are returned by this function. Function should accept three args:
+                - the dataframe data_gaia
+                - the number of clusters
+                - the name of the parameter.
+        n_clusters (int): number of clusters requiring parameters.
+
+    Returns:
+        a np.ndarray of cluster parameters.
+
+    """
+    # If desired_parameter_values is a np.ndarray, then we assume that it's something for us to pull values from
+    # randomly
+    if isinstance(desired_parameter_values, np.ndarray):
+        return np.random.choice(desired_parameter_values, size=n_clusters)
+
+    # Otherwise, if it's a float or an int, then we simply want to copy that value across
+    elif isinstance(desired_parameter_values, (float, int)):
+        return np.ones(n_clusters, dtype=float) * desired_parameter_values
+
+    # Otherwise, if it's a function, then we want
+    elif callable(desired_parameter_values):
+        return desired_parameter_values(data_gaia, n_clusters, parameter_name)
+
+    else:
+        raise ValueError("specified desired_parameter_values has an unsupported type. "
+                         "It should be an int, float, np.ndarray or callable.")
+
+
+parameters_with_symmetric_error = [
+    'pmra', 'pmdec', 'parallax', 'phot_g_mean_flux', 'phot_bp_mean_flux', 'phot_rp_mean_flux'
+]
+
+magnitude_parameters = [
+    'phot_g_mean_mag', 'phot_bp_mean_mag', 'phot_rp_mean_mag'
+]
+
+magnitude_parameter_band_names = [
+    'G', 'G_BP', 'G_RP'
+]
+
+bp_rp_color_name = 'bp_rp'
+
+flux_parameters = [
+    'phot_g_mean_flux', 'phot_bp_mean_flux', 'phot_rp_mean_flux'
+]
+
+parameters_to_assign = [
+    'ruwe'
+]
+
+distance_parameters_with_assymetric_error = [
+    'distance'
+]
+
+# Assymetric keys should live in a dictionary (whose keys are the same as distance_parameters_with_assymetric_error)
+# and each entry should look have [modal parameter, low parameter, high parameter, original parameter] keys in a list.
+distance_parameters_with_assymetric_error_keys = {'distance': ['r_est', 'r_lo', 'r_hi', 'parallax']}
+
+
+def _find_nearest_magnitude_star(gaia_photometry: Union[pd.Series, np.ndarray],
+                                 simulated_photometry: Union[pd.Series, np.ndarray],
+                                 fiddle_factor: float = 0.01):
+    """Little function to do some array maths and find the nearest star to a synthetic one. Includes a fiddle factor
+    to make sure that if two identical stars are picked from simulated data, they're less likely to end up with the same
+    errors.
+
+    Args:
+        gaia_photometry (pd.Series, np.ndarray): gaia photometry to find matches in.
+        simulated_photometry (pd.Series, np.ndarray): synthetic photometry to find matches for.
+        fiddle_factor (float): standard deviation of normal deviates to add to synthetic photometry to help prevent
+            identical errors across the board.
+            Default: 0.01
+
+    Returns:
+        np.ndarray of the indices into gaia_photometry that returned the closest matches for the simulated_photometry.
+
+    """
+    # First, we add the fiddle factor onto the simulated stars so that if two identical stars are picked from simulated
+    # data, they're less likely to end up with the same errors
+    simulated_photometry += np.random.normal(loc=0.0, scale=fiddle_factor, size=simulated_photometry.shape)
+
+    # Then, we find the nearest magnitude star (in the G band) to each simulated star (brute force because
+    # Emily is Lazy TM) and return this
+    return np.argmin(np.abs(np.asarray(gaia_photometry).reshape(1, -1)
+                            - np.asarray(simulated_photometry).reshape(-1, 1)),
+                     axis=1)
+
+
+def _convolve_simulated_clusters_with_errors(data_gaia: pd.DataFrame,
+                                             data_simulated: pd.DataFrame):
+    """Adds errors onto synthetic photometry. Method for assymetric errors is currently "quite shit."
+
+    Notes:
+        See parameters_with_symmetric_error and
+        distance_parameters_with_assymetric_error/distance_parameters_with_assymetric_error_keys to see lists of params
+        that will be added by this function to data_simulated. These can be changed after import of the package.
+
+    Args:
+        data_gaia (pd.DataFrame): gaia data of shape data_simulated.shape, where each entry is the nearest found entry
+            to data_simulated. INDEX MUST BE RESET BEFORE CALLING.
+        data_simulated (pd.DataFrame): simulated data to add errors to.
+
+    Returns:
+        data_simulated, but with errors added!
+
+    """
+
+    # Idiot check
+    n_stars = data_simulated.shape[0]
+    if data_gaia.shape[0] != n_stars:
+        raise ValueError("data_gaia must already have been pre-selected to be the best matches to data_simulated, and "
+                         "hence both data frames must have the same shape. But they do not!! Shape mismatch is "
+                         f"{data_gaia.shape} for Gaia vs. {data_simulated.shape} for simulated data")
+
+    # Deal with assymmetric parameters, which are also allowed to have weird keys (this was basically just made to deal
+    # with all the different distance estimators that exist in the modern world today)
+    # Todo this could infer errors in the actual way used (e.g. with CBJ distances) as a way to be less shit
+    for a_parameter in distance_parameters_with_assymetric_error:
+        a_parameter_mode, a_parameter_low, a_parameter_high, original_parameter = \
+            distance_parameters_with_assymetric_error_keys[a_parameter]
+
+        # Work out what fractional error the matched stars have on their assymetric errors.
+        # N.B. low fractional errors have negative signs, high errors have positive signs.
+        gaia_fractional_errors = np.asarray(
+            (data_gaia[[a_parameter_low, a_parameter_high]].to_numpy().reshape(-1, 2)
+             - data_gaia[a_parameter_mode].to_numpy().reshape(-1, 1))
+             / data_gaia[a_parameter_mode].to_numpy().reshape(-1, 1))
+
+        # Do some TOTAL BULLSHIT to try and make a rough estimate of what the errors should be.
+        # We pull a random value in the range of the fractional errors (loosely equivalent to +- 1 sigma, which might be
+        # too small but I don't want to let negative values happen)
+        use_low_or_high = np.random.choice([0, 1], size=n_stars)
+
+        data_simulated[a_parameter_mode] = (
+            data_simulated['distance']
+            * (1 + np.random.randn(n_stars) * gaia_fractional_errors[np.arange(n_stars), use_low_or_high]))
+
+        data_simulated[a_parameter_low] = (
+                data_simulated[a_parameter_mode].to_numpy() * (1 + gaia_fractional_errors[:, 0]))
+        data_simulated[a_parameter_high] = (
+                data_simulated[a_parameter_mode].to_numpy() * (1 + gaia_fractional_errors[:, 1]))
+
+    # Deal with symmetric parameters, adding some lovely symmetric error bars to the data
+    for a_parameter in parameters_with_symmetric_error:
+        a_parameter_error = a_parameter + '_error'
+        data_simulated[a_parameter_error] = data_gaia[a_parameter_error]
+        data_simulated[a_parameter] += np.random.normal(0.0, scale=data_simulated[a_parameter_error], size=n_stars)
+
+    # Deal with magnitudes, which we'll want to re-calculate now that the photometric information has changed
+    for a_magnitude_parameter, a_band, a_flux in zip(
+            magnitude_parameters, magnitude_parameter_band_names, flux_parameters):
+        data_simulated[a_magnitude_parameter] = -2.5 * np.log10(data_simulated[a_flux]) + gaia_dr2_zero_points[a_band]
+
+    # Add a new bp-rp colour
+    if bp_rp_color_name is not None:
+        data_simulated[bp_rp_color_name] = data_simulated['phot_bp_mean_mag'] - data_simulated['phot_rp_mean_mag']
+
+    # Finally, deal with copy-pasted parameters
+    for a_parameter_to_assign in parameters_to_assign:
+        data_simulated[a_parameter_to_assign] = data_gaia[a_parameter_to_assign]
+
+    return data_simulated
+
+
 def generate_synthetic_clusters(simulated_populations: SimulatedPopulations,
                                 data_gaia: pd.DataFrame,
-                                age_examples: np.ndarray,
-                                metallicity_examples: np.ndarray,
-                                n_stars: Union[np.ndarray, list, tuple],
-                                internal_velocity_dispersion: float = 500, ):
+                                mode: str = 'clustering_augmentation',
+                                cluster_parameters_to_overwrite: Optional[dict] = None,
+                                kwargs_for_simulated_populations: Optional[dict] = None,
+                                n_clusters: int = 2,
+                                concatenate: bool = True,
+                                shuffle: bool = True,
+                                ):
     """Generates synthetic star clusters based on generated simulated populations (e.g. via CMD 3.3) and real examples
-    of Gaia data (and its associated errors.)"""
+    of Gaia data (and its associated errors.)
 
-    # Load default
+    Args:
+        simulated_populations (SimulatedPopulations object): an ocelot.cluster.SimulatedPopulations object with data
+            on simulated populations pre-loaded.
+        data_gaia (pd.DataFrame): a representative sample of Gaia stars to model errors with.
+        mode (str): mode to use for generation. Accepts the following arguments:
+            'clustering_augmentation': will generate two clusters outside of the central field and at the median
+                distance. This setting is designed to be used with algorithms like HDBSCAN to make tree splitting more
+                sensible. Every entry in cluster_parameters must have a max length of two.
+            'generator': will generate as many clusters as you'd like. Ideal for when a large sample of simulated OCs
+                is needed.
+        cluster_parameters_to_overwrite (dict, optional): parameters for the clusters to generate. The following have
+            default values and can be changed:
+                Spatial parameters
+                    'ra': right ascension of the cluster. (deg) default: +- min and max
+                    'dec': declination of the cluster. (deg) default: inferred
+                    'distance': distance to the cluster. (parsecs) default: median of data_gaia
+                    'extinction_v': v-band extinction towards the cluster. default: 0.0
+                    'pmra': proper motion in right ascension of the cluster. (mas/yr) default: +-4 sigma of data_gaia
+                    'pmdec': proper motion in declination of the cluster. (mas/yr) default: +-4 sigma of data_gaia
+                Internal parameters
+                    'age': logarithmic age of the cluster. default: 7.0
+                    'Z': metallicity of the cluster, in units of dex (aka [Fe/H] or Z/X). default: 0.0 (solar)
+                    'mass': underlying mass of the cluster, in solar masses. default: 1000
+                    'radius_c': King's core radius of the cluster, in parsecs. default: 1.5
+                    'radius_t': King's tidal radius of the cluster, in parsecs. default: 10
+                    'v_int': internal velocity dispersion of the cluster, in m/s. default: 500
+            and each parameter may be a number, an array of values to sample from, or a callable function to apply. The
+            callable function must take arguments data (a pd.DataFrame), size (aka the number of clusters)
+            and the name of the parameter (a string), and return a np.ndarray or pd.Series of shape (size,).
+            Default value of cluster_parameters: None
+                (hence uses all defaults, the above are for mode 'clustering_augmentation')
+        n_clusters (int): in mode "generator", this specifies the number of clusters to make. In mode
+            'clustering_augmentation', this will always be two.
+            Default: 2
+        concatenate (bool): whether or not to return a concatenated DataFrame of data_gaia and data_simulated, or
+            whether to only return data_simulated. In the former case, all stars in data_gaia will also be labelled -1
+            in a new cluster_label column to show that they are noise.
+            Default: True
+        shuffle (bool): whether or not to shuffle the output to hide the simulated clusters in the data.
+            Default: True
+        kwargs_for_simulated_populations (dict, optional): keyword arguments to pass to the SimulatedPopulations object.
+            Default: None
 
 
+    """
+    # Pre-process the easy function arguments
+    if mode not in _valid_modes:
+        raise ValueError(f"specified mode {mode} not supported! You may choose from the following values: \n"
+                         f"{_valid_modes}")
 
+    if kwargs_for_simulated_populations is None:
+        kwargs_for_simulated_populations = {}
 
+    # More setup, but dependant on the mode
+    if mode is 'clustering_augmentation':
+        cluster_parameters = _default_cluster_parameters_augmentation
+        n_clusters = 2
+    else:  # mode is 'generator'
+        cluster_parameters = _default_cluster_parameters_generator
 
+    # Cycle over overwrite parameters
+    for a_key in cluster_parameters_to_overwrite.keys():
+        cluster_parameters[a_key] = cluster_parameters_to_overwrite[a_key]
 
+    # Process all of the parameters
+    data_cluster = pd.DataFrame({})
+    for a_key in cluster_parameters.keys():
+        data_cluster[a_key] = _setup_cluster_parameter(data_gaia, a_key, cluster_parameters[a_key], n_clusters)
 
+    # Cluster simulation time!!!!
+    data_simulated = simulated_populations.get_clusters(data_cluster, **kwargs_for_simulated_populations)
 
+    # Convolve some cheeky errors in there too
+    star_matches = _find_nearest_magnitude_star(data_gaia['phot_g_mean_mag'], data_simulated['phot_g_mean_mag'])
+    data_simulated = _convolve_simulated_clusters_with_errors(
+        data_gaia.loc[star_matches, :].reset_index(drop=True), data_simulated)
 
+    if concatenate:
+        # Append a noise cluster label to the original data too
+        data_gaia['cluster_label'] = -1
+        data_simulated = pd.concat([data_simulated, data_gaia]).reset_index(drop=True)
 
-    pass
+    # Return an array
+    if shuffle:
+        return data_simulated.sample(frac=1).reset_index(drop=True)
+    else:
+        return data_simulated

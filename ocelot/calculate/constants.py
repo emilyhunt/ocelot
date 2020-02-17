@@ -2,6 +2,33 @@
 
 from astropy import units as u
 
+# Wavelengths of the Gaia DR2 photometry in nanometres
+gaia_dr2_wavelengths = {
+    "G": 643.770,
+    "G_BP": 530.957,
+    "G_RP": 770.985
+}
+
+# A_lambda over A_V for Gaia DR2
+gaia_dr2_a_lambda_over_a_v = {
+    "G": 0.85926,
+    "G_BP": 1.06794,
+    "G_RP": 0.65199
+}
+
+# Gaia DR2 photometric information from Evans+18:
+gaia_dr2_zero_points = {
+    'G': 25.6884,
+    'G_BP': 25.3514,
+    'G_RP': 24.7619
+}
+gaia_dr2_zero_points_error = {
+    'G': 0.0018,
+    'G_BP': 0.0014,
+    'G_RP': 0.0019
+}
+
+
 # Constants we'll need
 mas_per_yr_to_rad_per_s = (u.mas / u.yr).to(u.rad / u.s)
 deg_to_rad = u.deg.to(u.rad)

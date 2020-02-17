@@ -63,7 +63,9 @@ def test_rescale_dataset():
         data_gaia = pickle.load(handle)
 
     # Re-scale the data with standard scaling and check that it has zero mean, unit variance
-    data_rescaled = ocelot.cluster.rescale_dataset(data_gaia, scaling_type='standard')
+    data_rescaled, data_rescaled_2 = ocelot.cluster.rescale_dataset(data_gaia, data_gaia, scaling_type='standard',
+                                                                    concatenate=False)
+    data_rescaled_3 = ocelot.cluster.rescale_dataset(data_gaia, scaling_type='standard')
 
     # Check for zero mean, unit standard deviation
     means = np.mean(data_rescaled, axis=0)
@@ -71,6 +73,12 @@ def test_rescale_dataset():
 
     std_deviation = np.std(data_rescaled, axis=0)
     assert np.allclose(std_deviation, np.ones(5), rtol=0.0, atol=1e-8)
+
+    # Check that the additional data frame was correctly re-scaled too - they should be identical
+    assert np.allclose(data_rescaled, data_rescaled_2, rtol=1e-6, atol=1e-8)
+
+    # And check that doing it just once has the same result too
+    assert np.allclose(data_rescaled, data_rescaled_3, rtol=1e-6, atol=1e-8)
 
     # Check that calling an invalid scaler type throws an error
     with pytest.raises(ValueError, match="Selected scaling_type not supported!"):
@@ -349,6 +357,8 @@ def test_simulated_populations(plot_clusters=False):
         ]]
         new_data.to_csv('test_clusters', index=False)
 
+    Todo: expand this unit test to be more than just a visual one
+
     """
     np.random.seed(42)
     test_clusters = pd.read_csv(path_to_simulated_population_test_clusters)
@@ -388,10 +398,124 @@ def test_simulated_populations(plot_clusters=False):
     return simulated_populations, test_clusters, simulated_clusters
 
 
+def test__setup_cluster_parameter():
+    """Tests ocelot.cluster.synthetic._setup_cluster_parameter, a function for handling cluster parameter stuff."""
+    # Read in data for Blanco 1
+    with open(path_to_blanco_1, 'rb') as handle:
+        data_gaia = pickle.load(handle)
+
+    # Constants
+    parameter_name = 'ra'
+
+    # Test identical parameters, for both int and float specified - both cases should return an array of floats
+    target = np.ones(5, dtype=float) * 2.
+
+    float_like = ocelot.cluster.synthetic._setup_cluster_parameter(data_gaia, 'ra', 2., 5)
+    assert np.allclose(target, float_like)
+
+    int_like = ocelot.cluster.synthetic._setup_cluster_parameter(data_gaia, 'ra', 2, 5)
+    assert np.allclose(target, int_like)
+
+    # Test sampling of parameters
+    np.random.seed(42)
+    target = np.asarray([0.75, 1., 0.5])
+
+    draw_from = np.linspace(0, 1, num=5)
+    array_like = ocelot.cluster.synthetic._setup_cluster_parameter(data_gaia, 'ra', draw_from, 3)
+
+    assert np.allclose(target, array_like)
+
+    # Test callable function use
+    target = np.asarray([-3.98379464, 5.76513088])
+
+    callable_like = ocelot.cluster.synthetic._setup_cluster_parameter(
+        data_gaia, 'ra', ocelot.cluster.synthetic._c_position_limits_plus_minus_two, 2)
+
+    assert np.allclose(target, callable_like)
+
+
+def test__find_nearest_magnitude_star():
+    """Tests ocelot.cluster.synthetic._find_nearest_magnitude_star, which basically just does some array maths"""
+    real = np.linspace(0, 10, num=1000)
+    synthetic = np.linspace(0, 10, num=6)
+    np.random.seed(42)
+
+    matches = ocelot.cluster.synthetic._find_nearest_magnitude_star(real, synthetic)
+
+    # Check that we get the correct number of matches
+    assert synthetic.shape == matches.shape
+
+    # Check that the values returned are about the same
+    assert np.allclose(synthetic, real[matches], atol=0.01)
+
+
+def test_generate_synthetic_clusters(plot_clusters=True):
+    """Tests ocelot.cluster.generate_synthetic_clusters, a fancy wrapper to the SimulatedPopulations class that also
+    handles adding things like error."""
+    # Read in data for Blanco 1 and make a simulated populations object
+    with open(path_to_blanco_1, 'rb') as handle:
+        data_gaia = pickle.load(handle)
+
+    # Add some random errors onto the data because Emily was a doofus and didn't download Gaia data with flux errors
+    data_gaia['phot_g_mean_flux_error'] = 4.
+    data_gaia['phot_bp_mean_flux_error'] = 30.
+    data_gaia['phot_rp_mean_flux_error'] = 30.
+
+    simulated_populations = ocelot.cluster.SimulatedPopulations(path_to_big_simulated_population,
+                                                                mass_tolerance=0.01)
+
+    # Make some clusters in augmentation mode
+    data_augmented = ocelot.cluster.generate_synthetic_clusters(
+        simulated_populations,
+        data_gaia,
+        mode='clustering_augmentation',
+        cluster_parameters_to_overwrite={'age': 9.5},
+        shuffle=False,)
+
+    data_augmented = ocelot.cluster.cut_dataset(data_augmented, parameter_cuts={'phot_g_mean_mag': [-np.inf, 18]})
+    data_augmented['ra'] = np.where(data_augmented['ra'] > 180, data_augmented['ra'] - 360, data_augmented['ra'])
+
+    # Make some clusters in generator mode
+    import time
+    start = time.time()
+    data_generated = ocelot.cluster.generate_synthetic_clusters(
+        simulated_populations,
+        data_gaia,
+        mode='generator',
+        cluster_parameters_to_overwrite={'distance': ocelot.cluster.synthetic._c_random_cbj_distance,
+                                         'age': np.linspace(6., 9.5, num=50),
+                                         'v_int': np.random.normal(loc=500, scale=50, size=50),
+                                         'mass': np.random.exponential(scale=200, size=50) + 50,
+                                         'extinction_v': np.random.exponential(scale=1., size=20)},
+        shuffle=True,
+        concatenate=False,
+        n_clusters=10)
+    print(time.time() - start)
+
+    data_generated = ocelot.cluster.cut_dataset(data_generated, parameter_cuts={'phot_g_mean_mag': [-np.inf, 21]})
+    data_generated['ra'] = np.where(data_generated['ra'] > 180, data_generated['ra'] - 360, data_generated['ra'])
+
+    if plot_clusters:
+        ocelot.plot.clustering_result(data_augmented,
+                                      data_augmented['cluster_label'],
+                                      [0, 1],
+                                      plot_std_limit=5.,
+                                      figure_title='augmented clustering',
+                                      cmd_plot_y_limits=[8, 18])
+
+        ocelot.plot.clustering_result(data_generated,
+                                      data_generated['cluster_label'],
+                                      np.unique(data_generated['cluster_label']),
+                                      plot_std_limit=1.5,
+                                      figure_title='generated clustering',
+                                      cmd_plot_y_limits=[8, 21])
+
+
 if __name__ == '__main__':
-    print('uncomment something ya frikin jabroni')
-    # gaia, rescaled = test_rescale_dataset()
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.max_rows', None)
     # cut = test_cut_dataset()
+    # gaia, rescaled = test_rescale_dataset()
     # spar, dist = test_precalculate_nn_distances()
     # eps, ran = test_acg18()
     # test__summed_kth_nn_distribution_one_cluster()
@@ -399,4 +523,7 @@ if __name__ == '__main__':
     # test__find_curve_absolute_maximum_epsilons()
     # test_field_model(show_figure=True)
     # one, all = test_read_cmd_simulated_populations()
-    simpop, test_clusters, simcl = test_simulated_populations(plot_clusters=False)
+    # simpop, test_clusters, simcl = test_simulated_populations(plot_clusters=False)
+    # test__setup_cluster_parameter()
+    # test__find_nearest_magnitude_star()
+    test_generate_synthetic_clusters(plot_clusters=True)
