@@ -109,8 +109,9 @@ def location(data_gaia: pd.DataFrame,
 
 
 def clustering_result(data_gaia: pd.DataFrame,
-                      cluster_labels: np.ndarray = None,
+                      cluster_labels: Optional[np.ndarray] = None,
                       cluster_indices: Optional[Union[list, np.ndarray]] = None,
+                      cluster_shading: Optional[np.ndarray] = None,
                       show_figure: bool = True,
                       save_name: Optional[str] = None,
                       figure_size: Union[list, np.ndarray] = (10, 10),
@@ -123,7 +124,8 @@ def clustering_result(data_gaia: pd.DataFrame,
                       cmd_plot_y_limits: Optional[Union[list, np.ndarray]] = None,
                       plot_std_limit: float = 1.5,
                       cmd_plot_std_limit: float = 3.0,
-                      cluster_marker_radius: Union[tuple, list] = (1., 1., 1.)):
+                      cluster_marker_radius: Union[tuple, list] = (1., 1., 1.),
+                      clip_to_fit_clusters: bool = True):
     """A figure for evaluating the results of a clustering algorithm.
 
     Args:
@@ -133,6 +135,9 @@ def clustering_result(data_gaia: pd.DataFrame,
             clustered stars. This should be the default sklearn.cluster output.
         cluster_indices (list-like, optional): the clusters to plot in
             cluster_labels. For instance, you may not want to plot '-1'
+        cluster_shading (np.ndarray, optional): an array of floats in the range 0, 1 for all clusters to use to shade
+            their colour (aka alpha value). Useful for displaying e.g. HDBSCAN soft clustering.
+            Default: None
         open_cluster_pm_to_mark (list-like, optional): the co-ordinates
             (pmra, pmdec) of a point to mark on the proper motion diagram, such
             as a literature value.
@@ -153,6 +158,8 @@ def clustering_result(data_gaia: pd.DataFrame,
             see against background points. Specified as a length 3 tuple, giving the radius for the position, pm and
             CMD plots.
             Default: (1., 1., 1.)
+        clip_to_fit_clusters (bool): whether or not to ensure that the proper motion plot always includes all clusters.
+            Default: True
 
         --- Module standard ---
         show_figure (bool): whether or not to show the figure at the end of plotting. Default: True
@@ -171,14 +178,19 @@ def clustering_result(data_gaia: pd.DataFrame,
     fig, ax = plt.subplots(nrows=2, ncols=2, figsize=figure_size, dpi=dpi)
 
     ax[0, 0], ax[0, 1] = cluster.position_and_pmotion(
-        fig, ax[0, 0], ax[0, 1], data_gaia, cluster_labels, cluster_indices,
+        fig, ax[0, 0], ax[0, 1], data_gaia, cluster_labels, cluster_indices, cluster_shading,
         open_cluster_pm_to_mark=open_cluster_pm_to_mark,
-        pmra_plot_limits=pmra_plot_limits, pmdec_plot_limits=pmdec_plot_limits, plot_std_limit=plot_std_limit,
-        cluster_marker_radius=cluster_marker_radius[0:2])
+        pmra_plot_limits=pmra_plot_limits,
+        pmdec_plot_limits=pmdec_plot_limits,
+        plot_std_limit=plot_std_limit,
+        cluster_marker_radius=cluster_marker_radius[0:2],
+        clip_to_fit_clusters=clip_to_fit_clusters)
 
     ax[1, 0] = cluster.color_magnitude_diagram(
-        fig, ax[1, 0], data_gaia, cluster_labels, cluster_indices,
-        x_limits=cmd_plot_x_limits, y_limits=cmd_plot_y_limits, plot_std_limit=cmd_plot_std_limit,
+        fig, ax[1, 0], data_gaia, cluster_labels, cluster_indices, cluster_shading,
+        x_limits=cmd_plot_x_limits,
+        y_limits=cmd_plot_y_limits,
+        plot_std_limit=cmd_plot_std_limit,
         cluster_marker_radius=cluster_marker_radius[2])
 
     # Beautifying

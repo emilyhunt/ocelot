@@ -17,11 +17,13 @@ def position_and_pmotion(
         data_gaia: pd.DataFrame,
         cluster_labels: np.ndarray = None,
         cluster_indices: Optional[Union[list, np.ndarray]] = None,
+        cluster_shading: Optional[np.ndarray] = None,
         open_cluster_pm_to_mark: Optional[Union[list, np.ndarray]] = None,
         pmra_plot_limits: Optional[Union[list, np.ndarray]] = None,
         pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
         plot_std_limit: float = 1.5,
-        cluster_marker_radius: Union[list, tuple] = (1., 1.)):
+        cluster_marker_radius: Union[list, tuple] = (1., 1.),
+        clip_to_fit_clusters: bool = True):
     """Makes a scatter plot of position and proper motion for a given cluster,
     using plot_helper_calculate_alpha to prevent over-saturation of the
     figures.
@@ -37,6 +39,9 @@ def position_and_pmotion(
         cluster_indices (list-like, optional): the clusters to plot in
             cluster_labels. For instance, you may not want to plot '-1'
             clusters (which are noise) produced by algorithm like DBSCAN.
+        cluster_shading (np.ndarray, optional): an array of floats in the range 0, 1 for all clusters to use to shade
+            their colour (aka alpha value). Useful for displaying e.g. HDBSCAN soft clustering.
+            Default: None
         open_cluster_pm_to_mark (list-like, optional): the co-ordinates (pmra, pmdec) of a point to mark on the proper
             motion diagram, such as a literature value.
         pmra_plot_limits (list-like, optional): the minimum and maximum proper motion in the right ascension direction
@@ -64,6 +69,19 @@ def position_and_pmotion(
         pmdec_plot_limits = (np.mean(data_gaia.pmdec)
                              + np.std(data_gaia.pmdec)
                              * np.array([-plot_std_limit, plot_std_limit]))
+
+    # We also clip the plot so that it will always include all found clusters
+    if cluster_labels is not None and clip_to_fit_clusters:
+        clustered_stars = cluster_labels != -1
+        pmra_plot_limits = np.asarray(
+            [np.clip(pmra_plot_limits[0], -np.inf, data_gaia.loc[clustered_stars, 'pmra'].min() - 1),
+             np.clip(pmra_plot_limits[1], data_gaia.loc[clustered_stars, 'pmra'].max() + 1, np.inf)])
+        pmdec_plot_limits = np.asarray(
+            [np.clip(pmdec_plot_limits[0], -np.inf, data_gaia.loc[clustered_stars, 'pmdec'].min() - 1),
+             np.clip(pmdec_plot_limits[1], data_gaia.loc[clustered_stars, 'pmdec'].max() + 1, np.inf)])
+
+    if cluster_shading is None:
+        cluster_shading = np.ones(data_gaia.shape[0])
 
     # Better notation
     pmra_range = pmra_plot_limits
@@ -94,14 +112,31 @@ def position_and_pmotion(
 
     # Plot clusters if labels have been specified
     if cluster_labels is not None:
-        for a_cluster in cluster_indices:
-            # We cycle over the clusters, grabbing their indices and plotting
-            # them in a new colour erri time =)
+
+        cmap = plt.get_cmap("tab10")  # Get the default matplotlib colourmap
+
+        # We cycle over the clusters, grabbing their indices and plotting
+        # them in a new colour erri time =)
+        for i_color, a_cluster in enumerate(cluster_indices):
             stars_in_this_cluster = cluster_labels == a_cluster
-            axis_1.plot(data_gaia.loc[stars_in_this_cluster, 'ra'], data_gaia.loc[stars_in_this_cluster, 'dec'],
-                        '.', ms=cluster_marker_radius[0], alpha=1.0)
-            axis_2.plot(data_gaia.loc[stars_in_this_cluster, 'pmra'], data_gaia.loc[stars_in_this_cluster, 'pmdec'],
-                        '.', ms=cluster_marker_radius[1], alpha=1.0)
+
+            # Make colors and give them alpha values
+            colors = np.tile(cmap(i_color % 10), (np.count_nonzero(stars_in_this_cluster), 1))
+            colors[:, 3] = cluster_shading[stars_in_this_cluster]
+
+            axis_1.scatter(data_gaia.loc[stars_in_this_cluster, 'ra'],
+                           data_gaia.loc[stars_in_this_cluster, 'dec'],
+                           marker='.',
+                           s=cluster_marker_radius[0]**2,
+                           c=colors,
+                           zorder=100)
+
+            axis_2.scatter(data_gaia.loc[stars_in_this_cluster, 'pmra'],
+                           data_gaia.loc[stars_in_this_cluster, 'pmdec'],
+                           marker='.',
+                           s=cluster_marker_radius[1]**2,
+                           c=colors,
+                           zorder=100)
 
     # Add a red cross at a defined location on the pmra/pmdec plot if desired
     if open_cluster_pm_to_mark is not None:
@@ -217,6 +252,7 @@ def color_magnitude_diagram(fig,
                             data_gaia: pd.DataFrame,
                             cluster_labels: np.ndarray = None,
                             cluster_indices: Optional[Union[list, np.ndarray]] = None,
+                            cluster_shading: Optional[np.ndarray] = None,
                             plot_std_limit: float = 3.0,
                             x_limits: Optional[Union[list, np.ndarray]] = None,
                             y_limits: Optional[Union[list, np.ndarray]] = None,
@@ -238,6 +274,9 @@ def color_magnitude_diagram(fig,
         cluster_indices (list-like, optional): the clusters to plot in
             cluster_labels. For instance, you may not want to plot '-1'
             clusters (which are noise) produced by algorithm like DBSCAN.
+        cluster_shading (np.ndarray, optional): an array of floats in the range 0, 1 for all clusters to use to shade
+            their colour (aka alpha value). Useful for displaying e.g. HDBSCAN soft clustering.
+            Default: None
         plot_std_limit (float): standard deviation of parameters to use
             to find plotting limits if none are explicitly specified.
             Default: 1.5
@@ -272,6 +311,9 @@ def color_magnitude_diagram(fig,
                     + np.std(apparent_magnitude)
                     * np.array([-plot_std_limit, plot_std_limit]))
 
+    if cluster_shading is None:
+        cluster_shading = np.ones(data_gaia.shape[0])
+
     # Work out how many points will fall in the pm range
     good_x = np.logical_and(bp_minus_rp_colour > x_limits[0], bp_minus_rp_colour < x_limits[1])
     good_y = np.logical_and(apparent_magnitude > y_limits[0], apparent_magnitude < y_limits[1])
@@ -293,12 +335,22 @@ def color_magnitude_diagram(fig,
 
     # Plot clusters if labels have been specified
     if cluster_labels is not None:
-        for a_cluster in cluster_indices:
-            # We cycle over the clusters, grabbing their indices and plotting
-            # them in a new colour erri time =)
-            stars_in_this_cluster = np.where(cluster_labels == a_cluster)[0]
-            axis.plot(bp_minus_rp_colour[stars_in_this_cluster],
-                      apparent_magnitude[stars_in_this_cluster],
-                      '.', ms=cluster_marker_radius, alpha=1.0)
+        cmap = plt.get_cmap("tab10")  # Get the default matplotlib colourmap
+
+        # We cycle over the clusters, grabbing their indices and plotting
+        # them in a new colour erri time =)
+        for i_color, a_cluster in enumerate(cluster_indices):
+            stars_in_this_cluster = cluster_labels == a_cluster
+
+            # Make colors and give them alpha values
+            colors = np.tile(cmap(i_color % 10), (np.count_nonzero(stars_in_this_cluster), 1))
+            colors[:, 3] = cluster_shading[stars_in_this_cluster]
+
+            axis.scatter(bp_minus_rp_colour[stars_in_this_cluster],
+                         apparent_magnitude[stars_in_this_cluster],
+                         marker='.',
+                         s=cluster_marker_radius**2,
+                         c=colors,
+                         zorder=100)
 
     return axis

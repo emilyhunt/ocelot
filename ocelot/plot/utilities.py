@@ -6,7 +6,8 @@ from scipy.stats import iqr
 import numpy as np
 
 
-def calculate_alpha(fig, ax, n_points: int, marker_radius: int, dpi: int = 300, desired_max_density: float = 0.03):
+def calculate_alpha(fig, ax, n_points: int, marker_size: float, dpi: int = 300, desired_max_density: float = 0.03,
+                    scatter_plot: bool = False):
     """Calculates the optimum alpha value for points to make the plot not be
     over-saturated. Relies on the area value being correctly calculated
     prior to input, which should be the value in inches for the figure. It also
@@ -17,14 +18,16 @@ def calculate_alpha(fig, ax, n_points: int, marker_radius: int, dpi: int = 300, 
         fig (matplotlib figure): the figure element. Required to calculate alpha values precisely.
         ax (matplotlib axis): the figure element. Required to calculate alpha values precisely.
         n_points (int): the number of points to plot.
-        marker_radius (px): the radius of the marker. Note that plt.scatter()
+        marker_size (px): the radius of the marker. Note that plt.scatter()
             specifies marker *area* but plt.plot() uses marker size, which is
-            analogous to the marker radius.
+            analogous to the marker radius. In the former case, ensure scatter_plot is True.
         dpi (int): output resolution of the figure, which will scale the area
             parameter. In units of dots per inch. Default: 300.
         desired_max_density (float): tweakable parameter that was found to
             produce the best results. Simply mutliplying the area value is
             probably easier for normal function use, though. Default: 0.03.
+        scatter_plot (str): whether to calculate alpha values for a scatter plot, which specifies the marker_size as an
+            area, *not* a radius!
 
     Returns:
         float: A recommended alpha value to use on these axes.
@@ -37,9 +40,14 @@ def calculate_alpha(fig, ax, n_points: int, marker_radius: int, dpi: int = 300, 
     bbox = ax.get_window_extent().transformed(fig.dpi_scale_trans.inverted())
     area = bbox.width * bbox.height
 
+    # Scatter plots are awkward (see above function docs)
+    if scatter_plot:
+        marker_area = n_points * marker_size  # In units of px
+    else:
+        marker_area = n_points * np.pi * marker_size ** 2  # In units of px
+
     # We aim to have a maximum density of uniform_max_density, assuming that
     # n_points are distributed evenly across the area.
-    marker_area = n_points * np.pi * marker_radius ** 2  # In units of px
     total_area = area * fig.dpi ** 2
     current_max_density = marker_area / total_area
 

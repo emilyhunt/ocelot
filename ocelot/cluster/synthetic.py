@@ -7,7 +7,7 @@ from astropy.coordinates import SkyCoord, CartesianDifferential, CartesianRepres
 import astropy.units as u
 from ..calculate.constants import gaia_dr2_a_lambda_over_a_v, gaia_dr2_zero_points
 from ..calculate import king_surface_density, king_surface_density_fast
-from scipy.stats import norm
+from scipy.stats import norm, median_absolute_deviation
 
 from pathlib import Path
 from typing import Union, Optional, Callable
@@ -519,6 +519,10 @@ def _c_median_plus_or_minus_1_sigma(data, size, name):
     return np.median(data[name]) * np.asarray([+1, -1]) * np.std(data[name])
 
 
+def _c_median_plus_or_minus_1_mad(data, size, name):
+    return np.median(data[name]) * np.asarray([+1, -1]) * median_absolute_deviation(data[name])
+
+
 def _c_median(data, size, name):
     return np.repeat(np.median(data[name]), size)
 
@@ -535,8 +539,8 @@ _default_cluster_parameters_augmentation = {
     'dec': _c_position_limits_plus_minus_two,
     'distance': _c_median_distance,
     'extinction_v': 0.0,
-    'pmra': _c_median_plus_or_minus_1_sigma,
-    'pmdec': _c_median_plus_or_minus_1_sigma,
+    'pmra': _c_median_plus_or_minus_1_mad,
+    'pmdec': _c_median_plus_or_minus_1_mad,
     # Internal parameters
     'age': 7.0,
     'Z': 0.0,
@@ -806,6 +810,8 @@ def generate_synthetic_clusters(simulated_populations: SimulatedPopulations,
 
     if kwargs_for_simulated_populations is None:
         kwargs_for_simulated_populations = {}
+    if cluster_parameters_to_overwrite is None:
+        cluster_parameters_to_overwrite = {}
 
     # More setup, but dependant on the mode
     if mode is 'clustering_augmentation':

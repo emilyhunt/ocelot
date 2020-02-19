@@ -139,9 +139,13 @@ def test_clustering_result_plotting(show_figure=False):
     # Grab the unique labels
     unique_labels = np.unique(labels)  # The first value is -1, which is noise points
 
+    cluster_shading = (1 - np.clip(1. * np.sqrt((data_gaia['ra'] - np.mean(data_gaia['ra']))**2
+                                                 + (data_gaia['dec'] - np.mean(data_gaia['dec']))**2),
+                                   0.0, 1.0))
+
     # Plot time!
     fig, ax = ocelot.plot.clustering_result(
-        data_gaia, labels, unique_labels[1:], show_figure=show_figure,
+        data_gaia, labels, unique_labels[1:], cluster_shading, show_figure=show_figure,
         figure_title="Blanco 1 should be clearly visible! \nCut at G=18, clustered by DBSCAN",
         pmra_plot_limits=[14, 24], pmdec_plot_limits=[-2, 8], cmd_plot_y_limits=[6, 18],
         cluster_marker_radius=(1., 3., 1.,))
@@ -202,9 +206,9 @@ def test_nearest_neighbour_plotting(show_figure=True):
 
 # Run tests manually if the file is ran
 if __name__ == '__main__':
-    test_curve_normalisation()
-    test_percentile_based_plot_limits()
-    iso = test_isochrone_plotting(show_figure=True)
+    #test_curve_normalisation()
+    #test_percentile_based_plot_limits()
+    #iso = test_isochrone_plotting(show_figure=True)
     clustering_result = test_clustering_result_plotting(show_figure=True)
-    location = test_location_plotting(show_figure=True)
-    test_nearest_neighbour_plotting(True)
+    #location = test_location_plotting(show_figure=True)
+    #test_nearest_neighbour_plotting(True)
