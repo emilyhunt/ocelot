@@ -2,12 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/resample.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/synthetic.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/synthetic.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/utilities.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/utilities.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_plot.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_plot.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -297,7 +294,7 @@
       <workItem from="1581668123980" duration="15660000" />
       <workItem from="1581925290800" duration="23103000" />
       <workItem from="1582011670005" duration="7372000" />
-      <workItem from="1582098930729" duration="596000" />
+      <workItem from="1582098930729" duration="3638000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -565,7 +562,14 @@
       <option name="project" value="LOCAL" />
       <updated>1581952395784</updated>
     </task>
-    <option name="localTasksCounter" value="39" />
+    <task id="LOCAL-00039" summary="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0.">
+      <created>1582106293270</created>
+      <option name="number" value="00039" />
+      <option name="presentableId" value="LOCAL-00039" />
+      <option name="project" value="LOCAL" />
+      <updated>1582106293270</updated>
+    </task>
+    <option name="localTasksCounter" value="40" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -587,7 +591,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Small bugfix in plot_figure - figure_size keyword in matplotlib calls (incorrect) changed to figsize" />
     <MESSAGE value="Unit tests added for ocelot.plot along with a number of bugfixes" />
     <MESSAGE value="Added a cluster_marker_radius parameter to ocelot.plot.clustering_result" />
     <MESSAGE value="Little fix to figure saving in ocelot.plot - we had the wrong method written (.save() instead of .savefig())" />
@@ -612,6 +615,7 @@
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have most of SimulatedPopulations unit tested.&#10;- Going to make some changes to how radial profiles are drawn (the way I've done it has issues related to e.g. normal vs Rayleigh distributions.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Synthetic populations are now being correctly generated! The King profile was changed to be drawn from 3 times at once (i.e. in 3D.)&#10;- The class' runtime was sped up by a factor of ~15, by creating a sped up (check-free) version of the King profile, dramatically reducing the number of function calls by drawing a total number of points based on the expectation value of the accept/rejects, and by dropping stars below a conservative limiting magnitude very early in the process (making distant &amp; large clusters much smaller.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Finishing touches to synthetic cluster generation.&#10;- Made a generate_synthetic_cluster() function that wraps the SimulatedPopulations class&#10;- Lots of default parameters now exist in synthetic.py. Might be worth making them neater somehow!&#10;- Did visual unit tests and it seems to be working!&#10;This commit is experimental work for 0.3.0" />
-    <option name="LAST_COMMIT_MESSAGE" value="Finishing touches to synthetic cluster generation.&#10;- Made a generate_synthetic_cluster() function that wraps the SimulatedPopulations class&#10;- Lots of default parameters now exist in synthetic.py. Might be worth making them neater somehow!&#10;- Did visual unit tests and it seems to be working!&#10;This commit is experimental work for 0.3.0" />
+    <MESSAGE value="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0." />
+    <option name="LAST_COMMIT_MESSAGE" value="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0." />
   </component>
 </project>
