@@ -30,7 +30,7 @@ def generate_gaia_covariance_matrix(data_gaia: pd.DataFrame, type='pmra_pmdec_pa
             Cantat-Gaudin+2018a (the TGAS paper) equation 2.
 
     """
-    if type != 'pmra-pmdec-parallax':
+    if type != 'pmra_pmdec_parallax':
         raise NotImplementedError("currently, this function only supports pmra_pmdec_parallax covariance matrices.")
 
     # Grab the errors we need but as numpy arrays
@@ -59,7 +59,8 @@ def generate_gaia_covariance_matrix(data_gaia: pd.DataFrame, type='pmra_pmdec_pa
                        [pmra_parallax, pmdec_parallax, parallax_parallax]]).T
 
 
-def resample_gaia_astrometry(data_gaia: pd.DataFrame, covariance_matrix: np.ndarray) -> pd.DataFrame:
+def resample_gaia_astrometry(data_gaia: pd.DataFrame, covariance_matrix: np.ndarray,
+                             check_valid: str = 'ignore') -> pd.DataFrame:
     """ Todo fstring
     Notes:
         CHECKS ARE TURNED OFF TO MAKE THIS FUNCTION FASTER, so please make sure that data_gaia is correct and that
@@ -71,4 +72,4 @@ def resample_gaia_astrometry(data_gaia: pd.DataFrame, covariance_matrix: np.ndar
 
     return vectorized_multivariate_normal(mean=data_gaia[['pmra', 'pmdec', 'parallax']].to_numpy(),
                                           cov=covariance_matrix,
-                                          check_valid=False)
+                                          check_valid=check_valid)

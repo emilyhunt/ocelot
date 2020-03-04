@@ -1,14 +1,17 @@
 """A number of functions for pre-processing Gaia data before clustering can begin."""
 
-from typing import Optional, Union, List
+from typing import Optional, Union, Tuple, Any
 
 import numpy as np
 import pandas as pd
 from sklearn.preprocessing import RobustScaler, StandardScaler
+from astropy.coordinates import SkyCoord
+from astropy import units as u
 
 
-def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, geometric_cuts: Optional[dict] = None) \
-        -> pd.DataFrame:
+def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, geometric_cuts: Optional[dict] = None,
+                return_cut_stars: bool = False, reset_index: bool = True) \
+        -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
     """A function for cutting a dataset based on certain requirements: either on allowed parameter ranges or based on
     geometric cuts (such as selecting a circle from the data.)
 
@@ -29,6 +32,12 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
         geometric_cuts (dict, optional): a parameter dictionary for a geometric cut to apply to the dataset. Implemented
             cuts: NONE todo this
             Example: {"type":"great_circle", "sky_position"=[125.429, -16.743]}
+        return_cut_stars (bool): whether or not to also return a DataFrame containing *only* the stars that have
+            been cut.
+            Default: False
+        reset_index (bool): whether or not to reset the indexes on the data frames to be returned. May not be intended
+            behaviour if you're planning on re-combining the two DataFrames later.
+            Default: True
 
     Returns:
         a cut data_gaia with reset indexing.
@@ -64,10 +73,73 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
                                                     column_to_test < a_parameter_cut[1])
 
         # Once we have all the cuts, only *now* do we make data_gaia smaller.
-        data_gaia = data_gaia.loc[good_stars, :].reset_index(drop=True)
+        data_gaia_cut = data_gaia.loc[good_stars, :]
+
+        if reset_index:
+            data_gaia_cut = data_gaia_cut.reset_index(drop=True)
+
+        if return_cut_stars:
+            data_gaia_dropped_stars = data_gaia.loc[np.invert(good_stars), :]
+
+            if reset_index:
+                data_gaia_dropped_stars = data_gaia_dropped_stars.reset_index(drop=True)
+        else:
+            data_gaia_dropped_stars = None
+
+    else:
+        raise ValueError("You must specify parameter_cuts!")
 
     if geometric_cuts is not None:
         raise NotImplementedError("Sorry, geometric cutting isn't yet implemented here. Poke Emily to do something.")
+
+    if return_cut_stars:
+        return data_gaia_cut, data_gaia_dropped_stars
+    else:
+        return data_gaia_cut
+
+
+def recenter_dataset(data_gaia: pd.DataFrame,
+                     center: Union[tuple, list, np.ndarray],
+                     center_type: str = 'icrs',
+                     proper_motion: bool = True) -> pd.DataFrame:
+    """Creates new arbitrary co-ordinate axes centred on centre, allowing for clustering analysis that doesn't get
+    affected by distortions. N.B.: currently only able to use ra, dec from data_gaia!
+
+    Args:
+        data_gaia (pd.DataFrame): Gaia data, with the standard column names.
+        center (list-like): array of length 2 with the ra, dec co-ordinates of the new centre.
+        center_type (str): type of frame centre is defined in. Must be acceptable by astropy.coordinates.SkyCoord. E.g.
+            could be 'icrs' or 'galactic'.
+            Default: 'icrs', i.e. centre should be (ra, dec).
+        proper_motion (bool): whether or not to also make transformed proper motions.
+            Default: True
+
+
+    """
+    # Get the co-ordinates into a SkyCoord
+    centre_frame = SkyCoord(center[0], center[1], frame=center_type, unit=u.deg).skyoffset_frame()
+
+    if proper_motion:
+        coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
+                          dec=data_gaia['dec'].to_numpy() << u.deg,
+                          pm_ra_cosdec=data_gaia['pmra'].to_numpy() << u.mas / u.yr,
+                          pm_dec=data_gaia['pmdec'].to_numpy() << u.mas / u.yr)
+    else:
+        coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
+                          dec=data_gaia['dec'].to_numpy() << u.deg)
+
+    # Apply the transform and save it
+    coords = coords.transform_to(centre_frame)
+
+    data_gaia['lon'] = coords.lon.value
+    data_gaia['lat'] = coords.lat.value
+
+    if proper_motion:
+        data_gaia['pmlon'] = coords.pm_lon_coslat.value
+        data_gaia['pmlat'] = coords.pm_lat.value
+
+    # Correct all values above 180 to simply be negative numbers
+    data_gaia['lon'] = np.where(data_gaia['lon'] > 180, data_gaia['lon'] - 360, data_gaia['lon'])
 
     return data_gaia
 
@@ -78,7 +150,8 @@ def rescale_dataset(data_gaia: pd.DataFrame,
                     column_weights: Union[list, tuple] = (1., 1., 1., 1., 1.),
                     scaling_type: str = 'robust',
                     concatenate: bool = True,
-                    **kwargs_for_scaler) -> Union[np.ndarray, List[np.ndarray]]:
+                    return_scaler: bool = False,
+                    **kwargs_for_scaler):
     """A wrapper for sklearn's scaling methods that can automatically handle re-scaling data a number of different ways.
 
     Args:
@@ -94,6 +167,8 @@ def rescale_dataset(data_gaia: pd.DataFrame,
             Default: 'robust'
         concatenate (bool): whether or not to join all rescaled arrays (assuming multiple args were specified) into one.
             Default: True, so only one np.array is returned.
+        return_scaler (bool): whether or not to also return the scaler object for future use.
+            Default: False
         **kwargs_for_scaler: additional keyword arguments will be passed to the selected scaler.
 
     Returns:
@@ -132,12 +207,16 @@ def rescale_dataset(data_gaia: pd.DataFrame,
 
     # Return a concatenated array
     if concatenate:
-        return np.concatenate(to_return, axis=0)
+        to_return = np.concatenate(to_return, axis=0)
 
     # Or, just return the one array if no args were specified (slightly ugly code so my API doesn't break lololol)
     elif len(to_return) == 1:
-        return to_return[0]
+        to_return = to_return[0]
 
-    # Or, return all arrays separately if we aren't concatenating and have multiple arrays
+    # Or, return all arrays separately if we aren't concatenating and have multiple arrays (keeps to_return as is)
+    # Now we just need to decide on whether or not to also return the scaler.
+    if return_scaler:
+        return to_return, scaler
     else:
         return to_return
+

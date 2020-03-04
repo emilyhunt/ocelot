@@ -279,19 +279,19 @@ def mean_radius(data_gaia: pd.DataFrame,
             "dec_error": error on the above
 
             # Angular radii
-            "ang_radius_50": median ang. distance from the centre, i.e.angular radius of the cluster with 50% of members
+            "ang_radius_50": median ang. distance from the center, i.e.angular radius of the cluster with 50% of members
             "ang_radius_50_error": error on the above
             "ang_radius_c": angular King's core radius of the cluster
             "ang_radius_c_error": error on the above
-            "ang_radius_t": maximum angular distance from the centre, i.e. angular King's tidal radius of the cluster
+            "ang_radius_t": maximum angular distance from the center, i.e. angular King's tidal radius of the cluster
             "ang_radius_t_error": error on the above
 
             # Parsec radii
-            "radius_50": median distance from the centre, i.e.radius of the cluster with 50% of members
+            "radius_50": median distance from the center, i.e.radius of the cluster with 50% of members
             "radius_50_error": error on the above
             "radius_c": King's core radius of the cluster
             "radius_c_error": error on the above
-            "radius_t": maximum distance from the centre, i.e. King's tidal radius of the cluster
+            "radius_t": maximum distance from the center, i.e. King's tidal radius of the cluster
             "radius_t_error": error on the above
             }
 
@@ -341,10 +341,10 @@ def mean_radius(data_gaia: pd.DataFrame,
 def mean_internal_velocity_dispersion(data_gaia: pd.DataFrame,
                                       membership_probabilities: Optional[np.ndarray] = None,
                                       already_inferred_parameters: Optional[dict] = None,
-                                      key_pmra: str = "ra",
-                                      key_pmra_error: str = "ra_error",
-                                      key_pmdec: str = "dec",
-                                      key_pmdec_error: str = "dec_error",
+                                      key_pmra: str = "pmra",
+                                      key_pmra_error: str = "pmra_error",
+                                      key_pmdec: str = "pmdec",
+                                      key_pmdec_error: str = "pmdec_error",
                                       distance_to_use: str = "inverse_parallax",
                                       **kwargs):
     """Estimates the internal velocity dispersion of a cluster.

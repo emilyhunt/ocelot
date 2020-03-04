@@ -116,7 +116,7 @@ def _kth_nn_distribution(r_range, a, dimension, k):
     f = r_range^(dimension + k - 1) / a^dimension * exp(-(r_range/a)^dimension)
 
     Args:
-        r_range: radius values away from the centre to evaluate at.
+        r_range: radius values away from the center to evaluate at.
         a: the fitting constant
         k: the kth nearest neighbor moment of the distribution
         dimension: the assumed dimensionality of the distribution
@@ -141,7 +141,7 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
             2: cluster_constant (also known as a)
             3: cluster_dimension
             4: cluster_fraction
-        r_range (np.ndarray): radius values away from the centre to evaluate at.
+        r_range (np.ndarray): radius values away from the center to evaluate at.
         y_range (np.ndarray): log10 points values to compare the model to. Must be specified if minimisation_mode=True.
             Default: None
         k (int): the kth nearest neighbor moment of the distribution

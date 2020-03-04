@@ -56,6 +56,42 @@ def test_cut_dataset():
     return data_cut
 
 
+def test_recenter_dataset(show_figure=False):
+    """Tests that position recentering in ocelot.cluster.recenter_dataset works as intended."""
+    # Read in data for Blanco 1
+    with open(path_to_blanco_1, 'rb') as handle:
+        data_gaia = pickle.load(handle)
+
+    center = [data_gaia['ra'].median(), data_gaia['dec'].median()]
+
+    data_gaia = ocelot.cluster.recenter_dataset(data_gaia, center=center)
+
+    if show_figure:
+        fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
+
+        marker_radius = 1
+        alpha = 0.3
+
+        ax[0, 0].scatter(data_gaia['ra'], data_gaia['dec'], s=marker_radius**2, alpha=alpha)
+        ax[0, 1].scatter(data_gaia['pmra'], data_gaia['pmdec'], s=marker_radius**2, alpha=alpha)
+        ax[1, 0].scatter(data_gaia['lon'], data_gaia['lat'], s=marker_radius**2, alpha=alpha)
+        ax[1, 1].scatter(data_gaia['pmlon'], data_gaia['pmlat'], s=marker_radius**2, alpha=alpha)
+
+        ax[0, 0].set_title('ra vs dec')
+        ax[0, 1].set_title('pmra vs pmdec')
+        ax[1, 0].set_title('lon vs lat')
+        ax[1, 1].set_title('pmlon vs pmlat')
+
+        fig.show()
+        plt.close(fig)
+
+    # A quick check that the median values are about 0, 0 (won't be exact due to distortions)
+    assert np.allclose(0.0, data_gaia['lon'].median(), rtol=0.0, atol=0.05)
+    assert np.allclose(0.0, data_gaia['lat'].median(), rtol=0.0, atol=0.05)
+
+    return data_gaia
+
+
 def test_rescale_dataset():
     """Tests the functionality of the dataset re-scaling of ocelot.cluster.rescale_dataset."""
     # Read in data for Blanco 1
@@ -526,4 +562,5 @@ if __name__ == '__main__':
     # simpop, test_clusters, simcl = test_simulated_populations(plot_clusters=False)
     # test__setup_cluster_parameter()
     # test__find_nearest_magnitude_star()
-    test_generate_synthetic_clusters(plot_clusters=True)
+    # test_generate_synthetic_clusters(plot_clusters=True)
+    gaia = test_recenter_dataset(show_figure=True)

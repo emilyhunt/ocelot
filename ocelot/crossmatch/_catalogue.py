@@ -39,7 +39,7 @@ class Catalogue:
                 catalogue. Useful when catalogues have positional errors to weight the closeness between matched and
                 catalogue clusters.
                 Default: 0.0, although this is *rarely zero* as many catalogues will do a shitty job of inferring the
-                centre of clusters!
+                center of clusters!
 
         """
         # Initialise the catalogue's name, cluster names and co-ordinates

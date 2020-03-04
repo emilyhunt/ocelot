@@ -148,7 +148,7 @@ def test_mean_internal_velocity_dispersion():
     parameters = ocelot.calculate.mean_internal_velocity_dispersion(data_cluster)
 
     target_dict = {
-        'v_internal_tangential': 423.7693107772393,
+        'v_internal_tangential': 927.8763318000849,
         'v_internal_tangential_error': np.nan}
 
     parameter_return_test_function(parameters, target_dict)
@@ -191,7 +191,7 @@ def test_all_statistics():
         'pmra_error': 0.7654178147576686,
         'pmdec': 2.6210183216120617,
         'pmdec_error': 0.7759414309583798,
-        'v_internal_tangential': 423.7693107772393,
+        'v_internal_tangential': 927.8763318000849,
         'v_internal_tangential_error': np.nan,
         'parameter_inference_mode': 'mean'}
 

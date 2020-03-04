@@ -2,9 +2,16 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/ocelot/cluster/resample.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/calculate/calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/calculate.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/resample.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/resample.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_calculate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -75,7 +82,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.test_plot">
+  <component name="RunManager" selected="Python.test_cluster">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -146,9 +153,6 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -233,10 +237,10 @@
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.test_cluster" />
-        <item itemvalue="Python.synthetic_" />
         <item itemvalue="Python.test_calculate" />
+        <item itemvalue="Python.test_plot" />
+        <item itemvalue="Python.synthetic_" />
         <item itemvalue="Python.test_isochrone" />
       </list>
     </recent_temporary>
@@ -294,7 +298,16 @@
       <workItem from="1581668123980" duration="15660000" />
       <workItem from="1581925290800" duration="23103000" />
       <workItem from="1582011670005" duration="7372000" />
-      <workItem from="1582098930729" duration="3638000" />
+      <workItem from="1582098930729" duration="4390000" />
+      <workItem from="1582184457889" duration="4153000" />
+      <workItem from="1582273574545" duration="1799000" />
+      <workItem from="1582530656091" duration="1043000" />
+      <workItem from="1582617244166" duration="11196000" />
+      <workItem from="1582706888610" duration="2286000" />
+      <workItem from="1582877190883" duration="1798000" />
+      <workItem from="1583136045288" duration="4683000" />
+      <workItem from="1583222789663" duration="3332000" />
+      <workItem from="1583308981469" duration="4266000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -569,7 +582,14 @@
       <option name="project" value="LOCAL" />
       <updated>1582106293270</updated>
     </task>
-    <option name="localTasksCounter" value="40" />
+    <task id="LOCAL-00040" summary="Added resampling and covariance matrix handling.&#10;- Added a new sub-submodule, ocelot.cluster.resample&#10;- It can create correctly shaped astrometric covariance matrices from scratch given standard Gaia data&#10;- It can also re-draw points from said Gaia multivariate normal distributions, although it's not yet super efficient (that would require some Cython unfortunately.)&#10;This commit is additional contributing work for 0.3.0.">
+      <created>1582125348542</created>
+      <option name="number" value="00040" />
+      <option name="presentableId" value="LOCAL-00040" />
+      <option name="project" value="LOCAL" />
+      <updated>1582125348542</updated>
+    </task>
+    <option name="localTasksCounter" value="41" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -591,7 +611,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Unit tests added for ocelot.plot along with a number of bugfixes" />
     <MESSAGE value="Added a cluster_marker_radius parameter to ocelot.plot.clustering_result" />
     <MESSAGE value="Little fix to figure saving in ocelot.plot - we had the wrong method written (.save() instead of .savefig())" />
     <MESSAGE value="Work on ocelot.cluster preprocessing functionality.&#10;- Added ocelot.cluster.cut_dataset, which is able to make (clear comparative) cuts on Gaia-style data&#10;- Added ocelot.cluster.rescale_dataset, which wraps sklearn rescaling options and prevents nasty errors&#10;- Both of the above have unit tests and appear to be working well.&#10;This releases satisfies 0.3.0 feature a." />
@@ -616,6 +635,7 @@
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Synthetic populations are now being correctly generated! The King profile was changed to be drawn from 3 times at once (i.e. in 3D.)&#10;- The class' runtime was sped up by a factor of ~15, by creating a sped up (check-free) version of the King profile, dramatically reducing the number of function calls by drawing a total number of points based on the expectation value of the accept/rejects, and by dropping stars below a conservative limiting magnitude very early in the process (making distant &amp; large clusters much smaller.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Finishing touches to synthetic cluster generation.&#10;- Made a generate_synthetic_cluster() function that wraps the SimulatedPopulations class&#10;- Lots of default parameters now exist in synthetic.py. Might be worth making them neater somehow!&#10;- Did visual unit tests and it seems to be working!&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0." />
-    <option name="LAST_COMMIT_MESSAGE" value="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0." />
+    <MESSAGE value="Added resampling and covariance matrix handling.&#10;- Added a new sub-submodule, ocelot.cluster.resample&#10;- It can create correctly shaped astrometric covariance matrices from scratch given standard Gaia data&#10;- It can also re-draw points from said Gaia multivariate normal distributions, although it's not yet super efficient (that would require some Cython unfortunately.)&#10;This commit is additional contributing work for 0.3.0." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added resampling and covariance matrix handling.&#10;- Added a new sub-submodule, ocelot.cluster.resample&#10;- It can create correctly shaped astrometric covariance matrices from scratch given standard Gaia data&#10;- It can also re-draw points from said Gaia multivariate normal distributions, although it's not yet super efficient (that would require some Cython unfortunately.)&#10;This commit is additional contributing work for 0.3.0." />
   </component>
 </project>
