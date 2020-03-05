@@ -164,6 +164,7 @@ def test_all_statistics():
     parameters = ocelot.calculate.all_statistics(data_cluster, mode="mean")
 
     target_dict = {
+        'n_stars': 262,
         'ra': 0.9211424874405434,
         'ra_error': np.nan,
         'dec': -29.968388740371715,
@@ -195,6 +196,9 @@ def test_all_statistics():
         'v_internal_tangential_error': np.nan,
         'parameter_inference_mode': 'mean'}
 
+    # parameter_return_test_function(parameters, target_dict)
+    # todo test function is broken!!! The string at the end fucks it up.
+
     return parameters
 
 
@@ -215,11 +219,11 @@ def test_points_on_sphere(show_diagnostic_histograms=False):
         fig.show()
         plt.close('all')
 
-    # Check radian mode, asymmetric
+    # Check radian input_mode, asymmetric
     assert np.all(np.logical_and(theta_rad >= 0, theta_rad < 2*np.pi))
     assert np.all(np.logical_and(phi_rad >= 0, phi_rad <= np.pi))
 
-    # Check degree mode, symmetric
+    # Check degree input_mode, symmetric
     assert np.all(np.logical_and(theta_deg >= 0, theta_deg < 360))
     assert np.all(np.logical_and(phi_deg >= -90, phi_deg <= 90))
 

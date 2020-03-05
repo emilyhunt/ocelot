@@ -419,7 +419,7 @@ def all_statistics(data_gaia: pd.DataFrame,
 
     Returns:
         a dict, containing the following parameters for the cluster:
-            'ra', 'ra_error', 'dec', 'dec_error', 'ang_radius_50', 'ang_radius_50_error', 'ang_radius_c',
+            'n_stars', 'ra', 'ra_error', 'dec', 'dec_error', 'ang_radius_50', 'ang_radius_50_error', 'ang_radius_c',
             'ang_radius_c_error', 'ang_radius_t', 'ang_radius_t_error', 'radius_50', 'radius_50_error', 'radius_c',
             'radius_c_error', 'radius_t', 'radius_t_error', 'parallax', 'parallax_error', 'inverse_parallax',
             'inverse_parallax_l68', 'inverse_parallax_u68', 'distance', 'distance_error', 'pmra', 'pmra_error', 'pmdec',
@@ -438,6 +438,7 @@ def all_statistics(data_gaia: pd.DataFrame,
             mean_distance(data_gaia, membership_probabilities=membership_probabilities, **kwargs))
 
         inferred_parameters = {
+            'n_stars': data_gaia.shape[0],
             **mean_radius(data_gaia, membership_probabilities=membership_probabilities,
                           already_inferred_parameters=inferred_parameters, **kwargs),
             **inferred_parameters}

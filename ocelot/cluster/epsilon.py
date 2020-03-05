@@ -132,7 +132,7 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
                                             y_range: np.ndarray = None, minimisation_mode: bool = True):
     """Returns the summer kth nearest neighbor distribution, assuming the field contains at most one cluster.
 
-    Todo remove minimisation mode
+    Todo remove minimisation input_mode
 
     Args:
         parameters (np.ndarray): parameters of the model of length 5, in the form:
@@ -517,7 +517,7 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
 
     Returns:
         - bool for whether or not a cluster was found
-        - a tuple containing epsilon 0, 1 and 2 estimates
+        - a tuple containing epsilon 0, 1, 2, 3 and 4 estimates
         - a tuple of the fitting parameters found
         - the expected number of cluster members, n_cluster_members
 
@@ -631,7 +631,7 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
 
     # Return nada if no cluster was found
     if n_cluster_members < min_cluster_size:
-        to_return = [False, (0., 0., 0.), result, n_cluster_members]
+        to_return = [False, (0., 0., 0., 0., 0.), result, n_cluster_members]
     else:
         to_return = [True, epsilon_values, result, n_cluster_members]
 

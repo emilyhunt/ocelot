@@ -156,6 +156,12 @@ def test_precalculate_nn_distances():
     return sparse_matrix, distance_matrix
 
 
+def test_data_partition(show_figure=True):
+    """Tests all elements of the data partition class, ocelot.cluster.DataPartition."""
+    
+    pass
+
+
 def test_acg18():
     """Tests the OCELOT implementation of the Alfred Castro-Ginard+18 method of determining an optimum value for DBSCAN.
     """
@@ -500,7 +506,7 @@ def test_generate_synthetic_clusters(plot_clusters=True):
     simulated_populations = ocelot.cluster.SimulatedPopulations(path_to_big_simulated_population,
                                                                 mass_tolerance=0.01)
 
-    # Make some clusters in augmentation mode
+    # Make some clusters in augmentation input_mode
     data_augmented = ocelot.cluster.generate_synthetic_clusters(
         simulated_populations,
         data_gaia,
@@ -511,7 +517,7 @@ def test_generate_synthetic_clusters(plot_clusters=True):
     data_augmented = ocelot.cluster.cut_dataset(data_augmented, parameter_cuts={'phot_g_mean_mag': [-np.inf, 18]})
     data_augmented['ra'] = np.where(data_augmented['ra'] > 180, data_augmented['ra'] - 360, data_augmented['ra'])
 
-    # Make some clusters in generator mode
+    # Make some clusters in generator input_mode
     import time
     start = time.time()
     data_generated = ocelot.cluster.generate_synthetic_clusters(
