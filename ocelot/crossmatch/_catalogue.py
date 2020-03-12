@@ -24,7 +24,7 @@ class Catalogue:
 
         Args:
             data (pd.DataFrame or pd.Series if just one cluster): data for the catalogue to match against.
-            catalogue_name (str): name of the catalogue. This is stored and used to 
+            catalogue_name (str): name of the catalogue. This is stored and used to
             key_name (str): name of the name column in data.
                 Default: "Name"
             key_ra (str): name of the ra column in data.

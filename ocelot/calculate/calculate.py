@@ -437,6 +437,8 @@ def all_statistics(data_gaia: pd.DataFrame,
         inferred_parameters.update(
             mean_distance(data_gaia, membership_probabilities=membership_probabilities, **kwargs))
 
+        # Todo: could also add the number of 1sigma+ member stars.
+
         inferred_parameters = {
             'n_stars': data_gaia.shape[0],
             **mean_radius(data_gaia, membership_probabilities=membership_probabilities,

@@ -7,4 +7,4 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')
 
 import ocelot
 
-x = ocelot.version
+x = ocelot.__version__

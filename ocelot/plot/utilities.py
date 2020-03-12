@@ -6,7 +6,10 @@ from scipy.stats import iqr
 import numpy as np
 
 
-def calculate_alpha(fig, ax, n_points: int, marker_size: float, dpi: int = 300, desired_max_density: float = 0.03,
+def calculate_alpha(fig, ax, n_points: int, marker_size: float, desired_max_density: float = 0.1,
+                    scale_with_dpi: bool = False,
+                    max_alpha: float = 0.3,
+                    min_alpha: float = 0.001,
                     scatter_plot: bool = False):
     """Calculates the optimum alpha value for points to make the plot not be
     over-saturated. Relies on the area value being correctly calculated
@@ -21,11 +24,16 @@ def calculate_alpha(fig, ax, n_points: int, marker_size: float, dpi: int = 300, 
         marker_size (px): the radius of the marker. Note that plt.scatter()
             specifies marker *area* but plt.plot() uses marker size, which is
             analogous to the marker radius. In the former case, ensure scatter_plot is True.
-        dpi (int): output resolution of the figure, which will scale the area
-            parameter. In units of dots per inch. Default: 300.
+        scale_with_dpi (bool): whether or not to scale alpha values with the dpi of the figure.
+            Default: False (correct for scatter plots)
         desired_max_density (float): tweakable parameter that was found to
             produce the best results. Simply mutliplying the area value is
-            probably easier for normal function use, though. Default: 0.03.
+            probably easier for normal function use, though.
+            Default: 0.1.
+        max_alpha (float): max alpha value to allow.
+            Default: 0.3
+        min_alpha (float): min alpha value to allow.
+            Default: 0.001
         scatter_plot (str): whether to calculate alpha values for a scatter plot, which specifies the marker_size as an
             area, *not* a radius!
 
@@ -48,10 +56,13 @@ def calculate_alpha(fig, ax, n_points: int, marker_size: float, dpi: int = 300, 
 
     # We aim to have a maximum density of uniform_max_density, assuming that
     # n_points are distributed evenly across the area.
-    total_area = area * fig.dpi ** 2
+    if scale_with_dpi:
+        total_area = area * fig.dpi ** 2
+    else:
+        total_area = area * 100**2  # If not, we just use the default area
     current_max_density = marker_area / total_area
 
-    return np.clip(desired_max_density / current_max_density, 0., 1.)
+    return np.clip(desired_max_density / current_max_density, min_alpha, max_alpha)
 
 
 def normalise_a_curve(x_values: np.ndarray, y_values: np.ndarray, normalisation_constant: Union[int, float]):
