@@ -187,21 +187,31 @@ def test_acg18():
     # Epsilon time
     np.random.seed(42)
     epsilons, random_distance_matrix = ocelot.cluster.epsilon.acg18(
-        data_rescaled, distance_matrix, n_repeats=2, min_samples='all', return_last_random_distance=True)
+        data_rescaled, distance_matrix, n_repeats=[1, 2], min_samples='all', return_last_random_distance=True)
 
     # Check that the correct shapes are returned
     assert distance_matrix.shape == random_distance_matrix.shape
-    assert epsilons.shape == (10,)
+    assert epsilons.shape == (10, 3)
+    assert epsilons.columns.to_list() == ['min_samples', 'acg_1', 'acg_2']
 
     # Check the values against a target set that were correct at first implementation
-    target_epsilons = np.asarray([0.01594943, 0.06773323, 0.09449874, 0.10952761, 0.12000926, 0.13023932,
-                                  0.14131321, 0.14809204, 0.15114417, 0.15699153])
-    assert np.allclose(epsilons, target_epsilons, rtol=0.0, atol=1e-8)
+    target_epsilons = np.asarray([[0.01767441, 0.01594943],
+                                  [0.06125835, 0.06773323],
+                                  [0.09002014, 0.09449874],
+                                  [0.10619648, 0.10952761],
+                                  [0.12325615, 0.12000926],
+                                  [0.12975783, 0.13023932],
+                                  [0.14481370, 0.14131321],
+                                  [0.14834746, 0.14809204],
+                                  [0.15089530, 0.15114417],
+                                  [0.15616676, 0.15699153]])
+    assert np.allclose(epsilons[['acg_1', 'acg_2']].values, target_epsilons, rtol=0.0, atol=1e-8)
 
     # Check that we just get back one (correct) value if that's all we ask for
     np.random.seed(42)
     single_epsilon = ocelot.cluster.epsilon.acg18(
         data_rescaled, distance_matrix, n_repeats=2, min_samples=10, return_last_random_distance=False)
+    single_epsilon = single_epsilon['acg_2'].values[0]
 
     assert type(single_epsilon) == float or np.float
     assert np.allclose(single_epsilon, 0.1588709230676416, rtol=0.0, atol=1e-8)
@@ -559,7 +569,7 @@ if __name__ == '__main__':
     # cut = test_cut_dataset()
     # gaia, rescaled = test_rescale_dataset()
     # spar, dist = test_precalculate_nn_distances()
-    # eps, ran = test_acg18()
+    eps, ran = test_acg18()
     # test__summed_kth_nn_distribution_one_cluster()
     # test__find_sign_change_epsilons()
     # test__find_curve_absolute_maximum_epsilons()
@@ -569,4 +579,4 @@ if __name__ == '__main__':
     # test__setup_cluster_parameter()
     # test__find_nearest_magnitude_star()
     # test_generate_synthetic_clusters(plot_clusters=True)
-    gaia = test_recenter_dataset(show_figure=True)
+    # gaia = test_recenter_dataset(show_figure=True)

@@ -1,9 +1,10 @@
 """A set of functions for calculating optimum DBSCAN/OPTICS epsilon parameters of a field."""
 
 import gc
-from typing import Union
+from typing import Union, List, Tuple
 
 import numpy as np
+import pandas as pd
 
 from scipy.interpolate import interp1d
 from scipy.optimize import minimize, curve_fit
@@ -13,7 +14,7 @@ from ..plot import nearest_neighbor_distances
 from sklearn.metrics import pairwise_distances
 
 
-def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: int = 10,
+def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Union[int, List[int], Tuple[int]] = 10,
           min_samples: Union[str, int] = 10, return_last_random_distance: bool = False):
     """A method for calculating an optimal epsilon value as in Alfredo Castro-Ginard's 2018 paper (hence the acronym
     acg18.)
@@ -22,7 +23,8 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: int 
         data_clustering (np.ndarray): clustering data for the field in shape (n_samples, n_features).
         nn_distances (np.ndarray): nearest neighbor distances for the field, in shape
             (n_samples, max_neighbors_to_calculate).
-        n_repeats (int): number of random repeats to perform.
+        n_repeats (int, list of ints, tuple of ints): number of random repeats to perform. May be a list or tuple of
+            integers.
             Default: 10
         min_samples (int, str): number of minimum samples to find the acg18 epsilon for (aka the kth nearest neighbor).
             May be an integer or 'all'.
@@ -37,18 +39,14 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: int 
             last random distances simulation.
 
     """
-    if n_repeats < 1:
+    n_repeats = np.atleast_1d(n_repeats)
+    max_n_repeats = np.max(n_repeats)
+
+    if max_n_repeats < 1:
         raise ValueError("A positive number of repeats must be specified.")
 
     # Infer how many neighbors we need to calculate
     max_neighbors_to_calculate = nn_distances.shape[1]
-
-    # Calculate nearest neighbor distances if they haven't been passed to the function already
-    # REMOVED as this fucks with inferring max_neighbors_to_calculate and it should always be calculated by the user
-    # already anyway.
-    # if nn_distances is None:
-    #     nn_distances = precalculate_nn_distances(data_clustering, n_neighbors=max_neighbors_to_calculate,
-    #                                              return_sparse_matrix=False, return_knn_distance_array=True)
 
     # Grab the minimum epsilon in the unperturbed field & do some error checking of min_samples in the process.
     if min_samples == 'all':
@@ -72,10 +70,10 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: int 
     gc.collect()
 
     # Cycle over the required number of random repeats
-    random_epsilons = np.zeros((n_repeats, max_neighbors_to_calculate))
+    random_epsilons = np.zeros((max_n_repeats, max_neighbors_to_calculate))
     random_nn_distances = None  # Done solely to shut up my fucking linter
     i = 0
-    while i < n_repeats:
+    while i < max_n_repeats:
 
         # Shuffle all values in the dataset column-wise, which is annoying to do but I guess I'll manage :L
         current_axis = 0
@@ -92,22 +90,29 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: int 
         i += 1
 
         # Semi-paranoid memory management (lol)
-        if return_last_random_distance is False or i != n_repeats:
+        if return_last_random_distance is False or i != max_n_repeats:
             del random_nn_distances
             gc.collect()
 
     # Ignore random epsilons we don't need if the user doesn't want them all
     if min_samples != 'all':
-        random_epsilons = random_epsilons[:, min_samples - 1]
+        random_epsilons = random_epsilons[:, min_samples - 1].reshape(-1, 1)
+        acg_epsilon = {'min_samples': np.atleast_1d(min_samples)}
+    else:
+        acg_epsilon = {'min_samples': np.arange(max_neighbors_to_calculate) + 1}
 
-    # Find the mean random epsilon & acg 18 epsilon
-    mean_random_epsilons = np.mean(random_epsilons, axis=0)
-    acg_epsilon = (mean_random_epsilons + epsilon_minimum) / 2
+    # Cycle over all the numbers of repeats the user requested, finding the requested acg epsilon values
+    for a_n_repeats in n_repeats:
+        mean_random_epsilons = np.mean(random_epsilons[:a_n_repeats, :], axis=0)
+        acg_epsilon['acg_' + str(a_n_repeats)] = (mean_random_epsilons + epsilon_minimum) / 2
+
+    # Finally, turn this into a DataFrame!
+    acg_epsilon_dataframe = pd.DataFrame(acg_epsilon, index=np.arange(len(acg_epsilon['min_samples'])))
 
     if return_last_random_distance:
-        return acg_epsilon, random_nn_distances
+        return acg_epsilon_dataframe, random_nn_distances
     else:
-        return acg_epsilon
+        return acg_epsilon_dataframe
 
 
 def _kth_nn_distribution(r_range, a, dimension, k):
