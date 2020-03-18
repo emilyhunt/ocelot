@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from scipy.sparse.csr import csr_matrix
 
 path_to_blanco_1 = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle')
+path_to_healpix_pixel = Path('./test_data/healpix_12237.csv')
 
 path_to_one_simulated_population = Path('./test_data/simulated_populations/small/1.dat')
 path_to_all_simulated_populations = Path('./test_data/simulated_populations/small')
@@ -56,6 +57,29 @@ def test_cut_dataset():
     return data_cut
 
 
+def _plot_for_recenter_dataset(data_gaia: pd.DataFrame, super_title: str = ''):
+    """Cheeky plotting function for manual testing of the dataset recentering functionality."""
+    fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
+
+    marker_radius = 1
+    alpha = 0.3
+
+    ax[0, 0].scatter(data_gaia['ra'], data_gaia['dec'], s=marker_radius**2, alpha=alpha)
+    ax[0, 1].scatter(data_gaia['pmra'], data_gaia['pmdec'], s=marker_radius**2, alpha=alpha)
+    ax[1, 0].scatter(data_gaia['lon'], data_gaia['lat'], s=marker_radius**2, alpha=alpha)
+    ax[1, 1].scatter(data_gaia['pmlon'], data_gaia['pmlat'], s=marker_radius**2, alpha=alpha)
+
+    ax[0, 0].set_title('ra vs dec')
+    ax[0, 1].set_title('pmra vs pmdec')
+    ax[1, 0].set_title('lon vs lat')
+    ax[1, 1].set_title('pmlon vs pmlat')
+
+    fig.suptitle(super_title)
+
+    fig.show()
+    plt.close(fig)
+
+
 def test_recenter_dataset(show_figure=False):
     """Tests that position recentering in ocelot.cluster.recenter_dataset works as intended."""
     # Read in data for Blanco 1
@@ -67,29 +91,32 @@ def test_recenter_dataset(show_figure=False):
     data_gaia = ocelot.cluster.recenter_dataset(data_gaia, center=center)
 
     if show_figure:
-        fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(8, 8))
-
-        marker_radius = 1
-        alpha = 0.3
-
-        ax[0, 0].scatter(data_gaia['ra'], data_gaia['dec'], s=marker_radius**2, alpha=alpha)
-        ax[0, 1].scatter(data_gaia['pmra'], data_gaia['pmdec'], s=marker_radius**2, alpha=alpha)
-        ax[1, 0].scatter(data_gaia['lon'], data_gaia['lat'], s=marker_radius**2, alpha=alpha)
-        ax[1, 1].scatter(data_gaia['pmlon'], data_gaia['pmlat'], s=marker_radius**2, alpha=alpha)
-
-        ax[0, 0].set_title('ra vs dec')
-        ax[0, 1].set_title('pmra vs pmdec')
-        ax[1, 0].set_title('lon vs lat')
-        ax[1, 1].set_title('pmlon vs pmlat')
-
-        fig.show()
-        plt.close(fig)
+        _plot_for_recenter_dataset(data_gaia, super_title="test_recenter_dataset")
 
     # A quick check that the median values are about 0, 0 (won't be exact due to distortions)
     assert np.allclose(0.0, data_gaia['lon'].median(), rtol=0.0, atol=0.05)
     assert np.allclose(0.0, data_gaia['lat'].median(), rtol=0.0, atol=0.05)
 
     return data_gaia
+
+
+def test_recenter_dataset_healpix(show_figure=False):
+    """Tests that position recentering in ocelot.cluster.recenter_dataset works as intended, but for when using a
+    healpix pixel."""
+    # Read in data for the pixel
+    data_gaia = pd.read_csv(path_to_healpix_pixel)
+
+    data_gaia = ocelot.cluster.recenter_dataset(data_gaia, pixel_id=12237, rotate_frame=True)
+
+    if show_figure:
+        _plot_for_recenter_dataset(data_gaia, super_title="test_recenter_dataset_healpix")
+
+    # A quick check that the median values are about 0, 0 (won't be exact due to distortions)
+    assert np.allclose(0.0, data_gaia['lon'].median(), rtol=0.0, atol=0.05)
+    assert np.allclose(0.0, data_gaia['lat'].median(), rtol=0.0, atol=0.05)
+
+    return data_gaia
+
 
 
 def test_rescale_dataset():
@@ -569,7 +596,7 @@ if __name__ == '__main__':
     # cut = test_cut_dataset()
     # gaia, rescaled = test_rescale_dataset()
     # spar, dist = test_precalculate_nn_distances()
-    eps, ran = test_acg18()
+    # eps, ran = test_acg18()
     # test__summed_kth_nn_distribution_one_cluster()
     # test__find_sign_change_epsilons()
     # test__find_curve_absolute_maximum_epsilons()
@@ -580,3 +607,4 @@ if __name__ == '__main__':
     # test__find_nearest_magnitude_star()
     # test_generate_synthetic_clusters(plot_clusters=True)
     # gaia = test_recenter_dataset(show_figure=True)
+    gaia = test_recenter_dataset_healpix(show_figure=True)

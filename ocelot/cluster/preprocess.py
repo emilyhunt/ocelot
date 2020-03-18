@@ -5,9 +5,12 @@ from typing import Optional, Union, Tuple
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import healpy
+
 from sklearn.preprocessing import RobustScaler, StandardScaler
 from astropy.coordinates import SkyCoord
 from astropy import units as u
+from scipy.optimize import minimize
 
 
 def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, geometric_cuts: Optional[dict] = None,
@@ -99,26 +102,119 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
         return data_gaia_cut
 
 
+def _rotation_function_lat(rotation: np.ndarray, coords: SkyCoord, center_coords: SkyCoord):
+    """Returns the least squares value of the 0th/1st and 2nd/3rd latitudes for a given rotation."""
+    # The astropy bits
+    center_frame = center_coords.skyoffset_frame(rotation=rotation[0] * u.deg)
+    coords = coords.transform_to(center_frame)
+    lat = coords.lat.value
+
+    # Grab the least squares differences
+    return (lat[0] - lat[1]) ** 2 + (lat[2] - lat[3]) ** 2
+
+
+default_healpy_kwargs = {
+    'nest': True,
+    'lonlat': True,
+    'nside': 32  # i.e. 2**5
+}
+
+
+def _get_healpix_frame(pixel_id: int, rotate_frame: bool = True, **user_healpy_kwargs):
+    """Returns an astropy SkyOffsetFrame given a healpix pixel id denoting the central pixel of the frame.
+
+    Args:
+        pixel_id (int): id of the healpix pixel.
+        rotate_frame (bool): whether or not to rotate the frame so that the boundaries of the quadrilateral are roughly
+            parallel to the latitude, longitude co-ordinate axes.
+            Default: True
+        **user_healpy_kwargs: kwargs for the healpy methods. You may change the following (shown with their defaults):
+            'nest': True
+            'lonlat': True
+            'nside': 32  # i.e. 2**5
+
+    Returns:
+        an astropy SkyOffsetFrame centered on the center of the pixel.
+
+    """
+    # Grab arguments for healpy
+    healpy_kwargs = default_healpy_kwargs
+    healpy_kwargs.update(user_healpy_kwargs)
+
+    # Get the center from the number of sides and the pixel id
+    center = healpy.pix2ang(healpy_kwargs['nside'], pixel_id, nest=True, lonlat=True)
+    center_coords = SkyCoord(center[0], center[1], frame='icrs', unit='deg')
+
+    # Rotate the frame if requested
+    if rotate_frame:
+        # Get the four corners of the pixel
+        corners_icrs = healpy.vec2ang(
+            healpy.boundaries(healpy_kwargs['nside'], pixel_id, step=1, nest=healpy_kwargs['nest']).T,
+            lonlat=healpy_kwargs['lonlat'])
+
+        # Make some astropy SkyCoords to handle various bits and bobs and get the rotation angle
+        coords = SkyCoord(ra=corners_icrs[0], dec=corners_icrs[1], unit='deg')
+        result = minimize(_rotation_function_lat, np.asarray([0]), args=(coords, center_coords))
+
+        # Check the result and cast the rotation angle correctly
+        if not result.success:
+            raise RuntimeError(f"failed to converge on an optimum rotation angle for pixel {pixel_id}!")
+        rotation_angle = result.x[0] * u.deg
+
+    else:
+        rotation_angle = 0 * u.deg
+
+    return center_coords.skyoffset_frame(rotation=rotation_angle)
+
+
 def recenter_dataset(data_gaia: pd.DataFrame,
-                     center: Union[tuple, list, np.ndarray],
+                     center: Optional[Union[tuple, list, np.ndarray]] = None,
                      center_type: str = 'icrs',
-                     proper_motion: bool = True) -> pd.DataFrame:
+                     pixel_id: Optional[int] = None,
+                     rotate_frame: bool = True,
+                     proper_motion: bool = True,
+                     **user_healpy_kwargs) -> pd.DataFrame:
     """Creates new arbitrary co-ordinate axes centred on centre, allowing for clustering analysis that doesn't get
     affected by distortions. N.B.: currently only able to use ra, dec from data_gaia!
 
     Args:
         data_gaia (pd.DataFrame): Gaia data, with the standard column names.
-        center (list-like): array of length 2 with the ra, dec co-ordinates of the new centre.
-        center_type (str): type of frame centre is defined in. Must be acceptable by astropy.coordinates.SkyCoord. E.g.
+        center (list-like): array of length 2 with the ra, dec co-ordinates of the new centre. Must be specified if
+            pixel_id is not specified.
+            Default: None
+        center_type (str): type of frame center is defined in. Must be acceptable by astropy.coordinates.SkyCoord. E.g.
             could be 'icrs' or 'galactic'.
-            Default: 'icrs', i.e. centre should be (ra, dec).
+            Default: 'icrs', i.e. center should be (ra, dec).
+        pixel_id (int): if working with healpix pixels, this is the id of the central healpix pixel. Must be specified
+            if center is not specified.
+            Default: None
+        rotate_frame (bool): if pixel_id is not None, then you can also ask to have the frame rotated. This will rotate
+            the frame so that the boundaries of the quadrilateral pixel are roughly parallel to the latitude, longitude
+            co-ordinate axes.
+            Default: True
         proper_motion (bool): whether or not to also make transformed proper motions.
             Default: True
+        user_healpy_kwargs: kwargs to change for passing to healpy. Will only do something if you're using a pixel_id
+            instead of a field center. You may change the following (shown with their defaults):
+            'nest': True
+            'lonlat': True
+            'nside': 32  # i.e. 2**5
 
+    Returns:
+        data_gaia, but now with lat, lon, (pmlat, pmlon) keys for the centered data.
 
     """
-    # Get the co-ordinates into a SkyCoord
-    centre_frame = SkyCoord(center[0], center[1], frame=center_type, unit=u.deg).skyoffset_frame()
+    # Deal with if we're using a healpix pixel and hence specify the center as a pixel number
+    if center is None and pixel_id is not None:
+        center_frame = _get_healpix_frame(pixel_id, rotate_frame=rotate_frame, **user_healpy_kwargs)
+
+    # Otherwise, deal with the frame being user-specified
+    elif center is not None and pixel_id is None:
+        center_frame = SkyCoord(
+            center[0], center[1], frame=center_type, unit=u.deg).skyoffset_frame()
+
+    else:
+        raise ValueError("you must specify one or the other of center and pixel_id. Not both or neither!")
 
     if proper_motion:
         coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
@@ -130,7 +226,7 @@ def recenter_dataset(data_gaia: pd.DataFrame,
                           dec=data_gaia['dec'].to_numpy() << u.deg)
 
     # Apply the transform and save it
-    coords = coords.transform_to(centre_frame)
+    coords = coords.transform_to(center_frame)
 
     data_gaia['lon'] = coords.lon.value
     data_gaia['lat'] = coords.lat.value
