@@ -118,7 +118,6 @@ def test_recenter_dataset_healpix(show_figure=False):
     return data_gaia
 
 
-
 def test_rescale_dataset():
     """Tests the functionality of the dataset re-scaling of ocelot.cluster.rescale_dataset."""
     # Read in data for Blanco 1
@@ -214,12 +213,13 @@ def test_acg18():
     # Epsilon time
     np.random.seed(42)
     epsilons, random_distance_matrix = ocelot.cluster.epsilon.acg18(
-        data_rescaled, distance_matrix, n_repeats=[1, 2], min_samples='all', return_last_random_distance=True)
+        data_rescaled, distance_matrix, n_repeats=[1, 2], min_samples='all', return_last_random_distance=True,
+        return_std_deviation=True)
 
     # Check that the correct shapes are returned
     assert distance_matrix.shape == random_distance_matrix.shape
-    assert epsilons.shape == (10, 3)
-    assert epsilons.columns.to_list() == ['min_samples', 'acg_1', 'acg_2']
+    assert epsilons.shape == (10, 5)
+    assert epsilons.columns.to_list() == ['min_samples', 'acg_1', 'acg_1_std', 'acg_2', 'acg_2_std']
 
     # Check the values against a target set that were correct at first implementation
     target_epsilons = np.asarray([[0.01767441, 0.01594943],
@@ -233,6 +233,19 @@ def test_acg18():
                                   [0.15089530, 0.15114417],
                                   [0.15616676, 0.15699153]])
     assert np.allclose(epsilons[['acg_1', 'acg_2']].values, target_epsilons, rtol=0.0, atol=1e-8)
+    
+    # Also check the standard deviations
+    target_epsilons = np.asarray([[0., 0.00344996],
+                                  [0., 0.01294977],
+                                  [0., 0.00895719],
+                                  [0., 0.00666226],
+                                  [0., 0.00649378],
+                                  [0., 0.00096298],
+                                  [0., 0.00700098],
+                                  [0., 0.00051084],
+                                  [0., 0.00049773],
+                                  [0., 0.00164952]])
+    assert np.allclose(epsilons[['acg_1_std', 'acg_2_std']].values, target_epsilons, rtol=0.0, atol=1e-8)
 
     # Check that we just get back one (correct) value if that's all we ask for
     np.random.seed(42)
@@ -596,7 +609,7 @@ if __name__ == '__main__':
     # cut = test_cut_dataset()
     # gaia, rescaled = test_rescale_dataset()
     # spar, dist = test_precalculate_nn_distances()
-    # eps, ran = test_acg18()
+    eps, ran = test_acg18()
     # test__summed_kth_nn_distribution_one_cluster()
     # test__find_sign_change_epsilons()
     # test__find_curve_absolute_maximum_epsilons()
@@ -607,4 +620,4 @@ if __name__ == '__main__':
     # test__find_nearest_magnitude_star()
     # test_generate_synthetic_clusters(plot_clusters=True)
     # gaia = test_recenter_dataset(show_figure=True)
-    gaia = test_recenter_dataset_healpix(show_figure=True)
+    # gaia = test_recenter_dataset_healpix(show_figure=True)

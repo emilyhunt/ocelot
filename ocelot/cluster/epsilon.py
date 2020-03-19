@@ -11,11 +11,10 @@ from scipy.optimize import minimize, curve_fit
 from .nearest_neighbor import precalculate_nn_distances
 from ..plot import nearest_neighbor_distances
 
-from sklearn.metrics import pairwise_distances
-
 
 def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Union[int, List[int], Tuple[int]] = 10,
-          min_samples: Union[str, int] = 10, return_last_random_distance: bool = False):
+          min_samples: Union[str, int] = 10, return_std_deviation: bool = False, 
+          return_last_random_distance: bool = False):
     """A method for calculating an optimal epsilon value as in Alfredo Castro-Ginard's 2018 paper (hence the acronym
     acg18.)
 
@@ -29,6 +28,9 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
         min_samples (int, str): number of minimum samples to find the acg18 epsilon for (aka the kth nearest neighbor).
             May be an integer or 'all'.
             Default: 10
+        return_std_deviation (bool): whether or not to also return the standard deviation of epsilon estimates in the
+            acg_epsilon dataframe. 
+            Default: False
         return_last_random_distance (bool): whether or not to return the final random distance set made by the function.
             Useful for making plots & understanding what's going on internally.
             Default: False
@@ -105,6 +107,10 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
     for a_n_repeats in n_repeats:
         mean_random_epsilons = np.mean(random_epsilons[:a_n_repeats, :], axis=0)
         acg_epsilon['acg_' + str(a_n_repeats)] = (mean_random_epsilons + epsilon_minimum) / 2
+        
+        # Also add the standard deviation, if desired
+        if return_std_deviation:
+            acg_epsilon['acg_' + str(a_n_repeats) + '_std'] = np.std(random_epsilons[:a_n_repeats, :], axis=0)
 
     # Finally, turn this into a DataFrame!
     acg_epsilon_dataframe = pd.DataFrame(acg_epsilon, index=np.arange(len(acg_epsilon['min_samples'])))
