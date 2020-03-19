@@ -305,7 +305,8 @@
       <workItem from="1584529465101" duration="142000" />
       <workItem from="1584529609138" duration="2031000" />
       <workItem from="1584535889515" duration="1717000" />
-      <workItem from="1584603878315" duration="1310000" />
+      <workItem from="1584603878315" duration="1389000" />
+      <workItem from="1584626133825" duration="1766000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -615,7 +616,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584538338259</updated>
     </task>
-    <option name="localTasksCounter" value="45" />
+    <task id="LOCAL-00045" summary="A little bit of extra ocelot.cluster.epsilon.acg_18 functionality.&#10;- The acg_18 epsilon determination function can now also output standard deviations of values.&#10;This commit is additional contributing work for 0.3.0.">
+      <created>1584605244205</created>
+      <option name="number" value="00045" />
+      <option name="presentableId" value="LOCAL-00045" />
+      <option name="project" value="LOCAL" />
+      <updated>1584605244205</updated>
+    </task>
+    <option name="localTasksCounter" value="46" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -637,7 +645,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added a unit test for precalculate_nn_distances.&#10;- Added ACG+18 epsilon determination, complete with a unit test.&#10;This releases partially satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster nearest neighbor plotting.&#10;- Added ocelot.plot.nearest_neighbor_distance and various functions to contribute to it&#10;- Implemented unit tests for the above &#10;This releases partially satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Began adding epsilon determination via model fitting &amp; differentiation.&#10;This releases partially satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Finished adding epsilon determination via model fitting &amp; differentiation.&#10;- Added and verified unit tests for the above.&#10;This releases satisfies 0.3.0 feature b." />
@@ -662,17 +669,18 @@
     <MESSAGE value="Dataset partitioning and small documentation changes.&#10;- Now have a dataset partitioning class in the cluster.preprocessing submodule! It still requires unit testing.&#10;- Calculation of all_statistics now also adds the number of cluster member stars.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Small change to ACG epsilon determination with ocelot.cluster.epsilon.acg_18.&#10;- acg_18() now accepts list-like n_repeats as argument, and will calculate and return all of them&#10;- acg_18() now returns a pd.DataFrame of everything it found. The advantage of doing this with pandas is consistency when n_repeats is list-like - the number min_samples of each epsilon value is saved for future use.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Added HEALPix support to ocelot.cluster.recenter_dataset.&#10;- Can now specify pixel_id instead of the center of a field for HEALPix pixels&#10;- Can rotate the HEALPix pixel to have the edges of the boundary aligned with the latitude/longitude axes. &#10;- Passed its tests!&#10;This commit is additional contributing work for 0.3.0." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added HEALPix support to ocelot.cluster.recenter_dataset.&#10;- Can now specify pixel_id instead of the center of a field for HEALPix pixels&#10;- Can rotate the HEALPix pixel to have the edges of the boundary aligned with the latitude/longitude axes. &#10;- Passed its tests!&#10;This commit is additional contributing work for 0.3.0." />
+    <MESSAGE value="A little bit of extra ocelot.cluster.epsilon.acg_18 functionality.&#10;- The acg_18 epsilon determination function can now also output standard deviations of values.&#10;This commit is additional contributing work for 0.3.0." />
+    <option name="LAST_COMMIT_MESSAGE" value="A little bit of extra ocelot.cluster.epsilon.acg_18 functionality.&#10;- The acg_18 epsilon determination function can now also output standard deviations of values.&#10;This commit is additional contributing work for 0.3.0." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452724048" />
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1584538337790">
+    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1584605243778">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584538337790" />
+    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584605243778" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1584529604410">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>

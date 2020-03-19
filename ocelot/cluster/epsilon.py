@@ -21,12 +21,13 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
     Args:
         data_clustering (np.ndarray): clustering data for the field in shape (n_samples, n_features).
         nn_distances (np.ndarray): nearest neighbor distances for the field, in shape
-            (n_samples, max_neighbors_to_calculate).
+            (n_samples, min_samples + 1).
         n_repeats (int, list of ints, tuple of ints): number of random repeats to perform. May be a list or tuple of
             integers.
             Default: 10
         min_samples (int, str): number of minimum samples to find the acg18 epsilon for (aka the kth nearest neighbor).
             May be an integer or 'all'.
+            In this implementation, k = min_samples - 1 (k is the kth nearest neighbor to find.)
             Default: 10
         return_std_deviation (bool): whether or not to also return the standard deviation of epsilon estimates in the
             acg_epsilon dataframe. 
@@ -57,15 +58,16 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
     elif type(min_samples) is not int:
         raise ValueError("Incompatible number or string of min_samples specified.\n"
                          "Allowed values:\n"
-                         "- integer less than max_neighbors_to_calculate and greater than zero\n"
+                         "- integer less than / equal to max_neighbors_to_calculate + 1 and greater than zero\n"
                          "- 'all', which calculates all values upto max_neighbors_to_calculate\n")
 
-    elif min_samples > max_neighbors_to_calculate or min_samples < 1:
-        raise ValueError("min_samples may not be larger than max_neighbors_to_calculate (aka nn_distances.shape[1]) "
-                         "and must be a positive integer.")
+    elif min_samples > max_neighbors_to_calculate + 1 or min_samples < 2:
+        raise ValueError("min_samples may not be larger than max_neighbors_to_calculate (aka nn_distances.shape[1]) + 1"
+                         " and must be a positive integer > 2.")
 
     else:
-        epsilon_minimum = np.min(nn_distances[:, min_samples - 1])
+        kth_neighbor = min_samples - 1 
+        epsilon_minimum = np.min(nn_distances[:, kth_neighbor - 1])  # -1 here because arrays are 0 indexed
 
     # Semi-paranoid memory management (lol)
     del nn_distances
@@ -98,10 +100,10 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
 
     # Ignore random epsilons we don't need if the user doesn't want them all
     if min_samples != 'all':
-        random_epsilons = random_epsilons[:, min_samples - 1].reshape(-1, 1)
+        random_epsilons = random_epsilons[:, kth_neighbor - 1].reshape(-1, 1)
         acg_epsilon = {'min_samples': np.atleast_1d(min_samples)}
     else:
-        acg_epsilon = {'min_samples': np.arange(max_neighbors_to_calculate) + 1}
+        acg_epsilon = {'min_samples': np.arange(max_neighbors_to_calculate) + 2}
 
     # Cycle over all the numbers of repeats the user requested, finding the requested acg epsilon values
     for a_n_repeats in n_repeats:

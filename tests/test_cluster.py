@@ -246,6 +246,9 @@ def test_acg18():
                                   [0., 0.00049773],
                                   [0., 0.00164952]])
     assert np.allclose(epsilons[['acg_1_std', 'acg_2_std']].values, target_epsilons, rtol=0.0, atol=1e-8)
+    
+    # And check the range of min_samples. It should go from 2 to 11 when provided with values of k from 0 to 10.
+    assert np.all(epsilons['min_samples'].values == np.arange(10) + 2)
 
     # Check that we just get back one (correct) value if that's all we ask for
     np.random.seed(42)
@@ -254,24 +257,24 @@ def test_acg18():
     single_epsilon = single_epsilon['acg_2'].values[0]
 
     assert type(single_epsilon) == float or np.float
-    assert np.allclose(single_epsilon, 0.1588709230676416, rtol=0.0, atol=1e-8)
+    assert np.allclose(single_epsilon, 0.15144678787864096, rtol=0.0, atol=1e-8)
 
     # Throw some errors by being a fuckwit with min_samples
     # Wrong string
-    with pytest.raises(ValueError, match="Incompatible number or string of min_samples specified.\n"
-                                         "Allowed values:\n"
-                                         "- integer less than max_neighbors_to_calculate and greater than zero\n"
-                                         "- 'all', which calculates all values upto max_neighbors_to_calculate\n"):
+    with pytest.raises(ValueError, match="Incompatible number or string of min_samples specified."):
         ocelot.cluster.epsilon.acg18(
-            data_rescaled, distance_matrix, n_repeats=2, min_samples='your mum', return_last_random_distance=False)
+            data_rescaled, distance_matrix, n_repeats=2, min_samples='not the droid you were looking for', 
+            return_last_random_distance=False)
 
     # Min_samples greater than the number of neighbours
-    with pytest.raises(ValueError, match="min_samples may not be larger than max_neighbors_to_calculate"):
+    with pytest.raises(ValueError,
+                       match="min_samples may not be larger than max_neighbors_to_calculate"):
         ocelot.cluster.epsilon.acg18(
             data_rescaled, distance_matrix, n_repeats=2, min_samples=100, return_last_random_distance=False)
 
     # Min_samples less than one
-    with pytest.raises(ValueError, match="min_samples may not be larger than max_neighbors_to_calculate"):
+    with pytest.raises(ValueError,
+                       match="min_samples may not be larger than max_neighbors_to_calculate"):
         ocelot.cluster.epsilon.acg18(
             data_rescaled, distance_matrix, n_repeats=2, min_samples=0, return_last_random_distance=False)
 
