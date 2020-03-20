@@ -612,7 +612,7 @@ if __name__ == '__main__':
     # cut = test_cut_dataset()
     # gaia, rescaled = test_rescale_dataset()
     # spar, dist = test_precalculate_nn_distances()
-    eps, ran = test_acg18()
+    # eps, ran = test_acg18()
     # test__summed_kth_nn_distribution_one_cluster()
     # test__find_sign_change_epsilons()
     # test__find_curve_absolute_maximum_epsilons()
@@ -624,3 +624,4 @@ if __name__ == '__main__':
     # test_generate_synthetic_clusters(plot_clusters=True)
     # gaia = test_recenter_dataset(show_figure=True)
     # gaia = test_recenter_dataset_healpix(show_figure=True)
+    test_data_partition(show_figure=True)

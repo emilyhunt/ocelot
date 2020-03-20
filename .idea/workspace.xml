@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Small bugfix to how acg epsilon determination works.&#10;- The nearest neighbor k is now correctly defined as min_samples - 1. This slightly reduces the estimates of this function.">
+      <change afterPath="$PROJECT_DIR$/ocelot/cluster/partition.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -56,7 +58,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/ocelot/cluster/partition.py" />
     <property name="run.code.analysis.last.selected.profile" value="aDefault" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
@@ -139,6 +141,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -231,6 +236,9 @@
       </list>
     </recent_temporary>
   </component>
+  <component name="StructureViewFactory">
+    <option name="ACTIVE_ACTIONS" value=",SHOW_FIELDS,SHOW_INHERITED" />
+  </component>
   <component name="SvnConfiguration">
     <configuration />
   </component>
@@ -306,7 +314,10 @@
       <workItem from="1584529609138" duration="2031000" />
       <workItem from="1584535889515" duration="1717000" />
       <workItem from="1584603878315" duration="1389000" />
-      <workItem from="1584626133825" duration="1766000" />
+      <workItem from="1584626133825" duration="3362000" />
+      <workItem from="1584691509465" duration="2828000" />
+      <workItem from="1584708972523" duration="50000" />
+      <workItem from="1584709051833" duration="3104000" />
     </task>
     <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
       <created>1570457204430</created>
@@ -623,7 +634,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584605244205</updated>
     </task>
-    <option name="localTasksCounter" value="46" />
+    <task id="LOCAL-00046" summary="Small bugfix to how acg epsilon determination works.&#10;- The nearest neighbor k is now correctly defined as min_samples - 1. This slightly reduces the estimates of this function.">
+      <created>1584628097587</created>
+      <option name="number" value="00046" />
+      <option name="presentableId" value="LOCAL-00046" />
+      <option name="project" value="LOCAL" />
+      <updated>1584628097587</updated>
+    </task>
+    <option name="localTasksCounter" value="47" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -645,7 +663,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on ocelot.cluster nearest neighbor plotting.&#10;- Added ocelot.plot.nearest_neighbor_distance and various functions to contribute to it&#10;- Implemented unit tests for the above &#10;This releases partially satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Began adding epsilon determination via model fitting &amp; differentiation.&#10;This releases partially satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Finished adding epsilon determination via model fitting &amp; differentiation.&#10;- Added and verified unit tests for the above.&#10;This releases satisfies 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Added a dpi parameter to ocelot.plot figures&#10;- Fixed a bug in acg epsilon determination&#10;This release fixes bugs in 0.3.0 feature b." />
@@ -670,28 +687,33 @@
     <MESSAGE value="Small change to ACG epsilon determination with ocelot.cluster.epsilon.acg_18.&#10;- acg_18() now accepts list-like n_repeats as argument, and will calculate and return all of them&#10;- acg_18() now returns a pd.DataFrame of everything it found. The advantage of doing this with pandas is consistency when n_repeats is list-like - the number min_samples of each epsilon value is saved for future use.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Added HEALPix support to ocelot.cluster.recenter_dataset.&#10;- Can now specify pixel_id instead of the center of a field for HEALPix pixels&#10;- Can rotate the HEALPix pixel to have the edges of the boundary aligned with the latitude/longitude axes. &#10;- Passed its tests!&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="A little bit of extra ocelot.cluster.epsilon.acg_18 functionality.&#10;- The acg_18 epsilon determination function can now also output standard deviations of values.&#10;This commit is additional contributing work for 0.3.0." />
-    <option name="LAST_COMMIT_MESSAGE" value="A little bit of extra ocelot.cluster.epsilon.acg_18 functionality.&#10;- The acg_18 epsilon determination function can now also output standard deviations of values.&#10;This commit is additional contributing work for 0.3.0." />
+    <MESSAGE value="Small bugfix to how acg epsilon determination works.&#10;- The nearest neighbor k is now correctly defined as min_samples - 1. This slightly reduces the estimates of this function." />
+    <option name="LAST_COMMIT_MESSAGE" value="Small bugfix to how acg epsilon determination works.&#10;- The nearest neighbor k is now correctly defined as min_samples - 1. This slightly reduces the estimates of this function." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452724048" />
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1584605243778">
+    <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog" timestamp="1584709507322">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584605243778" />
-    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1584529604410">
+    <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
+    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1584630262667">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584529604410" />
+    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584630262667" />
+    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1584709506609">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709506609" />
     <state x="2369" y="174" key="SettingsEditor" timestamp="1584452701822">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2369" y="174" key="SettingsEditor/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452701822" />
-    <state x="2536" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1584535890252">
+    <state x="2536" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1584709069870">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2536" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584535890252" />
+    <state x="2536" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709069870" />
   </component>
 </project>
