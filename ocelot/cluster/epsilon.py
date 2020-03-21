@@ -474,7 +474,7 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
 
 def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_size: int = 1,
                 resolution: int = 500, point_fraction_to_keep: float = 0.95, model_minimum_drop: float = 1.0,
-                optimiser: str ='trf', print_convergence_messages: bool = False,
+                optimiser: str ='trf', print_convergence_messages: bool = True,
                 make_diagnostic_plot: bool = False, return_all_sign_changes=False,
                 **kwargs) -> list:
     """Attempts to find an optimum value for epsilon by modelling the field of the cluster and the cluster itself.
@@ -583,6 +583,8 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     # -- Calculation and grabbing of epsilon values
     # We make sure that we oversample the function from near-zero, which helps to find all points where it crosses axis
     distances_sampled = np.linspace(1e-30, distances.max(), num=resolution)
+
+    print(parameters, '\n', result_unprocessed, '\n', result)
 
     # We'll evaluate the function at the results that were grabbed, for plotting and epsilon purposes
     points_field, points_cluster, points_total = _summed_kth_nn_distribution_one_cluster(
