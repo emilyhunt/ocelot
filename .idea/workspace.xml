@@ -317,14 +317,7 @@
       <workItem from="1584709051833" duration="4761000" />
       <workItem from="1584782168627" duration="168000" />
       <workItem from="1584803306801" duration="1196000" />
-      <workItem from="1584809979280" duration="852000" />
-    </task>
-    <task id="LOCAL-00001" summary="Imported some tools from Jupyter notebooks and setup some basic project structure.">
-      <created>1570457204430</created>
-      <option name="number" value="00001" />
-      <option name="presentableId" value="LOCAL-00001" />
-      <option name="project" value="LOCAL" />
-      <updated>1570457204430</updated>
+      <workItem from="1584809979280" duration="2341000" />
     </task>
     <task id="LOCAL-00002" summary="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board">
       <created>1570611109263</created>
@@ -662,7 +655,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584803993594</updated>
     </task>
-    <option name="localTasksCounter" value="50" />
+    <task id="LOCAL-00050" summary="Pushing a debug to the server, interim commit.">
+      <created>1584810866362</created>
+      <option name="number" value="00050" />
+      <option name="presentableId" value="LOCAL-00050" />
+      <option name="project" value="LOCAL" />
+      <updated>1584810866362</updated>
+    </task>
+    <option name="localTasksCounter" value="51" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -684,7 +684,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on ocelot.cluster epsilon determination.&#10;- Improved field model curve fit stability&#10;- Added a new epsilon c, epsilon f&#10;This release fixes bugs in 0.3.0 feature b." />
     <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented basic versions of .mean_distance, .mean_proper_motion, .internal_velocity_dispersion and .all_statistics&#10;- Radius and sky position stuff will need work&#10;- All the above is awaiting testing.&#10;This release partially satisfies 0.3.0 feature c." />
     <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented a basic version of .radius&#10;- Wrote unit tests for all functions in the submodule&#10;- Fixed a handful of small bugs in the implementations&#10;- Re-factored .all_statistics() so it can use different modes in the future. Eventually, it would be lovely to infer many of these parameters in a Bayesian way&#10;- All functions pass all tests =)&#10;This release satisfies 0.3.0 feature c." />
     <MESSAGE value="Work on ocelot.crossmatch&#10;- Have now written a basic crossmatch utility in the form of a class with methods, ocelot.crossmatch.Catalogue&#10;- It should be able to crossmatch with an arbitrary number of features, depending on the catalogue to be matched against&#10;- It requires testing!&#10;This commit partially satisfies 0.3.0 feature d." />
@@ -709,7 +708,8 @@
     <MESSAGE value="Began re-working the DataPartition class to work with HEALPix for CAC20.&#10;- Split the existing class into a SquareDataPartition and a DataPartition superclass.&#10;- This can be developed further, though I'll leave the square one as-is for now because I'm not using it." />
     <MESSAGE value="Field model bugfix.&#10;- Fixed a bug with epsilon field model determination in _summed_kth_nn_distribution_one_cluster: invalid parameters would cause a single np.inf to be incorrectly returned." />
     <MESSAGE value="Bugfix for my bugfix..." />
-    <option name="LAST_COMMIT_MESSAGE" value="Bugfix for my bugfix..." />
+    <MESSAGE value="Pushing a debug to the server, interim commit." />
+    <option name="LAST_COMMIT_MESSAGE" value="Pushing a debug to the server, interim commit." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -720,10 +720,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1584810844724">
+    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1584810865994">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584810844724" />
+    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584810865994" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1584709506609">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>

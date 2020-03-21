@@ -167,23 +167,12 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
         raise NotImplementedError("This function no longer supports use with previous minimisation versions of the "
                                   "field model for epsilon determination.")
 
-    # Return inf if the parameters are wrong
-    if np.any(parameters[:4] <= 0) or parameters[4] < 0:
-        return np.full((3, r_range.shape[0]), np.inf)
-    if parameters[2] >= parameters[0]:
-        return np.full((3, r_range.shape[0]), np.inf)
-
     # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
     y_field = np.cumsum(_kth_nn_distribution(r_range, parameters[0], parameters[1], k))
     normalisation_field = np.trapz(y_field, x=r_range) / (1 - parameters[4])
 
     y_cluster = np.cumsum(_kth_nn_distribution(r_range, parameters[2], parameters[3], k))
     normalisation_cluster = np.trapz(y_cluster, x=r_range) / parameters[4]
-
-    # Stop and return inf if the areas aren't valid
-    if normalisation_field <= 0 or normalisation_cluster <= 0 \
-            or np.all(np.isfinite(y_field)) is False or np.all(np.isfinite(y_cluster)) is False:
-        return np.full((3, r_range.shape[0]), np.inf)
 
     y_field /= normalisation_field
     y_cluster /= normalisation_cluster
@@ -583,8 +572,6 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     # -- Calculation and grabbing of epsilon values
     # We make sure that we oversample the function from near-zero, which helps to find all points where it crosses axis
     distances_sampled = np.linspace(1e-30, distances.max(), num=resolution)
-
-    print(parameters, '\n', result_unprocessed, '\n', result)
 
     # We'll evaluate the function at the results that were grabbed, for plotting and epsilon purposes
     points_field, points_cluster, points_total = _summed_kth_nn_distribution_one_cluster(
