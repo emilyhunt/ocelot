@@ -142,7 +142,7 @@ def _kth_nn_distribution(r_range, a, dimension, k):
 
 
 def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_range: np.ndarray,
-                                            y_range: np.ndarray = None, minimisation_mode: bool = True):
+                                            y_range: np.ndarray = None, minimisation_mode: bool = False):
     """Returns the summer kth nearest neighbor distribution, assuming the field contains at most one cluster.
 
     Todo remove minimisation input_mode
@@ -155,24 +155,23 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
             3: cluster_dimension
             4: cluster_fraction
         r_range (np.ndarray): radius values away from the center to evaluate at.
-        y_range (np.ndarray): log10 points values to compare the model to. Must be specified if minimisation_mode=True.
-            Default: None
         k (int): the kth nearest neighbor moment of the distribution
-        minimisation_mode (bool): whether or not to just return a single residual value. Otherwise, returns an array
-            of y_field, y_cluster and y_total.
-            Default: True
+        y_range (np.ndarray): unsupported previous functionality. Raises error if not None.
+        minimisation_mode (bool): unsupported previous functionality. Raises error if not False.
 
     Returns:
-        minimisation_mode =
-            True: a single residual value
-            False: an array of y_field, y_cluster and y_total.
+        an array of y_field, y_cluster and y_total.
 
     """
+    if minimisation_mode or y_range is not None:
+        raise NotImplementedError("This function no longer supports use with previous minimisation versions of the "
+                                  "field model for epsilon determination.")
+
     # Return inf if the parameters are wrong
     if np.any(parameters[:4] <= 0) or parameters[4] < 0:
-        return np.full(r_range.shape, np.inf)
+        return np.full((3, r_range.shape[0]), np.inf)
     if parameters[2] >= parameters[0]:
-        return np.full(r_range.shape, np.inf)
+        return np.full((3, r_range.shape[0]), np.inf)
 
     # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
     y_field = np.cumsum(_kth_nn_distribution(r_range, parameters[0], parameters[1], k))
@@ -184,30 +183,21 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
     # Stop and return inf if the areas aren't valid
     if normalisation_field <= 0 or normalisation_cluster <= 0 \
             or np.all(np.isfinite(y_field)) is False or np.all(np.isfinite(y_cluster)) is False:
-        return np.full(r_range.shape, np.inf)
+        return np.full((3, r_range.shape[0]), np.inf)
 
     y_field /= normalisation_field
     y_cluster /= normalisation_cluster
     y_total = y_field + y_cluster
 
-    # If we're minimising, we want to decide whether or not to take logs _fast_
-    if minimisation_mode:
-        if np.any(y_total <= 0):
-            return np.full(r_range.shape, np.inf)
-        else:
-            return np.sum((np.log10(y_total) - y_range)**2)
+    # Return raw values to be used by a plotter (slow due to the initialisation process, amongst other things)
+    # Make a big array to work on
+    log_array = np.vstack([y_field, y_cluster, y_total])
+    good_values = log_array > 0
 
-    # Otherwise, we'll return raw values to be used by a plotter (slow due to the initialisation process, amongst other
-    # things)
-    else:
-        # Make a big array to work on
-        log_array = np.vstack([y_field, y_cluster, y_total])
-        good_values = log_array > 0
+    # Take logs only where log() is defined, otherwise replace with -np.inf
+    log_array = np.where(good_values, np.log10(log_array, where=good_values), -np.inf)
 
-        # Take logs only where log() is defined, otherwise replace with -np.inf
-        log_array = np.where(good_values, np.log10(log_array, where=good_values), -np.inf)
-
-        return log_array
+    return log_array
 
 
 def _constrained_a(d, k, epsilon_max):
