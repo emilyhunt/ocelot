@@ -170,9 +170,9 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
     """
     # Return inf if the parameters are wrong
     if np.any(parameters[:4] <= 0) or parameters[4] < 0:
-        return np.inf
+        return np.full(r_range.shape, np.inf)
     if parameters[2] >= parameters[0]:
-        return np.inf
+        return np.full(r_range.shape, np.inf)
 
     # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
     y_field = np.cumsum(_kth_nn_distribution(r_range, parameters[0], parameters[1], k))
@@ -184,7 +184,7 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
     # Stop and return inf if the areas aren't valid
     if normalisation_field <= 0 or normalisation_cluster <= 0 \
             or np.all(np.isfinite(y_field)) is False or np.all(np.isfinite(y_cluster)) is False:
-        return np.inf
+        return np.full(r_range.shape, np.inf)
 
     y_field /= normalisation_field
     y_cluster /= normalisation_cluster
@@ -193,7 +193,7 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
     # If we're minimising, we want to decide whether or not to take logs _fast_
     if minimisation_mode:
         if np.any(y_total <= 0):
-            return np.inf
+            return np.full(r_range.shape, np.inf)
         else:
             return np.sum((np.log10(y_total) - y_range)**2)
 
