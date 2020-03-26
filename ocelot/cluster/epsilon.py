@@ -463,8 +463,8 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
 
 def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_size: int = 1,
                 resolution: int = 500, point_fraction_to_keep: float = 0.95, model_minimum_drop: float = 1.0,
-                optimiser: str ='trf', print_convergence_messages: bool = True,
-                make_diagnostic_plot: bool = False, return_all_sign_changes=False,
+                optimiser: str ='trf', print_convergence_messages: bool = False,
+                make_diagnostic_plot: bool = False, return_all_sign_changes: bool = False,
                 **kwargs) -> list:
     """Attempts to find an optimum value for epsilon by modelling the field of the cluster and the cluster itself.
     Leverages scipy curve fitting to find optimum model values, and can even report on the approximate estimated size

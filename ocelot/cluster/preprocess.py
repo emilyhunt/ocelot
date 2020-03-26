@@ -1,6 +1,6 @@
 """A number of functions for pre-processing Gaia data before clustering can begin."""
 
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, List
 
 import numpy as np
 import pandas as pd
@@ -166,18 +166,18 @@ def _get_healpix_frame(pixel_id: int, rotate_frame: bool = True, **user_healpy_k
     return center_coords.skyoffset_frame(rotation=rotation_angle)
 
 
-def recenter_dataset(data_gaia: pd.DataFrame,
+def recenter_dataset(*args,
                      center: Optional[Union[tuple, list, np.ndarray]] = None,
                      center_type: str = 'icrs',
                      pixel_id: Optional[int] = None,
                      rotate_frame: bool = True,
                      proper_motion: bool = True,
-                     **user_healpy_kwargs) -> pd.DataFrame:
+                     **user_healpy_kwargs) -> Union[pd.DataFrame, List[pd.DataFrame]]:
     """Creates new arbitrary co-ordinate axes centred on centre, allowing for clustering analysis that doesn't get
     affected by distortions. N.B.: currently only able to use ra, dec from data_gaia!
 
     Args:
-        data_gaia (pd.DataFrame): Gaia data, with the standard column names.
+        *args (pd.DataFrame): Gaia dataframes to apply the transform to.
         center (list-like): array of length 2 with the ra, dec co-ordinates of the new centre. Must be specified if
             pixel_id is not specified.
             Default: None
@@ -215,29 +215,37 @@ def recenter_dataset(data_gaia: pd.DataFrame,
     else:
         raise ValueError("you must specify one or the other of center and pixel_id. Not both or neither!")
 
-    if proper_motion:
-        coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
-                          dec=data_gaia['dec'].to_numpy() << u.deg,
-                          pm_ra_cosdec=data_gaia['pmra'].to_numpy() << u.mas / u.yr,
-                          pm_dec=data_gaia['pmdec'].to_numpy() << u.mas / u.yr)
+    to_return = []
+
+    for data_gaia in args:
+        if proper_motion:
+            coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
+                              dec=data_gaia['dec'].to_numpy() << u.deg,
+                              pm_ra_cosdec=data_gaia['pmra'].to_numpy() << u.mas / u.yr,
+                              pm_dec=data_gaia['pmdec'].to_numpy() << u.mas / u.yr)
+        else:
+            coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
+                              dec=data_gaia['dec'].to_numpy() << u.deg)
+
+        # Apply the transform and save it
+        coords = coords.transform_to(center_frame)
+
+        data_gaia['lon'] = coords.lon.value
+        data_gaia['lat'] = coords.lat.value
+
+        if proper_motion:
+            data_gaia['pmlon'] = coords.pm_lon_coslat.value
+            data_gaia['pmlat'] = coords.pm_lat.value
+
+        # Correct all values above 180 to simply be negative numbers
+        data_gaia['lon'] = np.where(data_gaia['lon'] > 180, data_gaia['lon'] - 360, data_gaia['lon'])
+
+        to_return.append(data_gaia)
+
+    if len(to_return) == 1:
+        return to_return[0]
     else:
-        coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
-                          dec=data_gaia['dec'].to_numpy() << u.deg)
-
-    # Apply the transform and save it
-    coords = coords.transform_to(center_frame)
-
-    data_gaia['lon'] = coords.lon.value
-    data_gaia['lat'] = coords.lat.value
-
-    if proper_motion:
-        data_gaia['pmlon'] = coords.pm_lon_coslat.value
-        data_gaia['pmlat'] = coords.pm_lat.value
-
-    # Correct all values above 180 to simply be negative numbers
-    data_gaia['lon'] = np.where(data_gaia['lon'] > 180, data_gaia['lon'] - 360, data_gaia['lon'])
-
-    return data_gaia
+        return to_return
 
 
 def rescale_dataset(data_gaia: pd.DataFrame,

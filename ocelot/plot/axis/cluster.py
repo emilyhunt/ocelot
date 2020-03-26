@@ -354,3 +354,106 @@ def color_magnitude_diagram(fig,
                          zorder=100)
 
     return axis
+
+
+def ra_versus_parallax(fig,
+                       axis,
+                       data_gaia: pd.DataFrame,
+                       cluster_labels: np.ndarray = None,
+                       cluster_indices: Optional[Union[list, np.ndarray]] = None,
+                       cluster_shading: Optional[np.ndarray] = None,
+                       plot_std_limit: float = 3.0,
+                       x_limits: Optional[Union[list, np.ndarray]] = None,
+                       y_limits: Optional[Union[list, np.ndarray]] = None,
+                       cluster_marker_radius: float = 1.0):
+    """Makes a plot of right ascension vs parallax on an axis.
+
+    Notes:
+        You can specify as few as one cluster_indices if cluster overplotting
+        is too crowded.
+
+    Args:
+        fig (matplotlib figure): the figure element. Required to calculate alpha values precisely.
+        axis (matplotlib axis): the colour magnitude diagram axis.
+        data_gaia (pandas.DataFrame): the Gaia data read in to a DataFrame.
+            Keys should be unchanged from default Gaia source table names.
+        cluster_labels (np.ndarray): the cluster membership labels for
+            clustered stars. This should be the default sklearn.cluster output.
+        cluster_indices (list-like, optional): the clusters to plot in
+            cluster_labels. For instance, you may not want to plot '-1'
+            clusters (which are noise) produced by algorithm like DBSCAN.
+        cluster_shading (np.ndarray, optional): an array of floats in the range 0, 1 for all clusters to use to shade
+            their colour (aka alpha value). Useful for displaying e.g. HDBSCAN soft clustering.
+            Default: None
+        plot_std_limit (float): standard deviation of parameters to use
+            to find plotting limits if none are explicitly specified.
+            Default: 1.5
+        x_limits (list-like, optional): the minimum and maximum ra limits.
+            Default: None
+        y_limits (list-like, optional): the minimum and maximum parallax limits.
+            Default: None
+        cluster_marker_radius (float): radius of the cluster marker. Useful to increase when clusters are hard to see
+            against background points.
+            Default: 1.0
+
+    Returns:
+        axis (matplotlib axis): the modified colour magnitude diagram axis.
+
+    """
+
+    # Calculate the stuff we need to plot
+    # M = m - 5 * log10(d [pc]) + 5
+    ra = data_gaia['ra']
+    parallax = data_gaia["parallax"]
+
+    # Calculate our own plotting limits if none have been specified
+    if x_limits is None:
+        x_limits = np.asarray([ra.min(), ra.max()])
+
+    if y_limits is None:
+        y_limits = (np.mean(parallax)
+                    + np.std(parallax)
+                    * np.array([-plot_std_limit, plot_std_limit]))
+
+    if cluster_shading is None:
+        cluster_shading = np.ones(data_gaia.shape[0])
+
+    # Work out how many points will fall in the pm range
+    good_x = np.logical_and(ra > x_limits[0], ra < x_limits[1])
+    good_y = np.logical_and(parallax > y_limits[0], parallax < y_limits[1])
+    n_points = np.count_nonzero(np.logical_and(good_x, good_y))
+
+    # Calculate a rough guess at a good alpha value
+    alpha_estimate = utilities.calculate_alpha(fig, axis, n_points, 1)
+
+    # CMD plot
+    axis.plot(ra, parallax,
+              '.', ms=1, alpha=alpha_estimate, c='k')
+
+    axis.set_xlabel(r'ra')
+    axis.set_ylabel(r'parallax')
+    axis.set_title('parallax vs. ra')
+    axis.set_xlim(x_limits)
+    axis.set_ylim(y_limits)
+
+    # Plot clusters if labels have been specified
+    if cluster_labels is not None:
+        cmap = plt.get_cmap("tab10")  # Get the default matplotlib colourmap
+
+        # We cycle over the clusters, grabbing their indices and plotting
+        # them in a new colour erri time =)
+        for i_color, a_cluster in enumerate(cluster_indices):
+            stars_in_this_cluster = cluster_labels == a_cluster
+
+            # Make colors and give them alpha values
+            colors = np.tile(cmap(i_color % 10), (np.count_nonzero(stars_in_this_cluster), 1))
+            colors[:, 3] = cluster_shading[stars_in_this_cluster]
+
+            axis.scatter(ra[stars_in_this_cluster],
+                         parallax[stars_in_this_cluster],
+                         marker='.',
+                         s=cluster_marker_radius**2,
+                         c=colors,
+                         zorder=100)
+
+    return axis

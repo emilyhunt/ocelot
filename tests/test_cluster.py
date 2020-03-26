@@ -22,6 +22,7 @@ from scipy.sparse.csr import csr_matrix
 
 path_to_blanco_1 = Path('./test_data/blanco_1_gaia_dr2_gmag_18_cut.pickle')
 path_to_healpix_pixel = Path('./test_data/healpix_12237.csv')
+path_to_healpix_pixels = Path('./test_data/healpix_pixel/')
 
 path_to_one_simulated_population = Path('./test_data/simulated_populations/small/1.dat')
 path_to_all_simulated_populations = Path('./test_data/simulated_populations/small')
@@ -182,10 +183,62 @@ def test_precalculate_nn_distances():
     return sparse_matrix, distance_matrix
 
 
-def test_data_partition(show_figure=True):
+def test_data_partition(show_figure=False):
     """Tests all elements of the data partition class, ocelot.cluster.DataPartition."""
-    
-    pass
+    # Read in the data
+    to_concatenate = []
+    for a_file in path_to_healpix_pixels.glob('*.csv'):
+        to_concatenate.append(pd.read_csv(a_file))
+
+    data_gaia = pd.concat(to_concatenate, ignore_index=True)
+    del to_concatenate
+
+    # Define what our partition will look like
+    constraints = [
+        [None, None, 0],
+        [5, 7, 1000],
+        [6, 7, 2000],
+    ]
+
+    # This is just to set the plotting up
+    partition_numbers = [np.arange(1), np.arange(1, 10), np.arange(10, 46)]
+
+    # Let's go!
+    partitioner = ocelot.cluster.DataPartition(12238,
+                                               constraints=constraints,
+                                               final_distance=np.inf,
+                                               parallax_sigma_threshold=2.)
+
+    partitioner.set_data(data_gaia)
+
+    partitioner.plot_partitions(figure_title='test of the partitioner', show_figure=show_figure)
+
+    # Also make a clustering-style plot of the different partitions
+    if show_figure:
+        # Make a mock labels array and a mock shades one
+        labels = np.full((partitioner.total_partitions, data_gaia.shape[0]), -1)
+
+        for i_partition in range(partitioner.total_partitions):
+            a_partition = partitioner.get_partition(i_partition, return_data=False)
+            labels[i_partition, a_partition] = i_partition
+
+        for i_parallax_set, a_parallax_set in enumerate(partition_numbers):
+
+            # Draw random values for every non-field label to decide which cluster to assign them to
+            random_vals = np.where(labels[a_parallax_set] == -1, -1,
+                                   np.random.rand(len(a_parallax_set), labels.shape[1]))
+
+            labels_view = labels[a_parallax_set]
+            a_labels = labels_view[np.argmax(random_vals, axis=0), np.arange(labels.shape[1])]
+
+            ocelot.plot.clustering_result(data_gaia, a_labels, a_parallax_set,
+                                          figure_title=f"parallax set {i_parallax_set}",
+                                          cmd_plot_y_limits=[9, 16],
+                                          make_parallax_plot=True,
+                                          clip_to_fit_clusters=False,
+                                          plot_std_limit=2.)
+
+    return data_gaia, partitioner
 
 
 def test_acg18():
@@ -624,4 +677,4 @@ if __name__ == '__main__':
     # test_generate_synthetic_clusters(plot_clusters=True)
     # gaia = test_recenter_dataset(show_figure=True)
     # gaia = test_recenter_dataset_healpix(show_figure=True)
-    test_data_partition(show_figure=True)
+    data, partition = test_data_partition(show_figure=True)

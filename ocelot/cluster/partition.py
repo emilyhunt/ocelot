@@ -3,6 +3,7 @@
 from typing import Optional, Union
 
 import numpy as np
+import healpy as hp
 import pandas as pd
 from matplotlib import pyplot as plt
 
@@ -40,126 +41,219 @@ def check_constraints(constraints, sky_area, minimum_area_fraction=2., tidal_rad
             - the end excess area fractions of bins
 
     """
-    # Set constraints into a numpy array
-    constraints = np.asarray(constraints)
-
-    # Error checking
-    if constraints.ndim != 2:
-        raise ValueError("constraints must have shape (n_distances, 2)")
-    if constraints.shape[1] != 2:
-        raise ValueError("constraints must have shape (n_distances, 2)")
-
-    # Check that all the distances are strictly increasing and that the last one is inf
-    if np.any(constraints[1:, 1] <= constraints[:-1, 1]):
-        raise ValueError("constraints must have strictly increasing distances.")
-    if constraints[-1, 1] != np.inf:
-        raise ValueError("the last tile must have an infinite end distance, aka np.inf.")
-
-    # Check that all numbers of bins are valid
-    if np.any(constraints[:, 0] < 1):
-        raise ValueError("sky areas must be divided into at least one box.")
-
-    n_distances = constraints.shape[0]
-
-    # Calculate the area at all points and check them, in a way that can handle divisions by zero
-    cluster_areas = _sky_area_of_cluster(constraints[:-1, 1], tidal_radius=tidal_radius)
-    tile_areas = sky_area / constraints[:, 0]
-    nonzero_areas = cluster_areas != 0
-
-    start_fractions = np.zeros(n_distances)
-    start_fractions[0] = np.inf  # We ignore the first start, as we always start at 0 distance
-    start_fractions[1:] = tile_areas[1:] / cluster_areas[:]
-
-    end_fractions = np.zeros(n_distances)
-    end_fractions = tile_areas[:-1] / cluster_areas[:]
-    end_fractions[-1] = np.inf  # We ignore the last bin too, as it's always np.inf
-
-    # Area checking time!
-    bad_starts = start_fractions < minimum_area_fraction
-    bad_ends = end_fractions < minimum_area_fraction
-    if np.any(bad_ends) or np.any(bad_starts):
-        raise ValueError(f"constraints {bad_starts.nonzero()[0]} have start area excesses below the "
-                         f"minimum_area_fraction, and {bad_ends.nonzero()[0]} also have final area excesses below "
-                         f"the minimum_area_fraction. All excess areas: \n"
-                         f"start: {start_fractions}\nend: {end_fractions}")
-
-    # Calculate the first valid distance
-    first_valid_distance = tidal_radius / np.tan(np.sqrt(tile_areas[0] * np.pi / 180 ** 2 / minimum_area_fraction))
-
-    return first_valid_distance, start_fractions, end_fractions
+    pass
 
 
 default_partition = [
-    [1, 800],
-    [1, 1500],
-    [9, np.inf]
+    [None, None, 0.],
+    [None, None, 700.],
+    [5, 6, 2000.]
 ]
 
 
 class DataPartition:
-    def __init__(self, sky_area: float,
-                 partitions,
-                 constraints: Union[list, tuple, np.ndarray],
+    def __init__(self,
+                 central_pixel: int,
+                 constraints: Optional[Union[list, tuple, np.ndarray]] = None,
+                 final_distance: float = np.inf,
                  parallax_sigma_threshold: float = 2.,
-                 minimum_area_fraction: float = 2.,
-                 tidal_radius: float = 10.,
                  verbose: bool = True):
-        """Superclass for data partitions. Does a bare minimum of error checking!
+        """A class for creating Gaia dataset partitions. Checks the quality of the constraints and writes them to the
+        class after some processing.
+
+        WARNING: Currently only supports squares! Rectangular fields may have unwanted effects.
 
         Args:
-            sky_area (float): the total area of the data on the sky.
-            partitions (list): an array of the partitions
-            tile_overlap (float): overlap (in parsecs) to make between the start of tiles. You will need to set this
-                lower if you have a large number of partitions or want to minimise the number of bin members.
-                Default: 10. (should prevent edge effects on all but the most... edgey clusters)
+            central_pixel (int): healpix level 5 id of the central pixel.
+            constraints (list-like, optional): the constraints array, of shape (n_distances, 3), where each entry looks
+                like:
+                [healpix_level or None, overlap healpix_level or None, start_distance in pc]
+                Default: ocelot.cluster.preprocess.default_partition
+            final_distance (float): end distance of the last set of constraints.
+                Default: np.inf
             parallax_sigma_threshold (float): how much of the parallax error to consider when deciding whether or not to
                 include stars. If zero, error is not considered at all and there won't be any overlap. If large, then
                 most stars will be in every parallax bin.
                 Default: 2. (i.e. ~90% of stars actually in a bin but outside of it within error will end up in the bin)
-            minimum_area_fraction (float): minimum tile_area / cluster_area allowed at each distance. If any tiles have
-                area fractions below this, this class will raise a ValueError. Will need to be set lower for small
-                fields or if you don't care about preventing edge effects.
-                Default: 2.
-            tidal_radius (float): tidal radius of the test cluster to consider.
-                Default: 10. (a decent average number for open clusters based on MWSC.)
             verbose (bool): whether or not to print a couple of info things to the console upon creation.
                 Default: True
 
         """
-        # Error checking!
-        self.first_valid_distance = check_constraints(
-            constraints, sky_area, minimum_area_fraction=minimum_area_fraction, tidal_radius=tidal_radius)
+        # Check that the input constraints aren't total BS
+        if constraints is None:
+            constraints = default_partition
 
-        # Turn the partitions list into a numpy array for easier indexing later
-        # Where indexes go as [partition_number, [x, y, parallax], [start, end]]
-        # i.e. shape (total_partitions, 3, 2)
-        self.partitions = np.asarray(partitions)
+        constraints = np.asarray(constraints, dtype=object)
+        if constraints.shape[1] != 3:
+            raise ValueError("input constraints must have shape (n_levels, 3)!")
+
+        # Turn the constraints into numpy arrays of the info we need
+        healpix_levels = constraints[:, 0]
+        healpix_overlaps = constraints[:, 1]
+
+        # For the distances, we grab them and then safely turn them into parallaxes
+        start_distances = np.asarray(constraints[:, 2], dtype=float)
+        end_distances = np.append(start_distances[1:], final_distance)
+        start_parallaxes, end_parallaxes = self._safe_distance_to_parallax(start_distances, end_distances)
+
+        # Grab the level 5 healpix pixels and create a map that includes them
+        self.level_5_pixels = np.append(central_pixel,
+                                        hp.get_all_neighbours(2 ** 5, central_pixel, nest=True, lonlat=True))
+        self.level_5_pixels = self.level_5_pixels[self.level_5_pixels != -1]
+
+        self.base_map = np.zeros(12288, dtype=int)
+        self.base_map[self.level_5_pixels] = 1.
+
+        # Now, let's cycle over every partition and work out which healpix pixels it needs
+        self.partitions = []
+        self.healpix_levels_to_calculate = []
+
+        for a_level, an_overlap, a_start, an_end in zip(
+                healpix_levels, healpix_overlaps, start_parallaxes, end_parallaxes):
+            self._calculate_sub_partition(a_level, an_overlap, a_start, an_end)
 
         # Some final attributes we want the class to have
-        self.total_partitions = self.partitions.shape[0]
+        self.total_partitions = len(self.partitions)
         self._stored_partitions = [None] * self.total_partitions
         self.current_partition = 0
         self.data = None
         self.parallax_sigma_threshold = parallax_sigma_threshold
 
+        self.current_core_pixels = None
+        self.current_healpix_string = None
+
+        self._stored_parallax_partitions = {}
+
         if verbose:
-            print(f"Created a dataset partitioning scheme. Its first valid distance is at "
-                  f"{self.first_valid_distance:.2f}pc.\n Clusters nearer this are liable to suffer edge effects as the "
-                  f"data region isn't large enough!")
+            print(f"Created a dataset partitioning scheme!")
+
+    def _calculate_sub_partition(self, core_level: Optional[int], overlap_level: Optional[int],
+                                 start: float, end: float):
+        """Calculates and returns the required sub-partitions for a certain partition as defined by input constraints.
+        """
+        parallax_range = (start, end)
+
+        # Work out how many separate sub-partitions this partition will have, the requisite HEALPix level to use,
+        # and whether or not we need to also think about making an overlap
+        # Case 1: we run over the whole field, within the parallax bin.
+        if core_level is None:
+            pixel_level = None
+            self.partitions.append([5, None, None, parallax_range])
+
+        # Cases 2 to 4 can be ran together.
+        else:
+            if core_level < 5:
+                raise ValueError("the HEALPix level of core pixels must be greater than or equal to 5!")
+
+            # Case 2: we run over a certain number of pixels individually, but without an overlap.
+            if overlap_level is None:
+                pixel_level = core_level
+                overlap = False
+
+            # Case 3: the user is a doofus
+            elif overlap_level < core_level or overlap_level < 5:
+                raise ValueError("the overlap level must be greater than or equal to the HEALPix level itself, and "
+                                 "must be greater than or equal to 5.")
+
+            # Case 4: we run over a certain number of pixels individually, *with* an overlap.
+            else:
+                pixel_level = overlap_level
+                overlap = True
+
+            # Get the pixels for cases 2/4, by...
+            # Using our normal level 5 pixels for this field, or
+            if core_level == 5:
+                core_pixels_at_core_level = np.asarray(self.level_5_pixels)
+            # Upgrading the map resolution to work out which pixels are a part of this
+            else:
+                core_pixels_at_core_level = np.nonzero(
+                    hp.ud_grade(self.base_map, nside_out=2**core_level,
+                                order_in='NESTED', order_out='NESTED', dtype=int))[0]
+
+            # Then, downsample these core pixels if necessary
+            if core_level != pixel_level:
+                # We loop over all of the pixels, adding them in
+                core_pixels_at_pixel_level = []
+                for a_pixel in core_pixels_at_core_level:
+                    test_map = np.zeros(hp.nside2npix(2**core_level), dtype=int)
+                    test_map[a_pixel] = 1
+
+                    core_pixels_at_pixel_level.append(np.nonzero(
+                        hp.ud_grade(test_map, nside_out=2**pixel_level,
+                                    order_in='NESTED', order_out='NESTED', dtype=int))[0])
+
+            else:
+                core_pixels_at_pixel_level = list(np.asarray(core_pixels_at_core_level).reshape(-1, 1))
+
+            n_core_pixels = len(core_pixels_at_core_level)
+
+            # Get all the overlap pixels if requested, by cycling over all core pixels
+            if overlap:
+                neighbor_pixels = []
+
+                for i_core_pixel in range(n_core_pixels):
+                    # Grab all neighbors for the core pixel in question, working at the underlying minimum pixel level
+                    current_neighbors = np.asarray(
+                        [hp.get_all_neighbours(2 ** pixel_level, a_pixel, nest=True, lonlat=True)
+                         for a_pixel in core_pixels_at_pixel_level[i_core_pixel]]).flatten()
+
+                    # Remove any invalid neighbors and make sure that the list is unique
+                    current_neighbors = np.unique(current_neighbors[current_neighbors != -1])
+
+                    # Remove any pixels that are in the list of core pixels already
+                    neighbor_pixels.append(current_neighbors[
+                        np.isin(current_neighbors, core_pixels_at_pixel_level[i_core_pixel], invert=True)])
+            else:
+                neighbor_pixels = [None] * n_core_pixels
+
+            # FINALLY, append all this to the partition array
+            for a_core, a_neighbor in zip(core_pixels_at_pixel_level, neighbor_pixels):
+                self.partitions.append([pixel_level, a_core, a_neighbor, parallax_range])
+
+        # Make sure that this HEALPix level will be calculated in the data
+        if pixel_level not in self.healpix_levels_to_calculate and pixel_level is not None:
+            self.healpix_levels_to_calculate.append(pixel_level)
 
     @staticmethod
-    def _safe_square_root(number, precision=8):
-        """Safely takes a square root and checks that the original number was indeed a square."""
-        sqrt_number = np.sqrt(number)
-
-        if np.round(sqrt_number % 1, decimals=precision) != 0.0:
-            raise ValueError("numbers of partitions must be square numbers, as this function currently only "
-                             "supports square partitions.")
+    def _safe_distance_to_parallax(*args, milliarcseconds: bool=True):
+        """Safely converts distances to parallax values and casts whatever input there is into numpy arrays."""
+        if milliarcseconds:
+            numerator = 1000.
         else:
-            return int(sqrt_number)
+            numerator = 1.
+
+        # Grab the length and convert to a list to unlock mutability
+        n_args = len(args)
+        args = list(args)
+
+        for i in range(n_args):
+            # Ensure we can make it into an array of floats
+            an_arg = np.asarray(args[i], dtype=float)
+
+            # Make sure all distances are positive and not np.nan
+            if np.any(an_arg) < 0:
+                raise ValueError("input distances cannot be negative!")
+            if np.any(np.isnan(an_arg)):
+                raise ValueError("at least one input distance was not a number. Input distances "
+                                 "must be 0 or positive (np.inf is allowed)")
+
+            # Find where we have zeros or infs
+            zeros = an_arg == 0.
+            infs = an_arg == np.inf
+            safe_values = np.invert(np.logical_or(zeros, infs))
+
+            # Apply different operations to the different extremes
+            an_arg[safe_values] = numerator / an_arg[safe_values]
+            an_arg[zeros] = np.inf
+            an_arg[infs] = -np.inf
+
+            # Assign it right back at cha!
+            args[i] = an_arg
+
+        return args
 
     def plot_partitions(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
-                        show_figure: bool = True, dpi: int = 100):
+                        show_figure: bool = True, dpi: int = 100, y_log: bool = True,):
         """Makes histograms showing the number of members of different constraint bins.
 
         Args:
@@ -171,6 +265,8 @@ class DataPartition:
                 Default: None
             dpi (int): dpi of the figure.
                 Default: 100
+            y_log (bool): whether or not to make the y scale logarithmic.
+                Default: True
 
         Returns:
             fig, ax (i.e. the figure and axis elements for you to mess with if desired)
@@ -186,6 +282,7 @@ class DataPartition:
 
         # We also grab the current default colourmap so that we can colour things by parallax cut
         total_count = 0
+        all_counts = np.zeros(self.total_partitions)
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         n_colors = len(colors)
         i_color = -1
@@ -196,12 +293,12 @@ class DataPartition:
         for i_partition, a_partition in enumerate(self.partitions):
 
             # Check if it has the same parallax cut as the last partition
-            if np.allclose(a_partition[2], last_parallax_cut):
+            if np.allclose(a_partition[3], last_parallax_cut):
                 label = None
 
             else:
-                label = f"{a_partition[2, 0]:.2f} to {a_partition[2, 1]:.2f}"
-                last_parallax_cut = a_partition[2]
+                label = f"{a_partition[3][0]:.2f} to {a_partition[3][1]:.2f}"
+                last_parallax_cut = a_partition[3]
 
                 # Increment the color
                 if i_color < n_colors - 1:
@@ -211,6 +308,7 @@ class DataPartition:
 
             # Plot the friend
             count = np.count_nonzero(self.get_partition(i_partition, return_data=False))
+            all_counts[i_partition] = count
             total_count += count
             ax.bar(i_partition, count, label=label, color=colors[i_color])
 
@@ -220,12 +318,21 @@ class DataPartition:
         ax.set_xlabel("Partition number")
         ax.set_ylabel("Bin count")
 
+        if y_log:
+            ax.set_yscale('log')
+
         # Plot a title - we use text instead of the title api so that it can be long and multi-line.
         if figure_title is None:
             figure_title = ""
 
+        initial_count = self.data.shape[0]
+        runtime_fraction_nlogn = initial_count * np.log(initial_count) / np.sum(all_counts * np.log(all_counts))
+        runtime_fraction_nsquared = initial_count**2 / np.sum(all_counts**2)
+
         ax.text(0., 1.10,
-                figure_title + f"\ninitial stars: {self.data.shape[0]}\npartitioned stars: {total_count}",
+                figure_title + f"\ninitial stars: {initial_count}\npartitioned stars: {total_count}"
+                + f"\ntime saving for nlogn algorithm: {runtime_fraction_nlogn:.2f}x faster"
+                + f"\ntime saving for n^2 algorithm: {runtime_fraction_nsquared:.2f}x faster",
                 transform=ax.transAxes, va="bottom")
 
         # Output time
@@ -247,6 +354,15 @@ class DataPartition:
         self.reset_partition_counter()
         self._stored_partitions = [None] * self.total_partitions
         self.data = data
+
+        # Calculate any requisite healpix data
+        for a_level in self.healpix_levels_to_calculate:
+
+            test_string = f"gaia_healpix_{a_level}"
+
+            if test_string not in self.data.keys():
+                self.data[test_string] = hp.ang2pix(2**a_level, self.data['ra'], self.data['dec'],
+                                                    nest=True, lonlat=True)
 
     def reset_partition_counter(self):
         """Resets the counter displaying which partition we're currently on."""
@@ -278,8 +394,83 @@ class DataPartition:
         return self.get_partition(partition_number, return_data=return_data, reset_index=reset_index)
 
     def get_partition(self, partition_number: int, return_data: bool = True, reset_index: bool = True):
-        """Blank function. Should be over-written by subclasses."""
-        return np.asarray([True])
+        """Returns a specific partition. It won't re-calculate the indexes of the partition if not necessary!
+
+        Args:
+            partition_number (int): number of the partition to return.
+            return_data (bool): whether or not to return a DataFrame (True) or a numpy array of bools for stars in
+                self.data that are or aren't in this partition.
+                Default: True
+            reset_index (bool): if returning data, whether or not to reset the index for this new DataFrame view.
+                Default: True
+
+        Returns:
+            the next partition, as a pd.DataFrame (if return_data is True) or a np.ndarray (if False).
+
+        """
+        if partition_number >= self.total_partitions or partition_number < 0:
+            raise ValueError(f"Cannot return partition {partition_number} as it is out of range of the total number of "
+                             f"partitions, {self.total_partitions}.")
+
+        healpix_level, self.current_core_pixels, neighbor_pixels, par_range = self.partitions[partition_number]
+        self.current_healpix_string = f"gaia_healpix_{healpix_level}"
+
+        if self._stored_partitions[partition_number] is None:
+
+            # Only calculate good parallaxes if needed
+            if par_range not in self._stored_parallax_partitions.keys():
+                # Grab stuff we need
+                parallax = self.data['parallax'].to_numpy()
+                parallax_error = self.data['parallax_error'].to_numpy() * self.parallax_sigma_threshold
+
+                # Test if it's in by default (easy)
+                good_upper = parallax < par_range[0]
+                good_lower = parallax > par_range[1]
+                bad_upper = np.invert(good_upper)
+                bad_lower = np.invert(good_lower)
+
+                good_parallax = np.logical_and(good_upper, good_lower)
+
+                # See if any of our friends ruined by the upper or lower limit are within it with error
+                good_parallax[bad_upper] = np.logical_and(
+                    parallax[bad_upper] - parallax_error[bad_upper] < par_range[0], good_lower[bad_upper])
+
+                good_parallax[bad_lower] = np.logical_and(
+                    parallax[bad_lower] + parallax_error[bad_lower] > par_range[1], good_upper[bad_lower])
+
+                # Save this result!
+                self._stored_parallax_partitions[par_range] = good_parallax.copy()
+
+            else:
+                good_parallax = self._stored_parallax_partitions[par_range].copy()
+
+            # Now, calculate which stars are within the correct HEALPix pixels given this parallax result and
+            # store it all!
+            # Case when all stars are allowed
+            if self.current_core_pixels is None:
+                self._stored_partitions[partition_number] = good_parallax
+
+            # Case when we don't have an overlap
+            elif neighbor_pixels is None:
+                good_parallax[good_parallax] = np.isin(
+                    self.data.loc[good_parallax, self.current_healpix_string].to_numpy(),
+                    self.current_core_pixels)
+                self._stored_partitions[partition_number] = good_parallax
+
+            # Or, the case when we have overlap pixels too
+            else:
+                good_parallax[good_parallax] = np.isin(
+                    self.data.loc[good_parallax, self.current_healpix_string].to_numpy(),
+                    np.append(self.current_core_pixels, neighbor_pixels))
+                self._stored_partitions[partition_number] = good_parallax
+
+        if return_data:
+            if reset_index:
+                return self.data.loc[self._stored_partitions[partition_number]].reset_index(drop=True)
+            else:
+                return self.data.loc[self._stored_partitions[partition_number]]
+        else:
+            return self._stored_partitions[partition_number]
 
     def generate_all_partitions(self, delete_data: bool = False):
         """Pre-generates all partitions for the current data and resets the partition counter.
@@ -300,164 +491,3 @@ class DataPartition:
 
         # We also reset the partition counter. We were never here!
         self.reset_partition_counter()
-
-
-class SquareDataPartition(DataPartition):
-    def __init__(self, constraints: Optional[Union[list, tuple, np.ndarray]] = None,
-                 shape: Union[list, tuple, np.ndarray] = (5, 5),
-                 tile_overlap: float = 10.,
-                 parallax_sigma_threshold: float = 2.,
-                 minimum_area_fraction: float = 2.,
-                 tidal_radius: float = 10.,
-                 verbose: bool = True):
-        """A class for creating Gaia dataset partitions. Checks the quality of the constraints and writes them to the
-        class after some processing. Makes square partitions!
-
-        Args:
-            constraints (list-like, optional): the constraints array, of shape (n_distances, 2), where the first entries
-                are the number of times to tile this partition, and the second number is the final distance of the bin.
-                np.inf specifies a bin that's endlessly long.
-                Default: ocelot.cluster.preprocess.default_partition
-            shape (list-like): shape of the field, length 2. Must be square:
-                Default: (5, 5)
-            tile_overlap (float): overlap (in parsecs) to make between the start of tiles. You will need to set this
-                lower if you have a large number of partitions or want to minimise the number of bin members.
-                Default: 10. (should prevent edge effects on all but the most... edgey clusters)
-            parallax_sigma_threshold (float): how much of the parallax error to consider when deciding whether or not to
-                include stars. If zero, error is not considered at all and there won't be any overlap. If large, then
-                most stars will be in every parallax bin.
-                Default: 2. (i.e. ~90% of stars actually in a bin but outside of it within error will end up in the bin)
-            minimum_area_fraction (float): minimum tile_area / cluster_area allowed at each distance. If any tiles have
-                area fractions below this, this class will raise a ValueError. Will need to be set lower for small
-                fields or if you don't care about preventing edge effects.
-                Default: 2.
-            tidal_radius (float): tidal radius of the test cluster to consider.
-                Default: 10. (a decent average number for open clusters based on MWSC.)
-            verbose (bool): whether or not to print a couple of info things to the console upon creation.
-                Default: True
-
-        """
-        # Check that the input constraints aren't total BS
-        if constraints is None:
-            constraints = default_partition
-
-        sky_area = shape[0] * shape[1]
-
-        # Calculate co-ordinates defining the maximum vertices of the partition
-        half_x = shape[0] / 2
-        half_y = shape[1] / 2
-
-        # Cycle over all the constraints, making us some new partitions in the form of cut dicts
-        partitions = []
-
-        start_distance = 0.0001
-        start_parallax = np.inf
-        for a_constraint in constraints:
-
-            # Get stats we need
-            n = a_constraint[0]
-            sqrt_n = self._safe_square_root(n)
-            safety_factor = _tidal_radius_of_cluster(start_distance, tile_overlap)
-
-            # If the end distance is np.inf, then we should take the hint and make the end distance -np.inf to allow
-            # for negative parallaxes
-            if a_constraint[1] != np.inf:
-                end_parallax = 1000 / a_constraint[1]  # In mas
-            else:
-                end_parallax = -np.inf
-
-            # Make ranges of partition bins and turn these into starts and ends with some clever indexing
-            x_range = np.linspace(-half_x, half_x, num=sqrt_n + 1)
-            y_range = np.linspace(-half_y, half_y, num=sqrt_n + 1)
-
-            start_x, start_y = np.meshgrid(x_range[:-1], y_range[:-1])
-            end_x, end_y = np.meshgrid(x_range[1:], y_range[1:])
-
-            # Join up the starts and ends into neater arrays
-            x_partition_cuts = np.vstack([start_x.flatten(), end_x.flatten()]).T
-            y_partition_cuts = np.vstack([start_y.flatten(), end_y.flatten()]).T
-
-            # Work out whichever ones aren't edges (as we don't want to be larger than these) to add the safety factor
-            x_not_an_edge = np.abs(x_partition_cuts) != half_x
-            y_not_an_edge = np.abs(y_partition_cuts) != half_y
-            x_partition_cuts[:, 0] -= safety_factor * x_not_an_edge[:, 0]
-            x_partition_cuts[:, 1] += safety_factor * x_not_an_edge[:, 1]
-            y_partition_cuts[:, 0] -= safety_factor * y_not_an_edge[:, 0]
-            y_partition_cuts[:, 1] += safety_factor * y_not_an_edge[:, 1]
-
-            # Clip the partitions + safety to not be larger than desired (sometimes large safety margins can make 'em
-            # larger than the field itself)
-            x_partition_cuts = np.clip(x_partition_cuts, -half_x, half_x)
-            y_partition_cuts = np.clip(y_partition_cuts, -half_y, half_y)
-
-            # Finally, add this partition to the class
-            for a_x, a_y in zip(x_partition_cuts, y_partition_cuts):
-                partitions.append([a_x, a_y, [start_parallax, end_parallax]])
-
-            start_distance = a_constraint[1]
-            start_parallax = end_parallax
-
-        # And lastly, let's do a super call
-        super().__init__(sky_area,
-                         partitions,
-                         constraints,
-                         parallax_sigma_threshold=parallax_sigma_threshold,
-                         minimum_area_fraction=minimum_area_fraction,
-                         tidal_radius=tidal_radius,
-                         verbose=verbose)
-
-    def get_partition(self, partition_number: int, return_data: bool = True, reset_index: bool = True):
-        """Returns a specific partition. It won't re-calculate the indexes of the partition if not necessary!
-
-        Args:
-            partition_number (int): number of the partition to return.
-            return_data (bool): whether or not to return a DataFrame (True) or a numpy array of bools for stars in
-                self.data that are or aren't in this partition.
-                Default: True
-            reset_index (bool): if returning data, whether or not to reset the index for this new DataFrame view.
-                Default: True
-
-        Returns:
-            the next partition, as a pd.DataFrame (if return_data is True) or a np.ndarray (if False).
-
-        """
-        if partition_number >= self.total_partitions or partition_number < 0:
-            raise ValueError(f"Cannot return partition {partition_number} as it is out of range of the total number of "
-                             f"partitions, {self.total_partitions}.")
-
-        lon_range, lat_range, par_range = self.partitions[partition_number]
-
-        if self._stored_partitions[partition_number] is None:
-            good_positions = np.logical_and(
-                np.logical_and(self.data['lon'] > lon_range[0], self.data['lon'] < lon_range[1]),
-                np.logical_and(self.data['lat'] > lat_range[0], self.data['lat'] < lat_range[1]))
-
-            # Grab stuff we need
-            parallax = self.data['parallax'].to_numpy()
-            parallax_error = self.data['parallax_error'].to_numpy() * self.parallax_sigma_threshold
-
-            # Test if it's in by default (easy)
-            good_upper = parallax < par_range[0]
-            good_lower = parallax > par_range[1]
-            bad_upper = np.invert(good_upper)
-            bad_lower = np.invert(good_lower)
-
-            good_parallax = np.logical_and(good_upper, good_lower)
-
-            # See if any of our friends ruined by the upper or lower limit are within it with error
-            good_parallax[bad_upper] = np.logical_and(
-                parallax[bad_upper] - parallax_error[bad_upper] < par_range[0], good_lower[bad_upper])
-
-            good_parallax[bad_lower] = np.logical_and(
-                parallax[bad_lower] + parallax_error[bad_lower] > par_range[1], good_upper[bad_lower])
-
-            # Store time!
-            self._stored_partitions[partition_number] = np.logical_and(good_parallax, good_positions)
-
-        if return_data:
-            if reset_index:
-                return self.data.loc[self._stored_partitions[partition_number]].reset_index(drop=True)
-            else:
-                return self.data.loc[self._stored_partitions[partition_number]]
-        else:
-            return self._stored_partitions[partition_number]

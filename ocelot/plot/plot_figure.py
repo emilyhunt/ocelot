@@ -229,10 +229,13 @@ def clustering_result(data_gaia: pd.DataFrame,
                       pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
                       cmd_plot_x_limits: Optional[Union[list, np.ndarray]] = None,
                       cmd_plot_y_limits: Optional[Union[list, np.ndarray]] = None,
+                      parallax_plot_x_limits: Optional[Union[list, np.ndarray]] = None,
+                      parallax_plot_y_limits: Optional[Union[list, np.ndarray]] = None,
                       plot_std_limit: float = 1.5,
                       cmd_plot_std_limit: float = 3.0,
-                      cluster_marker_radius: Union[tuple, list] = (1., 1., 1.),
-                      clip_to_fit_clusters: bool = True):
+                      cluster_marker_radius: Union[tuple, list] = (1., 1., 1., 1.),
+                      clip_to_fit_clusters: bool = True,
+                      make_parallax_plot: bool = False):
     """A figure for evaluating the results of a clustering algorithm.
 
     Args:
@@ -254,6 +257,8 @@ def clustering_result(data_gaia: pd.DataFrame,
             proper motion in the declination direction plot limits.
         cmd_plot_x_limits (list-like, optional): the minimum and maximum x (blue minus red) limits in the cmd plot.
         cmd_plot_y_limits (list-like, optional): the minimum and maximum y (apparent magnitude) limits in the cmd plot.
+        parallax_plot_x_limits (list-like, optional): as above for ra on the parallax plot.
+        parallax_plot_y_limits (list-like, optional): as above for parallax on the parallax plot.
         plot_std_limit (float): standard deviation of proper motion to use to find plotting limits if none are
             explicitly specified.
             Default: 1.5
@@ -262,11 +267,13 @@ def clustering_result(data_gaia: pd.DataFrame,
             value is often more suitable here.
             Default: 3.0
         cluster_marker_radius (list-like): radius of the cluster markers. Useful to increase when clusters are hard to
-            see against background points. Specified as a length 3 tuple, giving the radius for the position, pm and
-            CMD plots.
+            see against background points. Specified as a length 4 tuple, giving the radius for the position, pm, CMD
+            and parallax plots.
             Default: (1., 1., 1.)
         clip_to_fit_clusters (bool): whether or not to ensure that the proper motion plot always includes all clusters.
             Default: True
+        make_parallax_plot (bool): whether to make a parallax plot on the fourth axes or whether to leave them blank.
+            Default: False (for backwards-compatibility)
 
         --- Module standard ---
         show_figure (bool): whether or not to show the figure at the end of plotting. Default: True
@@ -299,6 +306,15 @@ def clustering_result(data_gaia: pd.DataFrame,
         y_limits=cmd_plot_y_limits,
         plot_std_limit=cmd_plot_std_limit,
         cluster_marker_radius=cluster_marker_radius[2])
+
+    if make_parallax_plot:
+        ax[1, 1] = cluster.ra_versus_parallax(
+            fig, ax[1, 1], data_gaia, cluster_labels, cluster_indices, cluster_shading,
+            x_limits=parallax_plot_x_limits,
+            y_limits=parallax_plot_y_limits,
+            plot_std_limit=plot_std_limit,
+            cluster_marker_radius=cluster_marker_radius[3]
+        )
 
     # Beautifying
     fig.subplots_adjust(hspace=0.25, wspace=0.25)

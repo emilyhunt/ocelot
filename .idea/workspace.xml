@@ -2,8 +2,23 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/emily.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12233.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12235.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12236.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12237.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12238.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12239.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12257.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12260.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12261.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/partition.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/partition.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,6 +55,7 @@
     </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="JupyterTrust" id="1c568e04-5109-48f1-bf9a-17ab7a4490ff" />
   <component name="ProjectId" id="1RrziPSIh3XuBidNfAcGl4Wx24B" />
   <component name="ProjectLevelVcsManager">
     <ConfirmationsSetting value="2" id="Add" />
@@ -138,9 +154,6 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -317,14 +330,8 @@
       <workItem from="1584709051833" duration="4761000" />
       <workItem from="1584782168627" duration="168000" />
       <workItem from="1584803306801" duration="1196000" />
-      <workItem from="1584809979280" duration="2341000" />
-    </task>
-    <task id="LOCAL-00002" summary="UNSTABLE: Continued development on ocelot.plot&#10;- Some refactoring in various places to make things more sensible&#10;- Type hinting added across the board">
-      <created>1570611109263</created>
-      <option name="number" value="00002" />
-      <option name="presentableId" value="LOCAL-00002" />
-      <option name="project" value="LOCAL" />
-      <updated>1570611109263</updated>
+      <workItem from="1584809979280" duration="12615000" />
+      <workItem from="1585210799352" duration="18658000" />
     </task>
     <task id="LOCAL-00003" summary="0.1-unstable&#10;- Basic plotting functionality ported from the Jupyter notebook,&#10;- Minimal testing completed!&#10;- Releasing early as I want to work on other things - ocelot.plot will have changes and more refactoring in the future.">
       <created>1570614800383</created>
@@ -662,7 +669,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584810866362</updated>
     </task>
-    <option name="localTasksCounter" value="51" />
+    <task id="LOCAL-00051" summary="By debugging introduced a new bug!&#10;- _summed_kth_nn_distribution_one_cluster had unnecessary error checking. &#10;- Occasionally, for very extreme fit values (e.g. d_c=17!!) the cluster constant a_c can be higher than the field constant a_f.&#10;- This is not an issue because of how the fit is done in the modern form of field_model - values are constrained anyway during fitting, so the field cannot have a higher maximum than the cluster. But this isn't based on the constants, but instead the maxima - unlike the error checking in _summed_kth_nn_distribution_one_cluster, which was more basic and could fail in edge cases.&#10;- I removed the error checking as it wasn't helping!">
+      <created>1584815350770</created>
+      <option name="number" value="00051" />
+      <option name="presentableId" value="LOCAL-00051" />
+      <option name="project" value="LOCAL" />
+      <updated>1584815350770</updated>
+    </task>
+    <option name="localTasksCounter" value="52" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -684,8 +698,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented basic versions of .mean_distance, .mean_proper_motion, .internal_velocity_dispersion and .all_statistics&#10;- Radius and sky position stuff will need work&#10;- All the above is awaiting testing.&#10;This release partially satisfies 0.3.0 feature c." />
-    <MESSAGE value="Work on ocelot.calculate.&#10;- Implemented a basic version of .radius&#10;- Wrote unit tests for all functions in the submodule&#10;- Fixed a handful of small bugs in the implementations&#10;- Re-factored .all_statistics() so it can use different modes in the future. Eventually, it would be lovely to infer many of these parameters in a Bayesian way&#10;- All functions pass all tests =)&#10;This release satisfies 0.3.0 feature c." />
     <MESSAGE value="Work on ocelot.crossmatch&#10;- Have now written a basic crossmatch utility in the form of a class with methods, ocelot.crossmatch.Catalogue&#10;- It should be able to crossmatch with an arbitrary number of features, depending on the catalogue to be matched against&#10;- It requires testing!&#10;This commit partially satisfies 0.3.0 feature d." />
     <MESSAGE value="Work on ocelot.crossmatch&#10;- Basic bugfixing to ocelot.crossmatch.Catalogue (it now works as written and intended), but I'd like to refactor it to work in more sensible ways (e.g. using an estimated systematic error on position to calculate positional probabilities instead of using the tidal radius as a proxy.)&#10;- Next commit will be quite different!&#10;This commit partially satisfies 0.3.0 feature d." />
     <MESSAGE value="Final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Added a systematic position error estimate parameter to the Catalogue class at __init__&#10;- Changed Catalogue.crossmatch() to be much simpler to call and to now use ocelot standard parameter names, which are now stored in ocelot.calculate.constants &#10;- These parameter names can be overriden (or even added to!) with Catalogue.override_default_ocelot_parameter_names()&#10;- Increased the stats in the crossmatch process - now powered only by sigma values, ignoring tidal radii and looking for the mean or max sigma to pick a best match&#10;- Catalogue.crossmatch() is now unit tested (more of an integration test =p) after lots of checking values by hand and looking for bugs!&#10;This commit satisfies 0.3.0 feature d." />
@@ -709,7 +721,9 @@
     <MESSAGE value="Field model bugfix.&#10;- Fixed a bug with epsilon field model determination in _summed_kth_nn_distribution_one_cluster: invalid parameters would cause a single np.inf to be incorrectly returned." />
     <MESSAGE value="Bugfix for my bugfix..." />
     <MESSAGE value="Pushing a debug to the server, interim commit." />
-    <option name="LAST_COMMIT_MESSAGE" value="Pushing a debug to the server, interim commit." />
+    <MESSAGE value="By debugging introduced a new bug!&#10;- _summed_kth_nn_distribution_one_cluster had unnecessary error checking. &#10;- Occasionally, for very extreme fit values (e.g. d_c=17!!) the cluster constant a_c can be higher than the field constant a_f.&#10;- This is not an issue because of how the fit is done in the modern form of field_model - values are constrained anyway during fitting, so the field cannot have a higher maximum than the cluster. But this isn't based on the constants, but instead the maxima - unlike the error checking in _summed_kth_nn_distribution_one_cluster, which was more basic and could fail in edge cases.&#10;- I removed the error checking as it wasn't helping!" />
+    <MESSAGE value="Changed the DataPartitioner to work with HEALPix pixels.&#10;- Re-wrote much of the code to now use HEALPix. It is *not* backward compatible!&#10;- Made some efficiency improvements to how it calculates parallax members (more stuff is saved to the class for later use)&#10;- Unit tested and verified that the new changes work as intended.&#10;- Wrote some really neat plotting code for the unit testing that I should totally integrate into the class itself..." />
+    <option name="LAST_COMMIT_MESSAGE" value="Changed the DataPartitioner to work with HEALPix pixels.&#10;- Re-wrote much of the code to now use HEALPix. It is *not* backward compatible!&#10;- Made some efficiency improvements to how it calculates parallax members (more stuff is saved to the class for later use)&#10;- Unit tested and verified that the new changes work as intended.&#10;- Wrote some really neat plotting code for the unit testing that I should totally integrate into the class itself..." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -720,10 +734,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1584810865994">
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585237330075">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2270" y="56" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584810865994" />
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585237330075" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1584709506609">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -732,9 +746,13 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2369" y="174" key="SettingsEditor/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452701822" />
-    <state x="2536" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1584803334552">
+    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1585147085692">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2536" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584803334552" />
+    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585147085692" />
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1585210800077">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585210800077" />
   </component>
 </project>
