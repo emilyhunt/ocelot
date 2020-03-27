@@ -5,7 +5,13 @@ from typing import Optional, Union
 import numpy as np
 import healpy as hp
 import pandas as pd
+from shapely.geometry import Polygon, Point
 from matplotlib import pyplot as plt
+from ..plot import clustering_result
+from .preprocess import _get_healpix_frame, recenter_dataset
+from pathlib import Path
+from astropy.coordinates import SkyCoord
+from scipy.optimize import minimize
 
 
 def _tidal_radius_of_cluster(distance, tidal_radius):
@@ -17,6 +23,82 @@ def _sky_area_of_cluster(distance, tidal_radius):
     """Unit is in square degrees!"""
     tidal_radius_in_degrees = _tidal_radius_of_cluster(distance, tidal_radius)
     return np.pi * tidal_radius_in_degrees ** 2
+
+
+def _convert_pixels_to_polygon(current_pixels, nside=32, step=5):
+    """Converts a list of pixels into a polygon object, which gets re-centered too for free!"""
+    # Work out a center numerically from the mean center of all the pixels
+    ra, dec = hp.pix2ang(nside, current_pixels, nest=True, lonlat=True)
+    center = (ra.mean(), dec.mean())
+
+    # Extract the boundaries of the pixels
+    pixel_data = []
+    for a_pixel in current_pixels:
+        pixel_ra, pixel_dec = hp.vec2ang(hp.boundaries(nside, a_pixel, step=step, nest=True).T, lonlat=True)
+        pixel_data.append(pd.DataFrame({'ra': pixel_ra, 'dec': pixel_dec}))
+
+    # Recenter them all
+    pixel_data_recentered = recenter_dataset(*pixel_data, center=center, proper_motion=False,
+                                             always_return_list=True)
+
+    # Turn them all into one big shape of happiness and fun
+    polygon = Polygon()
+    for a_pixel_data in pixel_data_recentered:
+        new_poly = Polygon(a_pixel_data[['lon', 'lat']].values)
+        polygon = polygon.union(new_poly)
+
+    return polygon
+
+
+def _cluster_contained_within_pixel(parameters, polygon: Polygon, parallax: float):
+    cluster_radius = parameters[0]
+
+    if cluster_radius < 0:
+        return np.inf
+
+    cluster = Point(0, 0).buffer(np.arctan(cluster_radius * parallax / 1000) * 180 / np.pi)
+
+    # Return a negative number if the cluster doesn't fit entirely within the pixel
+    if polygon.contains(cluster):
+        to_return = - cluster_radius
+    else:
+        to_return = + cluster_radius
+
+    return to_return
+
+
+def find_largest_cluster_in_pixel(current_pixels: Union[list, np.ndarray, tuple],
+                                  level: int,
+                                  parallax: float,
+                                  step: int = 5):
+    """A minimisation scheme for finding the largest possible cluster that could live at the center of a HEALPix pixel.
+
+    Args:
+        current_pixels (list-like): list-like of current pixels that make up this field. May simply be length 1.
+        level (int): the HEALPix level the pixel is specified with, where nside = 2 ** level.
+        parallax (float): the parallax (in mas) of the start of the pixel's range. Aka the nearest possible cluster
+            distance to consider.
+        step (int): resolution of the shapely instance of a pixel. Higher values mean more points per side. Minimimum
+            is 1, which just returns the corners only.
+            Default: 5
+
+    Returns:
+        the largest possible radius of cluster that can fit within the pixel. It's a float!
+        Raises a RuntimeError if minimisation was unsuccessful.
+
+    """
+    # Do our setup
+    polygon = _convert_pixels_to_polygon(current_pixels, nside=2**level, step=step)
+
+    # Minimise the function and find the smallest area
+    result = minimize(_cluster_contained_within_pixel, np.atleast_1d(1.), args=(polygon, parallax), method='powell')
+
+    if result.success:
+        return np.atleast_1d(result.x)[0]
+    else:
+        raise RuntimeError(f"unable to calculate largest possible cluster that could be contained in pixel list "
+                           f"{current_pixels} at HP level {level}. "
+                           f"Minimisation failed!")
 
 
 def check_constraints(constraints, sky_area, minimum_area_fraction=2., tidal_radius=10.):
@@ -113,6 +195,9 @@ class DataPartition:
             self._calculate_sub_partition(a_level, an_overlap, a_start, an_end)
 
         # Some final attributes we want the class to have
+        self.central_pixel = central_pixel
+        self._central_pixel_astropy_frame = _get_healpix_frame(central_pixel)
+
         self.total_partitions = len(self.partitions)
         self._stored_partitions = [None] * self.total_partitions
         self.current_partition = 0
@@ -120,7 +205,9 @@ class DataPartition:
         self.parallax_sigma_threshold = parallax_sigma_threshold
 
         self.current_core_pixels = None
+        self.current_healpix_level = None
         self.current_healpix_string = None
+        self.current_parallax_range = None
 
         self._stored_parallax_partitions = {}
 
@@ -252,8 +339,9 @@ class DataPartition:
 
         return args
 
-    def plot_partitions(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
-                        show_figure: bool = True, dpi: int = 100, y_log: bool = True,):
+    def plot_partition_bar_chart(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
+                                 show_figure: bool = True, dpi: int = 100, y_log: bool = True,
+                                 maximum_parallax_for_cluster_radii: float = 10.):
         """Makes histograms showing the number of members of different constraint bins.
 
         Args:
@@ -265,8 +353,11 @@ class DataPartition:
                 Default: None
             dpi (int): dpi of the figure.
                 Default: 100
-            y_log (bool): whether or not to make the y scale logarithmic.
+            y_log (bool): whether or not to make the y scale of the bar chart logarithmic.
                 Default: True
+            maximum_parallax_for_cluster_radii (str): the maximum start parallax to consider calculating a largest valid
+                cluster radii for. Stops the plot from tending to inf for the first partition, basically.
+                Default: 10. (aka 100pc away)
 
         Returns:
             fig, ax (i.e. the figure and axis elements for you to mess with if desired)
@@ -278,11 +369,12 @@ class DataPartition:
                              "set_data first and assign me a DataFrame to work with.")
 
         # Make a cute little bar chart with info of what's gone on
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=dpi)
+        fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=dpi)
 
         # We also grab the current default colourmap so that we can colour things by parallax cut
         total_count = 0
         all_counts = np.zeros(self.total_partitions)
+        all_cluster_radii = np.zeros(self.total_partitions)
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         n_colors = len(colors)
         i_color = -1
@@ -306,20 +398,41 @@ class DataPartition:
                 else:
                     i_color = 0
 
-            # Plot the friend
+            # Call get_partition and get count information
             count = np.count_nonzero(self.get_partition(i_partition, return_data=False))
             all_counts[i_partition] = count
             total_count += count
-            ax.bar(i_partition, count, label=label, color=colors[i_color])
+
+            # Also get information about the largest valid cluster radius of this pixel
+            if a_partition[3][0] < maximum_parallax_for_cluster_radii:
+                # Get the current pixels, dealing with if it's None
+                current_pixels = a_partition[1]
+                if current_pixels is None:
+                    current_pixels = self.level_5_pixels
+
+                all_cluster_radii[i_partition] = find_largest_cluster_in_pixel(
+                    current_pixels, a_partition[0], a_partition[3][0])
+
+            else:
+                all_cluster_radii[i_partition] = np.nan
+
+            # Plot the friend
+            ax1.bar(i_partition, count, label=label, color=colors[i_color])
+
+        # Also make a second axis so we can plot the cluster radii too
+        ax2 = ax1.twinx()
+        ax2.plot(np.arange(self.total_partitions), all_cluster_radii, 'ks', ms=3)
 
         # Beautification
-        ax.legend(edgecolor='k', fontsize=8, title='parallaxes (mas)',
-                  loc='center left', bbox_to_anchor=(1.0, 0.5))
-        ax.set_xlabel("Partition number")
-        ax.set_ylabel("Bin count")
+        ax1.legend(edgecolor='k', fontsize=8, title='parallaxes (mas)',
+                   loc='lower left', bbox_to_anchor=(1.0, 1.0))
+        ax1.set_xlabel("Partition number")
+        ax1.set_ylabel("Bin count")
+
+        ax2.set_ylabel("Maximum cluster radius at center (pc)")
 
         if y_log:
-            ax.set_yscale('log')
+            ax1.set_yscale('log')
 
         # Plot a title - we use text instead of the title api so that it can be long and multi-line.
         if figure_title is None:
@@ -329,11 +442,19 @@ class DataPartition:
         runtime_fraction_nlogn = initial_count * np.log(initial_count) / np.sum(all_counts * np.log(all_counts))
         runtime_fraction_nsquared = initial_count**2 / np.sum(all_counts**2)
 
-        ax.text(0., 1.10,
-                figure_title + f"\ninitial stars: {initial_count}\npartitioned stars: {total_count}"
-                + f"\ntime saving for nlogn algorithm: {runtime_fraction_nlogn:.2f}x faster"
-                + f"\ntime saving for n^2 algorithm: {runtime_fraction_nsquared:.2f}x faster",
-                transform=ax.transAxes, va="bottom")
+        memory_fraction_n = np.max(all_counts) / initial_count
+        memory_fraction_nsquared = np.max(all_counts)**2 / initial_count**2
+
+        ax1.text(0., 1.05,
+                 figure_title
+                 + f"\ninitial stars:         {initial_count}"
+                 + f"\npartitioned stars:     {total_count}"
+                 + f"\ntime saving for nlogn: {runtime_fraction_nlogn:.2f}x faster"
+                 + f"\ntime saving for n^2:   {runtime_fraction_nsquared:.2f}x faster"
+                 + f"\nRAM use for m ~ n:     {1/memory_fraction_n:.2f}x less"
+                 + f"\nRAM use for m ~ n^2:   {1/memory_fraction_nsquared:.2f}x less",
+                 transform=ax1.transAxes, va="bottom",
+                 family='monospace')
 
         # Output time
         if save_name is not None:
@@ -342,7 +463,90 @@ class DataPartition:
         if show_figure is True:
             fig.show()
 
-        return fig, ax
+        return fig, ax1
+
+    def plot_partitions(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
+                        show_figure: bool = True, dpi: int = 100, **extra_args_for_plot):
+        """Plots the individual parallax levels of partitions in a number of separate plots.
+
+        Args:
+            show_figure (bool): whether or not to show the figure at the end of plotting.
+                Default: True
+            save_name (string, optional): whether or not to save the figure at the end of plotting.
+                Default: None (no figure is saved)
+            figure_title (string, optional): the desired title of the figure.
+                Default: None
+            dpi (int): dpi of the figure.
+                Default: 100
+            extra_args_for_plot: extra arguments to pass to ocelot.plot.clustering_result.
+
+        Returns:
+            fig, ax (i.e. the figure and axis elements for you to mess with if desired)
+
+        """
+        default_plot_args = {
+            'cmd_plot_y_limits': [8, 18],
+            'make_parallax_plot': True,
+            'clip_to_fit_clusters': False,
+            'plot_std_limit': 2.
+        }
+        default_plot_args.update(**extra_args_for_plot)
+
+        # Make a mock labels array and a mock shades one
+        labels = np.full((self.total_partitions, self.data.shape[0]), -1)
+
+        # Update the labels array with the results of every partition
+        for i_partition in range(self.total_partitions):
+            a_partition = self.get_partition(i_partition, return_data=False)
+            labels[i_partition, a_partition] = i_partition
+
+        # Cycle over all partitions, working out how many are in each parallax level. We make lists of their indices
+        # for every different parallax entry in partition_numbers.
+        partition_numbers = {}
+        for i_partition, a_partition in enumerate(self.partitions):
+            a_parallax_partition = a_partition[-1]
+
+            # Update the partition number dict with this friend
+            if a_parallax_partition in partition_numbers.keys():
+                partition_numbers[a_parallax_partition].append(i_partition)
+            else:
+                partition_numbers[a_parallax_partition] = [i_partition]
+        
+        # Process the figure title and save name
+        n_partitions = len(partition_numbers.keys())
+        if save_name is not None:
+            save_name = Path(save_name)
+            prefix = save_name.parent / save_name.stem
+            suffix = save_name.suffix
+            save_name_list = [f"{prefix}_{x}{suffix}" for x in range(n_partitions)]
+        else:
+            save_name_list = [None] * n_partitions
+
+        if figure_title is None:
+            figure_title = ''
+        else:
+            figure_title = f'\n{figure_title}'
+        
+        # AND NOW, THE FUN REALLY BEGINS
+        # Let's make some plots!
+        for a_parallax_set, a_save_name in zip(partition_numbers.keys(), save_name_list):
+            current_parallax_indices = partition_numbers[a_parallax_set]
+
+            # Draw random values for every non-field label to decide which cluster to assign them to
+            random_vals = np.where(labels[current_parallax_indices] == -1, -1,
+                                   np.random.rand(len(current_parallax_indices), labels.shape[1]))
+
+            labels_view = labels[current_parallax_indices]
+            a_labels = labels_view[np.argmax(random_vals, axis=0), np.arange(labels.shape[1])]
+
+            clustering_result(self.data,
+                              a_labels,
+                              current_parallax_indices,
+                              figure_title=f"Partitions for parallax set {a_parallax_set}{figure_title}",
+                              save_name=a_save_name,
+                              dpi=dpi,
+                              show_figure=show_figure,
+                              **default_plot_args)
 
     def set_data(self, data: pd.DataFrame):
         """Sets the data currently associated with the class and resets various internals.
@@ -366,7 +570,7 @@ class DataPartition:
 
     def reset_partition_counter(self):
         """Resets the counter displaying which partition we're currently on."""
-        self.current_partition = 0
+        self.current_partition = -1
 
     def next_partition(self, return_data: bool = True, reset_index: bool = True):
         """Gets the next data partition and checks that there's even a next one to get.
@@ -382,14 +586,13 @@ class DataPartition:
             the next partition, as a pd.DataFrame (if return_data is True) or a np.ndarray (if False).
 
         """
+        self.current_partition += 1
 
         partition_number = self.current_partition
 
-        if partition_number >= self.total_partitions:
+        if partition_number >= self.total_partitions or partition_number < 0:
             raise ValueError(f"Partition {partition_number} is out of range. Have you iterated this method too many "
                              f"times?")
-
-        self.current_partition += 1
 
         return self.get_partition(partition_number, return_data=return_data, reset_index=reset_index)
 
@@ -412,20 +615,22 @@ class DataPartition:
             raise ValueError(f"Cannot return partition {partition_number} as it is out of range of the total number of "
                              f"partitions, {self.total_partitions}.")
 
-        healpix_level, self.current_core_pixels, neighbor_pixels, par_range = self.partitions[partition_number]
-        self.current_healpix_string = f"gaia_healpix_{healpix_level}"
+        self.current_healpix_level, self.current_core_pixels, neighbor_pixels, self.current_parallax_range = \
+            self.partitions[partition_number]
+        self.current_healpix_string = f"gaia_healpix_{self.current_healpix_level}"
+        self.current_partitioon = partition_number
 
         if self._stored_partitions[partition_number] is None:
 
             # Only calculate good parallaxes if needed
-            if par_range not in self._stored_parallax_partitions.keys():
+            if self.current_parallax_range not in self._stored_parallax_partitions.keys():
                 # Grab stuff we need
                 parallax = self.data['parallax'].to_numpy()
                 parallax_error = self.data['parallax_error'].to_numpy() * self.parallax_sigma_threshold
 
                 # Test if it's in by default (easy)
-                good_upper = parallax < par_range[0]
-                good_lower = parallax > par_range[1]
+                good_upper = parallax < self.current_parallax_range[0]
+                good_lower = parallax > self.current_parallax_range[1]
                 bad_upper = np.invert(good_upper)
                 bad_lower = np.invert(good_lower)
 
@@ -433,16 +638,18 @@ class DataPartition:
 
                 # See if any of our friends ruined by the upper or lower limit are within it with error
                 good_parallax[bad_upper] = np.logical_and(
-                    parallax[bad_upper] - parallax_error[bad_upper] < par_range[0], good_lower[bad_upper])
+                    parallax[bad_upper] - parallax_error[bad_upper]
+                    < self.current_parallax_range[0], good_lower[bad_upper])
 
                 good_parallax[bad_lower] = np.logical_and(
-                    parallax[bad_lower] + parallax_error[bad_lower] > par_range[1], good_upper[bad_lower])
+                    parallax[bad_lower] + parallax_error[bad_lower]
+                    > self.current_parallax_range[1], good_upper[bad_lower])
 
                 # Save this result!
-                self._stored_parallax_partitions[par_range] = good_parallax.copy()
+                self._stored_parallax_partitions[self.current_parallax_range] = good_parallax.copy()
 
             else:
-                good_parallax = self._stored_parallax_partitions[par_range].copy()
+                good_parallax = self._stored_parallax_partitions[self.current_parallax_range].copy()
 
             # Now, calculate which stars are within the correct HEALPix pixels given this parallax result and
             # store it all!
@@ -491,3 +698,37 @@ class DataPartition:
 
         # We also reset the partition counter. We were never here!
         self.reset_partition_counter()
+
+    def test_if_in_current_partition(self, lon: np.ndarray, lat: np.ndarray, parallax: np.ndarray):
+        """Tests whether or not clusters are within the bounds of the current partition. If not, then it's game over
+        for this punk.
+
+        Args:
+            lon (np.ndarray): the longitude values (post-recentering.) Should have shape (n,).
+            lat (np.ndarray): the latitude values (post-recentering.) Should have shape (n,).
+            parallax (np.ndarray): the parallax values. Should have shape (n,).
+
+        Returns:
+            an array of bools of shape (n,) as to whether or not the cluster is valid.
+
+        """
+        # GOOD POSITIONS
+        # Put all of the stars in the lon/lat frame and transform them
+        coords = SkyCoord(lon, lat, unit='deg', frame=self._central_pixel_astropy_frame)
+        coords = coords.transform_to('icrs')
+
+        ra = coords.ra.value
+        dec = coords.dec.value
+
+        # Calculate the pixel id of each and if it's in the core pixel range
+        pixels = hp.ang2pix(2**self.current_healpix_level, ra, dec, nest=True, lonlat=True)
+        good_locations = np.isin(pixels, self.current_core_pixels)
+
+        # GOOD PARALLAXES
+        # Pretty nice. Just work out what is or isn't in the correct range.
+        good_upper = parallax < self.current_parallax_range[0]
+        good_lower = parallax > self.current_parallax_range[1]
+
+        good_parallax = np.logical_and(good_upper, good_lower)
+
+        return np.logical_and(good_locations, good_parallax)

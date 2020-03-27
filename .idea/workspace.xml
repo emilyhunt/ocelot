@@ -2,22 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/emily.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12233.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12235.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12236.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12237.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12238.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12239.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12257.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12260.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_data/healpix_pixel/0000_12261.csv" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/partition.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/partition.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/plot_figure.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -331,14 +318,9 @@
       <workItem from="1584782168627" duration="168000" />
       <workItem from="1584803306801" duration="1196000" />
       <workItem from="1584809979280" duration="12615000" />
-      <workItem from="1585210799352" duration="18658000" />
-    </task>
-    <task id="LOCAL-00003" summary="0.1-unstable&#10;- Basic plotting functionality ported from the Jupyter notebook,&#10;- Minimal testing completed!&#10;- Releasing early as I want to work on other things - ocelot.plot will have changes and more refactoring in the future.">
-      <created>1570614800383</created>
-      <option name="number" value="00003" />
-      <option name="presentableId" value="LOCAL-00003" />
-      <option name="project" value="LOCAL" />
-      <updated>1570614800383</updated>
+      <workItem from="1585210799352" duration="18986000" />
+      <workItem from="1585297458390" duration="954000" />
+      <workItem from="1585299341275" duration="13712000" />
     </task>
     <task id="LOCAL-00004" summary="Implemented ocelot.isochrone.io.read_cmd_isochrone()&#10;- It reads in isochrones from CMD 3.3!&#10;- Unit test written &amp; passed.&#10;&gt; This satisfies feature(s) [a] for future release 0.2.0">
       <created>1570630466173</created>
@@ -676,7 +658,14 @@
       <option name="project" value="LOCAL" />
       <updated>1584815350770</updated>
     </task>
-    <option name="localTasksCounter" value="52" />
+    <task id="LOCAL-00052" summary="Changed the DataPartitioner to work with HEALPix pixels.&#10;- Re-wrote much of the code to now use HEALPix. It is *not* backward compatible!&#10;- Made some efficiency improvements to how it calculates parallax members (more stuff is saved to the class for later use)&#10;- Unit tested and verified that the new changes work as intended.&#10;- Wrote some really neat plotting code for the unit testing that I should totally integrate into the class itself...">
+      <created>1585237330955</created>
+      <option name="number" value="00052" />
+      <option name="presentableId" value="LOCAL-00052" />
+      <option name="project" value="LOCAL" />
+      <updated>1585237330956</updated>
+    </task>
+    <option name="localTasksCounter" value="53" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -750,9 +739,9 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585147085692" />
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1585210800077">
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1585299565585">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585210800077" />
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585299565585" />
   </component>
 </project>

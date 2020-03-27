@@ -183,6 +183,15 @@ def test_precalculate_nn_distances():
     return sparse_matrix, distance_matrix
 
 
+def test_find_largest_cluster():
+    """Tests ocelot.cluster.partition.find_largest_cluster_in_pixel."""
+    largest_cluster = ocelot.cluster.partition.find_largest_cluster_in_pixel([0], 5, 1)
+
+    assert np.allclose(largest_cluster, 15.886934673445522, atol=1e-3, rtol=1e-3)
+
+    return largest_cluster
+
+
 def test_data_partition(show_figure=False):
     """Tests all elements of the data partition class, ocelot.cluster.DataPartition."""
     # Read in the data
@@ -196,12 +205,9 @@ def test_data_partition(show_figure=False):
     # Define what our partition will look like
     constraints = [
         [None, None, 0],
-        [5, 7, 1000],
-        [6, 7, 2000],
+        [5, 7, 700],
+        [6, 8, 2000],
     ]
-
-    # This is just to set the plotting up
-    partition_numbers = [np.arange(1), np.arange(1, 10), np.arange(10, 46)]
 
     # Let's go!
     partitioner = ocelot.cluster.DataPartition(12238,
@@ -211,32 +217,10 @@ def test_data_partition(show_figure=False):
 
     partitioner.set_data(data_gaia)
 
-    partitioner.plot_partitions(figure_title='test of the partitioner', show_figure=show_figure)
+    partitioner.plot_partition_bar_chart(figure_title='test of the partitioner', show_figure=show_figure)
 
-    # Also make a clustering-style plot of the different partitions
-    if show_figure:
-        # Make a mock labels array and a mock shades one
-        labels = np.full((partitioner.total_partitions, data_gaia.shape[0]), -1)
-
-        for i_partition in range(partitioner.total_partitions):
-            a_partition = partitioner.get_partition(i_partition, return_data=False)
-            labels[i_partition, a_partition] = i_partition
-
-        for i_parallax_set, a_parallax_set in enumerate(partition_numbers):
-
-            # Draw random values for every non-field label to decide which cluster to assign them to
-            random_vals = np.where(labels[a_parallax_set] == -1, -1,
-                                   np.random.rand(len(a_parallax_set), labels.shape[1]))
-
-            labels_view = labels[a_parallax_set]
-            a_labels = labels_view[np.argmax(random_vals, axis=0), np.arange(labels.shape[1])]
-
-            ocelot.plot.clustering_result(data_gaia, a_labels, a_parallax_set,
-                                          figure_title=f"parallax set {i_parallax_set}",
-                                          cmd_plot_y_limits=[9, 16],
-                                          make_parallax_plot=True,
-                                          clip_to_fit_clusters=False,
-                                          plot_std_limit=2.)
+    #partitioner.plot_partitions(figure_title='testing of the partitioner', show_figure=show_figure,
+    #                            cmd_plot_y_limits=[9, 16])
 
     return data_gaia, partitioner
 
@@ -676,5 +660,6 @@ if __name__ == '__main__':
     # test__find_nearest_magnitude_star()
     # test_generate_synthetic_clusters(plot_clusters=True)
     # gaia = test_recenter_dataset(show_figure=True)
-    # gaia = test_recenter_dataset_healpix(show_figure=True)
+    # gaia = test_recenter_dataset_healpix(show_figure=True).
+    # largest = test_find_largest_cluster()
     data, partition = test_data_partition(show_figure=True)

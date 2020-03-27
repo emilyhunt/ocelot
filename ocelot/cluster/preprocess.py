@@ -172,6 +172,7 @@ def recenter_dataset(*args,
                      pixel_id: Optional[int] = None,
                      rotate_frame: bool = True,
                      proper_motion: bool = True,
+                     always_return_list: bool = False,
                      **user_healpy_kwargs) -> Union[pd.DataFrame, List[pd.DataFrame]]:
     """Creates new arbitrary co-ordinate axes centred on centre, allowing for clustering analysis that doesn't get
     affected by distortions. N.B.: currently only able to use ra, dec from data_gaia!
@@ -193,6 +194,9 @@ def recenter_dataset(*args,
             Default: True
         proper_motion (bool): whether or not to also make transformed proper motions.
             Default: True
+        always_return_list (bool): for backwards-compatibility, we always return one DataFrame when only passed one.
+            However, setting this to true will make it a one-element list of DataFrames.
+            Default: False
         user_healpy_kwargs: kwargs to change for passing to healpy. Will only do something if you're using a pixel_id
             instead of a field center. You may change the following (shown with their defaults):
             'nest': True
@@ -242,7 +246,7 @@ def recenter_dataset(*args,
 
         to_return.append(data_gaia)
 
-    if len(to_return) == 1:
+    if len(to_return) == 1 and always_return_list is False:
         return to_return[0]
     else:
         return to_return
