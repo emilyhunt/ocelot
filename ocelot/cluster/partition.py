@@ -466,10 +466,15 @@ class DataPartition:
         memory_fraction_n = np.max(all_counts) / initial_count
         memory_fraction_nsquared = np.max(all_counts)**2 / initial_count**2
 
+        count_passes = np.count_nonzero(all_counts > desired_count)
+        radius_passes = np.count_nonzero(all_cluster_radii[np.isfinite(all_cluster_radii)] > desired_radius)
+
         ax1.text(0., 1.05,
                  figure_title
                  + f"\ninitial stars:         {initial_count}"
                  + f"\npartitioned stars:     {total_count}"
+                 + f"\ncount passes:          {count_passes:3d}  {count_passes / self.total_partitions:.1%}"
+                 + f"\nradius passes:         {radius_passes:3d}  {radius_passes / self.total_partitions:.1%}"
                  + f"\ntime saving for nlogn: {runtime_fraction_nlogn:.2f}x faster"
                  + f"\ntime saving for n^2:   {runtime_fraction_nsquared:.2f}x faster"
                  + f"\nRAM use for m ~ n:     {1/memory_fraction_n:.2f}x less"

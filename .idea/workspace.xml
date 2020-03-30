@@ -320,14 +320,7 @@
       <workItem from="1585297458390" duration="954000" />
       <workItem from="1585299341275" duration="15278000" />
       <workItem from="1585552966819" duration="1387000" />
-      <workItem from="1585554448308" duration="3434000" />
-    </task>
-    <task id="LOCAL-00006" summary="Some testing of a new way to spline fit random data, &amp; beginning development on isochrone.IsochroneInterpolator &#10;- I should be able to try just finding scatter about an interpolated curve of random data - a new test script has been written for this.&#10;- Began working on the IsochroneInterpolator class by adding a cumulative sum along a curve function.">
-      <created>1571042528433</created>
-      <option name="number" value="00006" />
-      <option name="presentableId" value="LOCAL-00006" />
-      <option name="project" value="LOCAL" />
-      <updated>1571042528433</updated>
+      <workItem from="1585554448308" duration="5073000" />
     </task>
     <task id="LOCAL-00007" summary="Mostly finished implementing the IsochroneInterpolator class.&#10;- Runtime is high - can it be sped up with a way to selectively ignore some data points? &#10;- Unit test needs finishing&#10;- Needs more checking in general - a plotting utility would help (see feature 0.2.0 b1)&#10;&gt; This satisfies feature(s) [b] for future release 0.2.0">
       <created>1571061625577</created>
@@ -665,7 +658,14 @@
       <option name="project" value="LOCAL" />
       <updated>1585556676110</updated>
     </task>
-    <option name="localTasksCounter" value="55" />
+    <task id="LOCAL-00055" summary="Little usability improvements to DataPartitioner II.&#10;- Now have lines to mark where values should be.&#10;- Saving shouldn't crop the figure anymore.">
+      <created>1585561148615</created>
+      <option name="number" value="00055" />
+      <option name="presentableId" value="LOCAL-00055" />
+      <option name="project" value="LOCAL" />
+      <updated>1585561148615</updated>
+    </task>
+    <option name="localTasksCounter" value="56" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -687,7 +687,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Added a systematic position error estimate parameter to the Catalogue class at __init__&#10;- Changed Catalogue.crossmatch() to be much simpler to call and to now use ocelot standard parameter names, which are now stored in ocelot.calculate.constants &#10;- These parameter names can be overriden (or even added to!) with Catalogue.override_default_ocelot_parameter_names()&#10;- Increased the stats in the crossmatch process - now powered only by sigma values, ignoring tidal radii and looking for the mean or max sigma to pick a best match&#10;- Catalogue.crossmatch() is now unit tested (more of an integration test =p) after lots of checking values by hand and looking for bugs!&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Added a new metrics subpackage to ocelot.cluster.&#10;- Added a very basic (and probably hilariously slow) 5 parameter metric to cluster.epsilon.&#10;This commit is experimental work towards 0.3.0." />
     <MESSAGE value="Small improvement to epsilon determination with the field model.&#10;- Now have a &quot;model_minimum_drop&quot; parameter that controls how low the model's epsilon values are able to go, helping to prevent floating point errors from taking logs extremely close to or beyond 0.&#10;This commit fixes bugs in 0.3.0 feature b." />
@@ -712,7 +711,8 @@
     <MESSAGE value="Changed the DataPartitioner to work with HEALPix pixels.&#10;- Re-wrote much of the code to now use HEALPix. It is *not* backward compatible!&#10;- Made some efficiency improvements to how it calculates parallax members (more stuff is saved to the class for later use)&#10;- Unit tested and verified that the new changes work as intended.&#10;- Wrote some really neat plotting code for the unit testing that I should totally integrate into the class itself..." />
     <MESSAGE value="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic." />
     <MESSAGE value="Little usability improvements to DataPartitioner.&#10;- Verbose printing output is now more informative.&#10;- Will now close all created partition plots to save on memory. (Albeit only if show figure is False!)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Little usability improvements to DataPartitioner.&#10;- Verbose printing output is now more informative.&#10;- Will now close all created partition plots to save on memory. (Albeit only if show figure is False!)" />
+    <MESSAGE value="Little usability improvements to DataPartitioner II.&#10;- Now have lines to mark where values should be.&#10;- Saving shouldn't crop the figure anymore." />
+    <option name="LAST_COMMIT_MESSAGE" value="Little usability improvements to DataPartitioner II.&#10;- Now have lines to mark where values should be.&#10;- Saving shouldn't crop the figure anymore." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -723,10 +723,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585556675589">
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585561148383">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585556675589" />
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585561148383" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
