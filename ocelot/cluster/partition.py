@@ -139,7 +139,7 @@ class DataPartition:
                  constraints: Optional[Union[list, tuple, np.ndarray]] = None,
                  final_distance: float = np.inf,
                  parallax_sigma_threshold: float = 2.,
-                 verbose: bool = True):
+                 verbose: bool = False):
         """A class for creating Gaia dataset partitions. Checks the quality of the constraints and writes them to the
         class after some processing.
 
@@ -158,9 +158,14 @@ class DataPartition:
                 most stars will be in every parallax bin.
                 Default: 2. (i.e. ~90% of stars actually in a bin but outside of it within error will end up in the bin)
             verbose (bool): whether or not to print a couple of info things to the console upon creation.
-                Default: True
+                Default: False
 
         """
+        self.verbose = verbose
+
+        if self.verbose:
+            print("Creating a dataset partitioning scheme...")
+
         # Check that the input constraints aren't total BS
         if constraints is None:
             constraints = default_partition
@@ -211,7 +216,7 @@ class DataPartition:
 
         self._stored_parallax_partitions = {}
 
-        if verbose:
+        if self.verbose:
             print(f"Created a dataset partitioning scheme!")
 
     def _calculate_sub_partition(self, core_level: Optional[int], overlap_level: Optional[int],
@@ -363,6 +368,9 @@ class DataPartition:
             fig, ax (i.e. the figure and axis elements for you to mess with if desired)
 
         """
+        if self.verbose:
+            print("Plotting a bar chart of the number of members in each partition!")
+
         # Check that the user isn't a Total Biscuit
         if self.data is None:
             raise ValueError("The class currently has no data so there's nothing to plot! Please call the method "
@@ -381,6 +389,9 @@ class DataPartition:
 
         # Get all the different partitions and group them by parallax
         last_parallax_cut = np.asarray([-10, -10])
+
+        if self.verbose:
+            print("  iterating over partitions...")
 
         for i_partition, a_partition in enumerate(self.partitions):
 
@@ -463,6 +474,9 @@ class DataPartition:
         if show_figure is True:
             fig.show()
 
+        if self.verbose:
+            print("  done plotting the bar chart")
+
         return fig, ax1
 
     def plot_partitions(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
@@ -484,6 +498,9 @@ class DataPartition:
             fig, ax (i.e. the figure and axis elements for you to mess with if desired)
 
         """
+        if self.verbose:
+            print("Making plots of each individual partition.")
+
         default_plot_args = {
             'cmd_plot_y_limits': [8, 18],
             'make_parallax_plot': True,
@@ -496,6 +513,9 @@ class DataPartition:
         labels = np.full((self.total_partitions, self.data.shape[0]), -1)
 
         # Update the labels array with the results of every partition
+        if self.verbose:
+            print("  iterating over partitions...")
+
         for i_partition in range(self.total_partitions):
             a_partition = self.get_partition(i_partition, return_data=False)
             labels[i_partition, a_partition] = i_partition
@@ -525,11 +545,14 @@ class DataPartition:
         if figure_title is None:
             figure_title = ''
         else:
-            figure_title = f'\n{figure_title}'
+            figure_title = f'{figure_title}\n'
         
         # AND NOW, THE FUN REALLY BEGINS
         # Let's make some plots!
-        for a_parallax_set, a_save_name in zip(partition_numbers.keys(), save_name_list):
+        for i_parallax_set, (a_parallax_set, a_save_name) in enumerate(zip(partition_numbers.keys(), save_name_list)):
+            if self.verbose:
+                print(f"  plotting partition {i_parallax_set+1} of {n_partitions}")
+
             current_parallax_indices = partition_numbers[a_parallax_set]
 
             # Draw random values for every non-field label to decide which cluster to assign them to
@@ -539,14 +562,20 @@ class DataPartition:
             labels_view = labels[current_parallax_indices]
             a_labels = labels_view[np.argmax(random_vals, axis=0), np.arange(labels.shape[1])]
 
-            clustering_result(self.data,
-                              a_labels,
-                              current_parallax_indices,
-                              figure_title=f"Partitions for parallax set {a_parallax_set}{figure_title}",
-                              save_name=a_save_name,
-                              dpi=dpi,
-                              show_figure=show_figure,
-                              **default_plot_args)
+            fig, ax = clustering_result(self.data,
+                                        a_labels,
+                                        current_parallax_indices,
+                                        figure_title=f"{figure_title}Partitions for parallax set {a_parallax_set}",
+                                        save_name=a_save_name,
+                                        dpi=dpi,
+                                        show_figure=show_figure,
+                                        **default_plot_args)
+
+            if not show_figure:
+                plt.close(fig)
+
+        if self.verbose:
+            print("  done with plotting individual partitions!")
 
     def set_data(self, data: pd.DataFrame):
         """Sets the data currently associated with the class and resets various internals.
@@ -555,6 +584,9 @@ class DataPartition:
             data (pd.DataFrame): the dataframe to set. *Must* have arguments 'lat', 'lon', 'parallax' and
                 'parallax_error'.
         """
+        if self.verbose:
+            print("Setting data to the partitioner.")
+
         self.reset_partition_counter()
         self._stored_partitions = [None] * self.total_partitions
         self.data = data
@@ -567,6 +599,9 @@ class DataPartition:
             if test_string not in self.data.keys():
                 self.data[test_string] = hp.ang2pix(2**a_level, self.data['ra'], self.data['dec'],
                                                     nest=True, lonlat=True)
+
+        if self.verbose:
+            print("  successfully set data to the class!")
 
     def reset_partition_counter(self):
         """Resets the counter displaying which partition we're currently on."""
@@ -688,6 +723,9 @@ class DataPartition:
                 Default: False
 
         """
+        if self.verbose:
+            print(f"Pre-generating all partitions!")
+
         # Pre-get all partitions
         for i in range(self.total_partitions):
             self.get_partition(i, return_data=False)

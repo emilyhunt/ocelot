@@ -213,14 +213,15 @@ def test_data_partition(show_figure=False):
     partitioner = ocelot.cluster.DataPartition(12238,
                                                constraints=constraints,
                                                final_distance=np.inf,
-                                               parallax_sigma_threshold=2.)
+                                               parallax_sigma_threshold=2.,
+                                               verbose=True)
 
     partitioner.set_data(data_gaia)
 
     partitioner.plot_partition_bar_chart(figure_title='test of the partitioner', show_figure=show_figure)
 
-    #partitioner.plot_partitions(figure_title='testing of the partitioner', show_figure=show_figure,
-    #                            cmd_plot_y_limits=[9, 16])
+    partitioner.plot_partitions(figure_title='testing of the partitioner', show_figure=show_figure,
+                                cmd_plot_y_limits=[9, 16])
 
     return data_gaia, partitioner
 

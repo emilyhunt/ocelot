@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic.">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/partition.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/partition.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/preprocess.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -58,7 +57,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/ocelot/cluster/partition.py" />
+    <property name="last_opened_file_path" value="$USER_HOME$/Desktop" />
     <property name="run.code.analysis.last.selected.profile" value="aDefault" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
@@ -320,14 +319,9 @@
       <workItem from="1584809979280" duration="12615000" />
       <workItem from="1585210799352" duration="18986000" />
       <workItem from="1585297458390" duration="954000" />
-      <workItem from="1585299341275" duration="13712000" />
-    </task>
-    <task id="LOCAL-00004" summary="Implemented ocelot.isochrone.io.read_cmd_isochrone()&#10;- It reads in isochrones from CMD 3.3!&#10;- Unit test written &amp; passed.&#10;&gt; This satisfies feature(s) [a] for future release 0.2.0">
-      <created>1570630466173</created>
-      <option name="number" value="00004" />
-      <option name="presentableId" value="LOCAL-00004" />
-      <option name="project" value="LOCAL" />
-      <updated>1570630466173</updated>
+      <workItem from="1585299341275" duration="15278000" />
+      <workItem from="1585552966819" duration="1387000" />
+      <workItem from="1585554448308" duration="2169000" />
     </task>
     <task id="LOCAL-00005" summary="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io">
       <created>1570717103952</created>
@@ -665,7 +659,14 @@
       <option name="project" value="LOCAL" />
       <updated>1585237330956</updated>
     </task>
-    <option name="localTasksCounter" value="53" />
+    <task id="LOCAL-00053" summary="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic.">
+      <created>1585327383366</created>
+      <option name="number" value="00053" />
+      <option name="presentableId" value="LOCAL-00053" />
+      <option name="project" value="LOCAL" />
+      <updated>1585327383367</updated>
+    </task>
+    <option name="localTasksCounter" value="54" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -687,7 +688,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on ocelot.crossmatch&#10;- Have now written a basic crossmatch utility in the form of a class with methods, ocelot.crossmatch.Catalogue&#10;- It should be able to crossmatch with an arbitrary number of features, depending on the catalogue to be matched against&#10;- It requires testing!&#10;This commit partially satisfies 0.3.0 feature d." />
     <MESSAGE value="Work on ocelot.crossmatch&#10;- Basic bugfixing to ocelot.crossmatch.Catalogue (it now works as written and intended), but I'd like to refactor it to work in more sensible ways (e.g. using an estimated systematic error on position to calculate positional probabilities instead of using the tidal radius as a proxy.)&#10;- Next commit will be quite different!&#10;This commit partially satisfies 0.3.0 feature d." />
     <MESSAGE value="Final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Added a systematic position error estimate parameter to the Catalogue class at __init__&#10;- Changed Catalogue.crossmatch() to be much simpler to call and to now use ocelot standard parameter names, which are now stored in ocelot.calculate.constants &#10;- These parameter names can be overriden (or even added to!) with Catalogue.override_default_ocelot_parameter_names()&#10;- Increased the stats in the crossmatch process - now powered only by sigma values, ignoring tidal radii and looking for the mean or max sigma to pick a best match&#10;- Catalogue.crossmatch() is now unit tested (more of an integration test =p) after lots of checking values by hand and looking for bugs!&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d." />
@@ -712,7 +712,8 @@
     <MESSAGE value="Pushing a debug to the server, interim commit." />
     <MESSAGE value="By debugging introduced a new bug!&#10;- _summed_kth_nn_distribution_one_cluster had unnecessary error checking. &#10;- Occasionally, for very extreme fit values (e.g. d_c=17!!) the cluster constant a_c can be higher than the field constant a_f.&#10;- This is not an issue because of how the fit is done in the modern form of field_model - values are constrained anyway during fitting, so the field cannot have a higher maximum than the cluster. But this isn't based on the constants, but instead the maxima - unlike the error checking in _summed_kth_nn_distribution_one_cluster, which was more basic and could fail in edge cases.&#10;- I removed the error checking as it wasn't helping!" />
     <MESSAGE value="Changed the DataPartitioner to work with HEALPix pixels.&#10;- Re-wrote much of the code to now use HEALPix. It is *not* backward compatible!&#10;- Made some efficiency improvements to how it calculates parallax members (more stuff is saved to the class for later use)&#10;- Unit tested and verified that the new changes work as intended.&#10;- Wrote some really neat plotting code for the unit testing that I should totally integrate into the class itself..." />
-    <option name="LAST_COMMIT_MESSAGE" value="Changed the DataPartitioner to work with HEALPix pixels.&#10;- Re-wrote much of the code to now use HEALPix. It is *not* backward compatible!&#10;- Made some efficiency improvements to how it calculates parallax members (more stuff is saved to the class for later use)&#10;- Unit tested and verified that the new changes work as intended.&#10;- Wrote some really neat plotting code for the unit testing that I should totally integrate into the class itself..." />
+    <MESSAGE value="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic." />
+    <option name="LAST_COMMIT_MESSAGE" value="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -723,14 +724,14 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585237330075">
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585327622380">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585237330075" />
-    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1584709506609">
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585327622380" />
+    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709506609" />
+    <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585327553641" />
     <state x="2369" y="174" key="SettingsEditor" timestamp="1584452701822">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -739,9 +740,9 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585147085692" />
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1585299565585">
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1585554488109">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585299565585" />
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585554488109" />
   </component>
 </project>
