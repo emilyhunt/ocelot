@@ -210,13 +210,13 @@ def test_data_partition(show_figure=False):
     ]
 
     # Let's go!
-    partitioner = ocelot.cluster.DataPartition(12238,
+    partitioner = ocelot.cluster.DataPartition(data_gaia,
+                                               12238,
                                                constraints=constraints,
                                                final_distance=np.inf,
                                                parallax_sigma_threshold=2.,
+                                               minimum_size=2500,
                                                verbose=True)
-
-    partitioner.set_data(data_gaia)
 
     partitioner.plot_partition_bar_chart(figure_title='test of the partitioner', show_figure=show_figure)
 

@@ -135,10 +135,12 @@ default_partition = [
 
 class DataPartition:
     def __init__(self,
+                 data: pd.DataFrame,
                  central_pixel: int,
                  constraints: Optional[Union[list, tuple, np.ndarray]] = None,
                  final_distance: float = np.inf,
                  parallax_sigma_threshold: float = 2.,
+                 minimum_size: int = 6400,
                  verbose: bool = False):
         """A class for creating Gaia dataset partitions. Checks the quality of the constraints and writes them to the
         class after some processing.
@@ -157,6 +159,10 @@ class DataPartition:
                 include stars. If zero, error is not considered at all and there won't be any overlap. If large, then
                 most stars will be in every parallax bin.
                 Default: 2. (i.e. ~90% of stars actually in a bin but outside of it within error will end up in the bin)
+            minimum_size (int): minimum size of each partition bin. If any in a parallax range are smaller than this,
+                then their HEALPix core level will be increased to compensate upto including all stars in the parallax
+                bin.
+                Default: 6400
             verbose (bool): whether or not to print a couple of info things to the console upon creation.
                 Default: False
 
@@ -191,22 +197,19 @@ class DataPartition:
         self.base_map = np.zeros(12288, dtype=int)
         self.base_map[self.level_5_pixels] = 1.
 
-        # Now, let's cycle over every partition and work out which healpix pixels it needs
-        self.partitions = []
-        self.healpix_levels_to_calculate = []
-
-        for a_level, an_overlap, a_start, an_end in zip(
-                healpix_levels, healpix_overlaps, start_parallaxes, end_parallaxes):
-            self._calculate_sub_partition(a_level, an_overlap, a_start, an_end)
+        # Set the data and calculate any missing HEALPix levels
+        self.data = data
+        self._check_data(healpix_levels, healpix_overlaps)
 
         # Some final attributes we want the class to have
         self.central_pixel = central_pixel
         self._central_pixel_astropy_frame = _get_healpix_frame(central_pixel)
 
-        self.total_partitions = len(self.partitions)
-        self._stored_partitions = [None] * self.total_partitions
+        self.total_partitions = 0
+        self._stored_partitions = []
+
         self.current_partition = 0
-        self.data = None
+
         self.parallax_sigma_threshold = parallax_sigma_threshold
 
         self.current_core_pixels = None
@@ -216,21 +219,79 @@ class DataPartition:
 
         self._stored_parallax_partitions = {}
 
+        # Now, let's cycle over every partition and work out which healpix pixels it needs
+        self.partitions = []
+        self._calculate_partitions(healpix_levels, healpix_overlaps, start_parallaxes, end_parallaxes, minimum_size)
+
         if self.verbose:
             print(f"Created a dataset partitioning scheme!")
+
+    def _calculate_partitions(self, healpix_levels, healpix_overlaps, start_parallaxes, end_parallaxes,
+                              minimum_size: int = 6400):
+        """Calculates all partitions! Will size them up if necessary to make them bigger."""
+        if self.verbose:
+            print("Calculating the partitions themselves!")
+
+        n_partitions = len(healpix_levels)
+        i_partitions = 0
+        first_run = True
+        while i_partitions < n_partitions:
+            if self.verbose and first_run:
+                print(f"  attempting to calculate parallax range {i_partitions+1} of {n_partitions}")
+
+            # Calculate this sub-partition
+            partitions_to_append = self._calculate_sub_partition(
+                healpix_levels[i_partitions], healpix_overlaps[i_partitions],
+                start_parallaxes[i_partitions], end_parallaxes[i_partitions])
+
+            # Temporarily spoof the partitions the class has
+            n_new_partitions = len(partitions_to_append)
+            n_old_partitions = self.total_partitions
+            self.partitions += partitions_to_append
+            self.total_partitions += n_new_partitions
+            self._stored_partitions += [None] * self.total_partitions
+
+            # Calculate the new ones
+            counts = np.zeros(n_new_partitions)
+            for i in range(n_new_partitions):
+                a_partition = self.get_partition(n_old_partitions + i, return_data=False)
+                counts[i] = np.count_nonzero(a_partition)
+
+            # See if this partitioning fails
+            if np.any(counts < minimum_size) and healpix_levels[i_partitions] is not None:
+                first_run = False
+                healpix_levels[i_partitions] -= 1
+
+                if self.verbose:
+                    print(f"    too few stars! Reducing HEALPix level to {healpix_levels[i_partitions]}")
+
+                # See if we already have too few a HEALPix level and should move on
+                if healpix_levels[i_partitions] < 5:
+                    healpix_levels[i_partitions] = None
+
+                # Otherwise, using one of the worst pieces of code I've ever written, we remove the stuff we just
+                # calculated and decide to try again
+                self.partitions = self.partitions[:n_old_partitions]
+                self.total_partitions = n_old_partitions
+                self._stored_partitions = self._stored_partitions[:n_old_partitions]
+
+            else:
+                first_run = True
+                i_partitions += 1
 
     def _calculate_sub_partition(self, core_level: Optional[int], overlap_level: Optional[int],
                                  start: float, end: float):
         """Calculates and returns the required sub-partitions for a certain partition as defined by input constraints.
         """
         parallax_range = (start, end)
+        to_return = []
 
         # Work out how many separate sub-partitions this partition will have, the requisite HEALPix level to use,
         # and whether or not we need to also think about making an overlap
         # Case 1: we run over the whole field, within the parallax bin.
         if core_level is None:
             pixel_level = None
-            self.partitions.append([5, None, None, parallax_range])
+            to_return.append([5, None, None, parallax_range])
 
         # Cases 2 to 4 can be ran together.
         else:
@@ -300,11 +361,9 @@ class DataPartition:
 
             # FINALLY, append all this to the partition array
             for a_core, a_neighbor in zip(core_pixels_at_pixel_level, neighbor_pixels):
-                self.partitions.append([pixel_level, a_core, a_neighbor, parallax_range])
+                to_return.append([pixel_level, a_core, a_neighbor, parallax_range])
 
-        # Make sure that this HEALPix level will be calculated in the data
-        if pixel_level not in self.healpix_levels_to_calculate and pixel_level is not None:
-            self.healpix_levels_to_calculate.append(pixel_level)
+        return to_return
 
     @staticmethod
     def _safe_distance_to_parallax(*args, milliarcseconds: bool=True):
@@ -344,270 +403,24 @@ class DataPartition:
 
         return args
 
-    def plot_partition_bar_chart(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
-                                 show_figure: bool = True, dpi: int = 100, y_log: bool = True,
-                                 maximum_parallax_for_cluster_radii: float = 10.,
-                                 desired_radius: float = 10.,
-                                 desired_count: float = 8000):
-        """Makes histograms showing the number of members of different constraint bins.
-
-        Args:
-            show_figure (bool): whether or not to show the figure at the end of plotting.
-                Default: True
-            save_name (string, optional): whether or not to save the figure at the end of plotting.
-                Default: None (no figure is saved)
-            figure_title (string, optional): the desired title of the figure.
-                Default: None
-            dpi (int): dpi of the figure.
-                Default: 100
-            y_log (bool): whether or not to make the y scale of the bar chart logarithmic.
-                Default: True
-            maximum_parallax_for_cluster_radii (str): the maximum start parallax to consider calculating a largest valid
-                cluster radii for. Stops the plot from tending to inf for the first partition, basically.
-                Default: 10. (aka 100pc away)
-
-        Returns:
-            fig, ax (i.e. the figure and axis elements for you to mess with if desired)
-
-        """
-        if self.verbose:
-            print("Plotting a bar chart of the number of members in each partition!")
-
-        # Check that the user isn't a Total Biscuit
-        if self.data is None:
-            raise ValueError("The class currently has no data so there's nothing to plot! Please call the method "
-                             "set_data first and assign me a DataFrame to work with.")
-
-        # Make a cute little bar chart with info of what's gone on
-        fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=dpi)
-
-        # We also grab the current default colourmap so that we can colour things by parallax cut
-        total_count = 0
-        all_counts = np.zeros(self.total_partitions)
-        all_cluster_radii = np.zeros(self.total_partitions)
-        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        n_colors = len(colors)
-        i_color = -1
-
-        # Get all the different partitions and group them by parallax
-        last_parallax_cut = np.asarray([-10, -10])
-
-        if self.verbose:
-            print("  iterating over partitions...")
-
-        for i_partition, a_partition in enumerate(self.partitions):
-
-            # Check if it has the same parallax cut as the last partition
-            if np.allclose(a_partition[3], last_parallax_cut):
-                label = None
-
-            else:
-                label = f"{a_partition[3][0]:.2f} to {a_partition[3][1]:.2f}"
-                last_parallax_cut = a_partition[3]
-
-                # Increment the color
-                if i_color < n_colors - 1:
-                    i_color += 1
-                else:
-                    i_color = 0
-
-            # Call get_partition and get count information
-            count = np.count_nonzero(self.get_partition(i_partition, return_data=False))
-            all_counts[i_partition] = count
-            total_count += count
-
-            # Also get information about the largest valid cluster radius of this pixel
-            if a_partition[3][0] < maximum_parallax_for_cluster_radii:
-                # Get the current pixels, dealing with if it's None
-                current_pixels = a_partition[1]
-                if current_pixels is None:
-                    current_pixels = self.level_5_pixels
-
-                all_cluster_radii[i_partition] = find_largest_cluster_in_pixel(
-                    current_pixels, a_partition[0], a_partition[3][0])
-
-            else:
-                all_cluster_radii[i_partition] = np.nan
-
-            # Plot the friend
-            ax1.bar(i_partition, count, label=label, color=colors[i_color], zorder=0)
-
-        # Also make a second axis so we can plot the cluster radii too
-        ax2 = ax1.twinx()
-        ax2.plot(np.arange(self.total_partitions), all_cluster_radii, 'ks', ms=3, zorder=100)
-
-        # And add the desired values as horizontal lines
-        fraction_of_total = self.total_partitions / 10
-        ax1.plot([-1, fraction_of_total], [desired_count] * 2,
-                 'r-', lw=3, zorder=50)
-        ax2.plot([self.total_partitions - fraction_of_total, self.total_partitions+1], [desired_radius] * 2,
-                 'r-', lw=3, zorder=50)
-
-        # Beautification
-        ax1.legend(edgecolor='k', fontsize=8, title='parallaxes (mas)',
-                   loc='lower left', bbox_to_anchor=(1.0, 1.0))
-        ax1.set_xlabel("Partition number")
-        ax1.set_ylabel("Bin count")
-        ax2.set_ylabel("Maximum cluster radius at center (pc)")
-
-        ax1.set_xlim(0 - 0.4, self.total_partitions - 0.6)
-
-        if y_log:
-            ax1.set_yscale('log')
-
-        # Plot a title - we use text instead of the title api so that it can be long and multi-line.
-        if figure_title is None:
-            figure_title = ""
-
-        initial_count = self.data.shape[0]
-        runtime_fraction_nlogn = initial_count * np.log(initial_count) / np.sum(all_counts * np.log(all_counts))
-        runtime_fraction_nsquared = initial_count**2 / np.sum(all_counts**2)
-
-        memory_fraction_n = np.max(all_counts) / initial_count
-        memory_fraction_nsquared = np.max(all_counts)**2 / initial_count**2
-
-        count_passes = np.count_nonzero(all_counts > desired_count)
-        radius_passes = np.count_nonzero(all_cluster_radii[np.isfinite(all_cluster_radii)] > desired_radius)
-
-        ax1.text(0., 1.05,
-                 figure_title
-                 + f"\ninitial stars:         {initial_count}"
-                 + f"\npartitioned stars:     {total_count}"
-                 + f"\ncount passes:          {count_passes:3d}  {count_passes / self.total_partitions:.1%}"
-                 + f"\nradius passes:         {radius_passes:3d}  {radius_passes / self.total_partitions:.1%}"
-                 + f"\ntime saving for nlogn: {runtime_fraction_nlogn:.2f}x faster"
-                 + f"\ntime saving for n^2:   {runtime_fraction_nsquared:.2f}x faster"
-                 + f"\nRAM use for m ~ n:     {1/memory_fraction_n:.2f}x less"
-                 + f"\nRAM use for m ~ n^2:   {1/memory_fraction_nsquared:.2f}x less",
-                 transform=ax1.transAxes, va="bottom",
-                 family='monospace')
-
-        # Output time
-        if save_name is not None:
-            fig.savefig(save_name, dpi=dpi, bbox_inches='tight')
-
-        if show_figure is True:
-            fig.show()
-
-        if self.verbose:
-            print("  done plotting the bar chart")
-
-        return fig, ax1
-
-    def plot_partitions(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
-                        show_figure: bool = True, dpi: int = 100, **extra_args_for_plot):
-        """Plots the individual parallax levels of partitions in a number of separate plots.
-
-        Args:
-            show_figure (bool): whether or not to show the figure at the end of plotting.
-                Default: True
-            save_name (string, optional): whether or not to save the figure at the end of plotting.
-                Default: None (no figure is saved)
-            figure_title (string, optional): the desired title of the figure.
-                Default: None
-            dpi (int): dpi of the figure.
-                Default: 100
-            extra_args_for_plot: extra arguments to pass to ocelot.plot.clustering_result.
-
-        Returns:
-            fig, ax (i.e. the figure and axis elements for you to mess with if desired)
-
-        """
-        if self.verbose:
-            print("Making plots of each individual partition.")
-
-        default_plot_args = {
-            'cmd_plot_y_limits': [8, 18],
-            'make_parallax_plot': True,
-            'clip_to_fit_clusters': False,
-            'plot_std_limit': 2.
-        }
-        default_plot_args.update(**extra_args_for_plot)
-
-        # Make a mock labels array and a mock shades one
-        labels = np.full((self.total_partitions, self.data.shape[0]), -1)
-
-        # Update the labels array with the results of every partition
-        if self.verbose:
-            print("  iterating over partitions...")
-
-        for i_partition in range(self.total_partitions):
-            a_partition = self.get_partition(i_partition, return_data=False)
-            labels[i_partition, a_partition] = i_partition
-
-        # Cycle over all partitions, working out how many are in each parallax level. We make lists of their indices
-        # for every different parallax entry in partition_numbers.
-        partition_numbers = {}
-        for i_partition, a_partition in enumerate(self.partitions):
-            a_parallax_partition = a_partition[-1]
-
-            # Update the partition number dict with this friend
-            if a_parallax_partition in partition_numbers.keys():
-                partition_numbers[a_parallax_partition].append(i_partition)
-            else:
-                partition_numbers[a_parallax_partition] = [i_partition]
-        
-        # Process the figure title and save name
-        n_partitions = len(partition_numbers.keys())
-        if save_name is not None:
-            save_name = Path(save_name)
-            prefix = save_name.parent / save_name.stem
-            suffix = save_name.suffix
-            save_name_list = [f"{prefix}_{x}{suffix}" for x in range(n_partitions)]
-        else:
-            save_name_list = [None] * n_partitions
-
-        if figure_title is None:
-            figure_title = ''
-        else:
-            figure_title = f'{figure_title}\n'
-        
-        # AND NOW, THE FUN REALLY BEGINS
-        # Let's make some plots!
-        for i_parallax_set, (a_parallax_set, a_save_name) in enumerate(zip(partition_numbers.keys(), save_name_list)):
-            if self.verbose:
-                print(f"  plotting partition {i_parallax_set+1} of {n_partitions}")
-
-            current_parallax_indices = partition_numbers[a_parallax_set]
-
-            # Draw random values for every non-field label to decide which cluster to assign them to
-            random_vals = np.where(labels[current_parallax_indices] == -1, -1,
-                                   np.random.rand(len(current_parallax_indices), labels.shape[1]))
-
-            labels_view = labels[current_parallax_indices]
-            a_labels = labels_view[np.argmax(random_vals, axis=0), np.arange(labels.shape[1])]
-
-            fig, ax = clustering_result(self.data,
-                                        a_labels,
-                                        current_parallax_indices,
-                                        figure_title=f"{figure_title}Partitions for parallax set {a_parallax_set}",
-                                        save_name=a_save_name,
-                                        dpi=dpi,
-                                        show_figure=show_figure,
-                                        **default_plot_args)
-
-            if not show_figure:
-                plt.close(fig)
-
-        if self.verbose:
-            print("  done with plotting individual partitions!")
-
-    def set_data(self, data: pd.DataFrame):
+    def _check_data(self, *healpix_levels):
         """Sets the data currently associated with the class and resets various internals.
 
         Args:
-            data (pd.DataFrame): the dataframe to set. *Must* have arguments 'lat', 'lon', 'parallax' and
-                'parallax_error'.
-        """
-        if self.verbose:
-            print("Setting data to the partitioner.")
+            *args: arrays of HEALPix levels that we need to calculate.
 
-        self.reset_partition_counter()
-        self._stored_partitions = [None] * self.total_partitions
-        self.data = data
+        """
+        # Get unique HEALPix levels to calculate (removing any None values) from the input
+        healpix_levels_to_calculate = np.atleast_1d([])
+        for an_arg in healpix_levels:
+            an_arg_numpy = np.atleast_1d(an_arg)
+            good_values = an_arg_numpy != None
+            healpix_levels_to_calculate = np.append(healpix_levels_to_calculate, an_arg_numpy[good_values])
+
+        healpix_levels_to_calculate = np.unique(healpix_levels_to_calculate)
 
         # Calculate any requisite healpix data
-        for a_level in self.healpix_levels_to_calculate:
+        for a_level in healpix_levels_to_calculate:
 
             test_string = f"gaia_healpix_{a_level}"
 
@@ -729,28 +542,10 @@ class DataPartition:
         else:
             return self._stored_partitions[partition_number]
 
-    def generate_all_partitions(self, delete_data: bool = False):
-        """Pre-generates all partitions for the current data and resets the partition counter.
-
-        Args:
-            delete_data (bool): whether or not to also remove the class's local version of the input data. This is
-                useful for memory-efficient clustering analysis.
-                Default: False
-
-        """
-        if self.verbose:
-            print(f"Pre-generating all partitions!")
-
-        # Pre-get all partitions
-        for i in range(self.total_partitions):
-            self.get_partition(i, return_data=False)
-
-        # Say bye to the data (not using del, because that would delete the attribute too)
-        if delete_data:
-            self.data = None
-
-        # We also reset the partition counter. We were never here!
-        self.reset_partition_counter()
+    def delete_data(self):
+        """Deletes the data after init for memory efficiency!"""
+        # Say bye to the data (not using del, because that would delete the actual data too)
+        self.data = None
 
     def test_if_in_current_partition(self, lon: np.ndarray, lat: np.ndarray, parallax: np.ndarray):
         """Tests whether or not clusters are within the bounds of the current partition. If not, then it's game over
@@ -785,3 +580,251 @@ class DataPartition:
         good_parallax = np.logical_and(good_upper, good_lower)
 
         return np.logical_and(good_locations, good_parallax)
+
+    def plot_partition_bar_chart(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
+                                 show_figure: bool = True, dpi: int = 100, y_log: bool = True,
+                                 maximum_parallax_for_cluster_radii: float = 10.,
+                                 desired_radius: float = 10.,
+                                 desired_count: float = 8000):
+        """Makes histograms showing the number of members of different constraint bins.
+
+        Args:
+            show_figure (bool): whether or not to show the figure at the end of plotting.
+                Default: True
+            save_name (string, optional): whether or not to save the figure at the end of plotting.
+                Default: None (no figure is saved)
+            figure_title (string, optional): the desired title of the figure.
+                Default: None
+            dpi (int): dpi of the figure.
+                Default: 100
+            y_log (bool): whether or not to make the y scale of the bar chart logarithmic.
+                Default: True
+            maximum_parallax_for_cluster_radii (str): the maximum start parallax to consider calculating a largest valid
+                cluster radii for. Stops the plot from tending to inf for the first partition, basically.
+                Default: 10. (aka 100pc away)
+
+        Returns:
+            fig, ax (i.e. the figure and axis elements for you to mess with if desired)
+
+        """
+        if self.verbose:
+            print("Plotting a bar chart of the number of members in each partition!")
+
+        # Check that the user isn't a Total Biscuit
+        if self.data is None:
+            raise ValueError("The class currently has no data so there's nothing to plot! Please call the method "
+                             "set_data first and assign me a DataFrame to work with.")
+
+        # Make a cute little bar chart with info of what's gone on
+        fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=dpi)
+
+        # We also grab the current default colourmap so that we can colour things by parallax cut
+        total_count = 0
+        all_counts = np.zeros(self.total_partitions)
+        all_cluster_radii = np.zeros(self.total_partitions)
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        n_colors = len(colors)
+        i_color = -1
+
+        # Get all the different partitions and group them by parallax
+        last_parallax_cut = np.asarray([-10, -10])
+
+        if self.verbose:
+            print("  iterating over partitions...")
+
+        for i_partition, a_partition in enumerate(self.partitions):
+
+            # Check if it has the same parallax cut as the last partition
+            if np.allclose(a_partition[3], last_parallax_cut):
+                label = None
+
+            else:
+                label = f"{a_partition[3][0]:.2f} to {a_partition[3][1]:.2f}"
+                last_parallax_cut = a_partition[3]
+
+                # Increment the color
+                if i_color < n_colors - 1:
+                    i_color += 1
+                else:
+                    i_color = 0
+
+            # Call get_partition and get count information
+            count = np.count_nonzero(self.get_partition(i_partition, return_data=False))
+            all_counts[i_partition] = count
+            total_count += count
+
+            # Also get information about the largest valid cluster radius of this pixel
+            if a_partition[3][0] < maximum_parallax_for_cluster_radii:
+                # Get the current pixels, dealing with if it's None
+                current_pixels = a_partition[1]
+                if current_pixels is None:
+                    current_pixels = self.level_5_pixels
+
+                all_cluster_radii[i_partition] = find_largest_cluster_in_pixel(
+                    current_pixels, a_partition[0], a_partition[3][0])
+
+            else:
+                all_cluster_radii[i_partition] = np.nan
+
+            # Plot the friend
+            ax1.bar(i_partition, count, label=label, color=colors[i_color], zorder=0)
+
+        # Also make a second axis so we can plot the cluster radii too
+        ax2 = ax1.twinx()
+        ax2.plot(np.arange(self.total_partitions), all_cluster_radii, 'ks', ms=3, zorder=100)
+
+        # And add the desired values as horizontal lines
+        fraction_of_total = self.total_partitions / 10
+        ax1.plot([-1, fraction_of_total], [desired_count] * 2,
+                 'r-', lw=3, zorder=50)
+        ax2.plot([self.total_partitions - fraction_of_total, self.total_partitions + 1], [desired_radius] * 2,
+                 'r-', lw=3, zorder=50)
+
+        # Beautification
+        ax1.legend(edgecolor='k', fontsize=8, title='parallaxes (mas)',
+                   loc='lower left', bbox_to_anchor=(1.0, 1.0))
+        ax1.set_xlabel("Partition number")
+        ax1.set_ylabel("Bin count")
+        ax2.set_ylabel("Maximum cluster radius at center (pc)")
+
+        ax1.set_xlim(0 - 0.4, self.total_partitions - 0.6)
+
+        if y_log:
+            ax1.set_yscale('log')
+
+        # Plot a title - we use text instead of the title api so that it can be long and multi-line.
+        if figure_title is None:
+            figure_title = ""
+
+        initial_count = self.data.shape[0]
+        runtime_fraction_nlogn = initial_count * np.log(initial_count) / np.sum(all_counts * np.log(all_counts))
+        runtime_fraction_nsquared = initial_count ** 2 / np.sum(all_counts ** 2)
+
+        memory_fraction_n = np.max(all_counts) / initial_count
+        memory_fraction_nsquared = np.max(all_counts) ** 2 / initial_count ** 2
+
+        count_passes = np.count_nonzero(all_counts > desired_count)
+        radius_passes = np.count_nonzero(all_cluster_radii[np.isfinite(all_cluster_radii)] > desired_radius)
+
+        ax1.text(0., 1.05,
+                 figure_title
+                 + f"\ninitial stars:         {initial_count}"
+                 + f"\npartitioned stars:     {total_count}"
+                 + f"\ncount passes:          {count_passes:3d}  {count_passes / self.total_partitions:5.1%}"
+                 + f"\nradius passes:         {radius_passes:3d}  {radius_passes / self.total_partitions:5.1%}\n"
+                 + f"\ntime saving for nlogn: {runtime_fraction_nlogn:.2f}x faster"
+                 + f"\ntime saving for n^2:   {runtime_fraction_nsquared:.2f}x faster"
+                 + f"\nRAM use for m ~ n:     {1 / memory_fraction_n:.2f}x less"
+                 + f"\nRAM use for m ~ n^2:   {1 / memory_fraction_nsquared:.2f}x less",
+                 transform=ax1.transAxes, va="bottom",
+                 family='monospace')
+
+        # Output time
+        if save_name is not None:
+            fig.savefig(save_name, dpi=dpi, bbox_inches='tight')
+
+        if show_figure is True:
+            fig.show()
+
+        if self.verbose:
+            print("  done plotting the bar chart")
+
+        return fig, ax1
+
+    def plot_partitions(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
+                        show_figure: bool = True, dpi: int = 100, **extra_args_for_plot):
+        """Plots the individual parallax levels of partitions in a number of separate plots.
+
+        Args:
+            show_figure (bool): whether or not to show the figure at the end of plotting.
+                Default: True
+            save_name (string, optional): whether or not to save the figure at the end of plotting.
+                Default: None (no figure is saved)
+            figure_title (string, optional): the desired title of the figure.
+                Default: None
+            dpi (int): dpi of the figure.
+                Default: 100
+            extra_args_for_plot: extra arguments to pass to ocelot.plot.clustering_result.
+
+        Returns:
+            fig, ax (i.e. the figure and axis elements for you to mess with if desired)
+
+        """
+        if self.verbose:
+            print("Making plots of each individual partition.")
+
+        default_plot_args = {
+            'cmd_plot_y_limits': [8, 18],
+            'make_parallax_plot': True,
+            'clip_to_fit_clusters': False,
+            'plot_std_limit': 2.
+        }
+        default_plot_args.update(**extra_args_for_plot)
+
+        # Make a mock labels array and a mock shades one
+        labels = np.full((self.total_partitions, self.data.shape[0]), -1)
+
+        # Update the labels array with the results of every partition
+        if self.verbose:
+            print("  iterating over partitions...")
+
+        for i_partition in range(self.total_partitions):
+            a_partition = self.get_partition(i_partition, return_data=False)
+            labels[i_partition, a_partition] = i_partition
+
+        # Cycle over all partitions, working out how many are in each parallax level. We make lists of their indices
+        # for every different parallax entry in partition_numbers.
+        partition_numbers = {}
+        for i_partition, a_partition in enumerate(self.partitions):
+            a_parallax_partition = a_partition[-1]
+
+            # Update the partition number dict with this friend
+            if a_parallax_partition in partition_numbers.keys():
+                partition_numbers[a_parallax_partition].append(i_partition)
+            else:
+                partition_numbers[a_parallax_partition] = [i_partition]
+
+        # Process the figure title and save name
+        n_partitions = len(partition_numbers.keys())
+        if save_name is not None:
+            save_name = Path(save_name)
+            prefix = save_name.parent / save_name.stem
+            suffix = save_name.suffix
+            save_name_list = [f"{prefix}_{x}{suffix}" for x in range(n_partitions)]
+        else:
+            save_name_list = [None] * n_partitions
+
+        if figure_title is None:
+            figure_title = ''
+        else:
+            figure_title = f'{figure_title}\n'
+
+        # AND NOW, THE FUN REALLY BEGINS
+        # Let's make some plots!
+        for i_parallax_set, (a_parallax_set, a_save_name) in enumerate(zip(partition_numbers.keys(), save_name_list)):
+            if self.verbose:
+                print(f"  plotting partition {i_parallax_set + 1} of {n_partitions}")
+
+            current_parallax_indices = partition_numbers[a_parallax_set]
+
+            # Draw random values for every non-field label to decide which cluster to assign them to
+            random_vals = np.where(labels[current_parallax_indices] == -1, -1,
+                                   np.random.rand(len(current_parallax_indices), labels.shape[1]))
+
+            labels_view = labels[current_parallax_indices]
+            a_labels = labels_view[np.argmax(random_vals, axis=0), np.arange(labels.shape[1])]
+
+            fig, ax = clustering_result(self.data,
+                                        a_labels,
+                                        current_parallax_indices,
+                                        figure_title=f"{figure_title}Partitions for parallax set {a_parallax_set}",
+                                        save_name=a_save_name,
+                                        dpi=dpi,
+                                        show_figure=show_figure,
+                                        **default_plot_args)
+
+            if not show_figure:
+                plt.close(fig)
+
+        if self.verbose:
+            print("  done with plotting individual partitions!")
