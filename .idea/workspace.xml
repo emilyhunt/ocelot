@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic.">
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/partition.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/partition.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -321,14 +320,7 @@
       <workItem from="1585297458390" duration="954000" />
       <workItem from="1585299341275" duration="15278000" />
       <workItem from="1585552966819" duration="1387000" />
-      <workItem from="1585554448308" duration="2169000" />
-    </task>
-    <task id="LOCAL-00005" summary="Beginning work on ocelot.isochrone.interpolate.&#10;- Two classes to handle isochrone interpolation are planned out &amp; beginning to take shape.&#10;- Some additional bugfixes in isochrone.io">
-      <created>1570717103952</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1570717103952</updated>
+      <workItem from="1585554448308" duration="3434000" />
     </task>
     <task id="LOCAL-00006" summary="Some testing of a new way to spline fit random data, &amp; beginning development on isochrone.IsochroneInterpolator &#10;- I should be able to try just finding scatter about an interpolated curve of random data - a new test script has been written for this.&#10;- Began working on the IsochroneInterpolator class by adding a cumulative sum along a curve function.">
       <created>1571042528433</created>
@@ -666,7 +658,14 @@
       <option name="project" value="LOCAL" />
       <updated>1585327383367</updated>
     </task>
-    <option name="localTasksCounter" value="54" />
+    <task id="LOCAL-00054" summary="Little usability improvements to DataPartitioner.&#10;- Verbose printing output is now more informative.&#10;- Will now close all created partition plots to save on memory. (Albeit only if show figure is False!)">
+      <created>1585556676109</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1585556676110</updated>
+    </task>
+    <option name="localTasksCounter" value="55" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -688,7 +687,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on ocelot.crossmatch&#10;- Basic bugfixing to ocelot.crossmatch.Catalogue (it now works as written and intended), but I'd like to refactor it to work in more sensible ways (e.g. using an estimated systematic error on position to calculate positional probabilities instead of using the tidal radius as a proxy.)&#10;- Next commit will be quite different!&#10;This commit partially satisfies 0.3.0 feature d." />
     <MESSAGE value="Final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Added a systematic position error estimate parameter to the Catalogue class at __init__&#10;- Changed Catalogue.crossmatch() to be much simpler to call and to now use ocelot standard parameter names, which are now stored in ocelot.calculate.constants &#10;- These parameter names can be overriden (or even added to!) with Catalogue.override_default_ocelot_parameter_names()&#10;- Increased the stats in the crossmatch process - now powered only by sigma values, ignoring tidal radii and looking for the mean or max sigma to pick a best match&#10;- Catalogue.crossmatch() is now unit tested (more of an integration test =p) after lots of checking values by hand and looking for bugs!&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Final, final work on ocelot.crossmatch to fix bugs and make it as usable as possible. &#10;- Now using the ocelot standard parameter names in output match tables from Catalogue.crossmatch() for consistency, instead of using the column names of the literature catalogue.&#10;This commit satisfies 0.3.0 feature d." />
     <MESSAGE value="Added a new metrics subpackage to ocelot.cluster.&#10;- Added a very basic (and probably hilariously slow) 5 parameter metric to cluster.epsilon.&#10;This commit is experimental work towards 0.3.0." />
@@ -713,7 +711,8 @@
     <MESSAGE value="By debugging introduced a new bug!&#10;- _summed_kth_nn_distribution_one_cluster had unnecessary error checking. &#10;- Occasionally, for very extreme fit values (e.g. d_c=17!!) the cluster constant a_c can be higher than the field constant a_f.&#10;- This is not an issue because of how the fit is done in the modern form of field_model - values are constrained anyway during fitting, so the field cannot have a higher maximum than the cluster. But this isn't based on the constants, but instead the maxima - unlike the error checking in _summed_kth_nn_distribution_one_cluster, which was more basic and could fail in edge cases.&#10;- I removed the error checking as it wasn't helping!" />
     <MESSAGE value="Changed the DataPartitioner to work with HEALPix pixels.&#10;- Re-wrote much of the code to now use HEALPix. It is *not* backward compatible!&#10;- Made some efficiency improvements to how it calculates parallax members (more stuff is saved to the class for later use)&#10;- Unit tested and verified that the new changes work as intended.&#10;- Wrote some really neat plotting code for the unit testing that I should totally integrate into the class itself..." />
     <MESSAGE value="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic." />
-    <option name="LAST_COMMIT_MESSAGE" value="Final improvements to DataPartitioner.&#10;- Wrote some (untested!) code to test membership of cluster candidates within the core pixels and parallax range of a partition.&#10;- Made some improvements to how the bar chart plotting code works. Specifically, we now have some lovely diagnostic info on the largest cluster that could be detected within a cluster.&#10;- Integrated the neat code that plots individual partitions into the class itself. Previously, this was just a unit test diagnostic." />
+    <MESSAGE value="Little usability improvements to DataPartitioner.&#10;- Verbose printing output is now more informative.&#10;- Will now close all created partition plots to save on memory. (Albeit only if show figure is False!)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Little usability improvements to DataPartitioner.&#10;- Verbose printing output is now more informative.&#10;- Will now close all created partition plots to save on memory. (Albeit only if show figure is False!)" />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -724,10 +723,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585327622380">
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585556675589">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585327622380" />
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585556675589" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>

@@ -346,7 +346,9 @@ class DataPartition:
 
     def plot_partition_bar_chart(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
                                  show_figure: bool = True, dpi: int = 100, y_log: bool = True,
-                                 maximum_parallax_for_cluster_radii: float = 10.):
+                                 maximum_parallax_for_cluster_radii: float = 10.,
+                                 desired_radius: float = 10.,
+                                 desired_count: float = 8000):
         """Makes histograms showing the number of members of different constraint bins.
 
         Args:
@@ -428,19 +430,27 @@ class DataPartition:
                 all_cluster_radii[i_partition] = np.nan
 
             # Plot the friend
-            ax1.bar(i_partition, count, label=label, color=colors[i_color])
+            ax1.bar(i_partition, count, label=label, color=colors[i_color], zorder=0)
 
         # Also make a second axis so we can plot the cluster radii too
         ax2 = ax1.twinx()
-        ax2.plot(np.arange(self.total_partitions), all_cluster_radii, 'ks', ms=3)
+        ax2.plot(np.arange(self.total_partitions), all_cluster_radii, 'ks', ms=3, zorder=100)
+
+        # And add the desired values as horizontal lines
+        fraction_of_total = self.total_partitions / 10
+        ax1.plot([-1, fraction_of_total], [desired_count] * 2,
+                 'r-', lw=3, zorder=50)
+        ax2.plot([self.total_partitions - fraction_of_total, self.total_partitions+1], [desired_radius] * 2,
+                 'r-', lw=3, zorder=50)
 
         # Beautification
         ax1.legend(edgecolor='k', fontsize=8, title='parallaxes (mas)',
                    loc='lower left', bbox_to_anchor=(1.0, 1.0))
         ax1.set_xlabel("Partition number")
         ax1.set_ylabel("Bin count")
-
         ax2.set_ylabel("Maximum cluster radius at center (pc)")
+
+        ax1.set_xlim(0 - 0.4, self.total_partitions - 0.6)
 
         if y_log:
             ax1.set_yscale('log')
@@ -469,7 +479,7 @@ class DataPartition:
 
         # Output time
         if save_name is not None:
-            fig.savefig(save_name, dpi=dpi)
+            fig.savefig(save_name, dpi=dpi, bbox_inches='tight')
 
         if show_figure is True:
             fig.show()
