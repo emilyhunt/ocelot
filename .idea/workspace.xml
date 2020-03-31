@@ -4,7 +4,6 @@
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/partition.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/partition.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -140,6 +139,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -321,14 +323,8 @@
       <workItem from="1585297458390" duration="954000" />
       <workItem from="1585299341275" duration="15278000" />
       <workItem from="1585552966819" duration="1387000" />
-      <workItem from="1585554448308" duration="11580000" />
-    </task>
-    <task id="LOCAL-00008" summary="IsochroneInterpolator unit testing&#10;- Added more unit testing and did more output checking.&#10;- Changed to using a significantly smaller isochrone table to speed up testing results. &#10;&gt; This further satisfies feature(s) [b] for future release 0.2.0">
-      <created>1571131286085</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1571131286085</updated>
+      <workItem from="1585554448308" duration="12222000" />
+      <workItem from="1585642203135" duration="4466000" />
     </task>
     <task id="LOCAL-00009" summary="More work on isochrone plotting&#10;- Completed ocelot.plot.isochrone&#10;- Still need to do some documentation, but I'm nearly there on 2.0.0 feature b1">
       <created>1571235295783</created>
@@ -666,7 +662,14 @@
       <option name="project" value="LOCAL" />
       <updated>1585563005351</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="Little usability improvements to DataPartitioner IV.&#10;- We now decrease the sub-partition HEALPix level until the number of stars in the partition is the same as some minimum_size.">
+      <created>1585579483285</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1585579483285</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -688,7 +691,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Added a new metrics subpackage to ocelot.cluster.&#10;- Added a very basic (and probably hilariously slow) 5 parameter metric to cluster.epsilon.&#10;This commit is experimental work towards 0.3.0." />
     <MESSAGE value="Small improvement to epsilon determination with the field model.&#10;- Now have a &quot;model_minimum_drop&quot; parameter that controls how low the model's epsilon values are able to go, helping to prevent floating point errors from taking logs extremely close to or beyond 0.&#10;This commit fixes bugs in 0.3.0 feature b." />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have a simulated populations class&#10;- Lots of thinking and head scratching about how to do this best&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have a simulated populations class... that is nearly totally developed!&#10;- Added lots of methods to make the cluster based on a mass, then calculate parameters for member stars (like photometry, positions, proper motions...)&#10;- Still need the overall wrapper function to be made &amp; also need a way to convolve Gaia errors onto our simulated stars!&#10;- Began writing a unit test for SimulatedPopulations.&#10;This commit is experimental work for 0.3.0" />
@@ -713,7 +715,8 @@
     <MESSAGE value="Little usability improvements to DataPartitioner.&#10;- Verbose printing output is now more informative.&#10;- Will now close all created partition plots to save on memory. (Albeit only if show figure is False!)" />
     <MESSAGE value="Little usability improvements to DataPartitioner II.&#10;- Now have lines to mark where values should be.&#10;- Saving shouldn't crop the figure anymore." />
     <MESSAGE value="Little usability improvements to DataPartitioner III.&#10;- Small formatting changes on the bar chart plots." />
-    <option name="LAST_COMMIT_MESSAGE" value="Little usability improvements to DataPartitioner III.&#10;- Small formatting changes on the bar chart plots." />
+    <MESSAGE value="Little usability improvements to DataPartitioner IV.&#10;- We now decrease the sub-partition HEALPix level until the number of stars in the partition is the same as some minimum_size." />
+    <option name="LAST_COMMIT_MESSAGE" value="Little usability improvements to DataPartitioner IV.&#10;- We now decrease the sub-partition HEALPix level until the number of stars in the partition is the same as some minimum_size." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -724,10 +727,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585563005212">
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585579483122">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585563005212" />
+    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585579483122" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -736,10 +739,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2369" y="174" key="SettingsEditor/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452701822" />
-    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1585575927141">
+    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1585670475208">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585575927141" />
+    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585670475208" />
     <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1585554488109">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>

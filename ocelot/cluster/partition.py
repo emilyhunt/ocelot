@@ -5,6 +5,7 @@ from typing import Optional, Union
 import numpy as np
 import healpy as hp
 import pandas as pd
+import gc
 from shapely.geometry import Polygon, Point
 from matplotlib import pyplot as plt
 from ..plot import clustering_result
@@ -481,7 +482,7 @@ class DataPartition:
         self.current_healpix_level, self.current_core_pixels, neighbor_pixels, self.current_parallax_range = \
             self.partitions[partition_number]
         self.current_healpix_string = f"gaia_healpix_{self.current_healpix_level}"
-        self.current_partitioon = partition_number
+        self.current_partition = partition_number
 
         if self._stored_partitions[partition_number] is None:
 
@@ -546,8 +547,10 @@ class DataPartition:
         """Deletes the data after init for memory efficiency!"""
         # Say bye to the data (not using del, because that would delete the actual data too)
         self.data = None
+        gc.collect()
 
-    def test_if_in_current_partition(self, lon: np.ndarray, lat: np.ndarray, parallax: np.ndarray):
+    def test_if_in_current_partition(self, lon: np.ndarray, lat: np.ndarray, parallax: np.ndarray,
+                                     return_ra_dec: bool = False):
         """Tests whether or not clusters are within the bounds of the current partition. If not, then it's game over
         for this punk.
 
@@ -555,9 +558,14 @@ class DataPartition:
             lon (np.ndarray): the longitude values (post-recentering.) Should have shape (n,).
             lat (np.ndarray): the latitude values (post-recentering.) Should have shape (n,).
             parallax (np.ndarray): the parallax values. Should have shape (n,).
+            return_ra_dec: whether or not to also return arrays of the ra, dec values this function calculated
+                internally by reversing the transform.
+                Default: False
 
         Returns:
             an array of bools of shape (n,) as to whether or not the cluster is valid.
+            if return_ra_dec:
+                two more arrays, of the ra, dec respectively.
 
         """
         # GOOD POSITIONS
@@ -579,7 +587,13 @@ class DataPartition:
 
         good_parallax = np.logical_and(good_upper, good_lower)
 
-        return np.logical_and(good_locations, good_parallax)
+        # FNAL JOIN AND RETURN
+        good_stars = np.logical_and(good_locations, good_parallax)
+
+        if return_ra_dec:
+            return good_stars, ra, dec
+        else:
+            return good_stars
 
     def plot_partition_bar_chart(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
                                  show_figure: bool = True, dpi: int = 100, y_log: bool = True,
