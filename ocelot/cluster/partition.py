@@ -280,6 +280,10 @@ class DataPartition:
                 first_run = True
                 i_partitions += 1
 
+        # Reset the partition counter - also making sure that the current information in the class is removed now that
+        # setup is complete
+        self.reset_partition_counter()
+
     def _calculate_sub_partition(self, core_level: Optional[int], overlap_level: Optional[int],
                                  start: float, end: float):
         """Calculates and returns the required sub-partitions for a certain partition as defined by input constraints.
@@ -433,8 +437,12 @@ class DataPartition:
             print("  successfully set data to the class!")
 
     def reset_partition_counter(self):
-        """Resets the counter displaying which partition we're currently on."""
+        """Resets the information displaying which partition we're currently on."""
         self.current_partition = -1
+        self.current_core_pixels = None
+        self.current_healpix_level = None
+        self.current_healpix_string = None
+        self.current_parallax_range = None
 
     def next_partition(self, return_data: bool = True, reset_index: bool = True):
         """Gets the next data partition and checks that there's even a next one to get.
@@ -549,15 +557,18 @@ class DataPartition:
         self.data = None
         gc.collect()
 
-    def test_if_in_current_partition(self, lon: np.ndarray, lat: np.ndarray, parallax: np.ndarray,
+    def test_if_in_current_partition(self,
+                                     lon: Union[int, float, np.ndarray],
+                                     lat: Union[int, float, np.ndarray],
+                                     parallax: Union[int, float, np.ndarray],
                                      return_ra_dec: bool = False):
         """Tests whether or not clusters are within the bounds of the current partition. If not, then it's game over
         for this punk.
 
         Args:
-            lon (np.ndarray): the longitude values (post-recentering.) Should have shape (n,).
-            lat (np.ndarray): the latitude values (post-recentering.) Should have shape (n,).
-            parallax (np.ndarray): the parallax values. Should have shape (n,).
+            lon (int, float or np.ndarray): the longitude values (post-recentering.) Should have shape (n,).
+            lat (int, float or np.ndarray): the latitude values (post-recentering.) Should have shape (n,).
+            parallax (int, float or np.ndarray): the parallax values. Should have shape (n,).
             return_ra_dec: whether or not to also return arrays of the ra, dec values this function calculated
                 internally by reversing the transform.
                 Default: False
@@ -568,6 +579,11 @@ class DataPartition:
                 two more arrays, of the ra, dec respectively.
 
         """
+        if self.current_partition < 0 or self.current_partition > self.total_partitions:
+            raise ValueError("current partition number is invalid! Has get_partition() been called yet with this "
+                             "partitioner? test_if_in_current_partition uses internals that are set by get_partition() "
+                             "or next_partition().")
+
         # GOOD POSITIONS
         # Put all of the stars in the lon/lat frame and transform them
         coords = SkyCoord(lon, lat, unit='deg', frame=self._central_pixel_astropy_frame)
@@ -576,9 +592,15 @@ class DataPartition:
         ra = coords.ra.value
         dec = coords.dec.value
 
+        # Grab the current pixels we need to test against (
+        if self.current_core_pixels is None:
+            pixels_to_test_against = self.level_5_pixels
+        else:
+            pixels_to_test_against = self.current_core_pixels
+
         # Calculate the pixel id of each and if it's in the core pixel range
         pixels = hp.ang2pix(2**self.current_healpix_level, ra, dec, nest=True, lonlat=True)
-        good_locations = np.isin(pixels, self.current_core_pixels)
+        good_locations = np.isin(pixels, pixels_to_test_against)
 
         # GOOD PARALLAXES
         # Pretty nice. Just work out what is or isn't in the correct range.

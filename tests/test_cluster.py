@@ -201,6 +201,9 @@ def test_data_partition(show_figure=False):
 
     data_gaia = pd.concat(to_concatenate, ignore_index=True)
     del to_concatenate
+    
+    # We want the data to have lon, lat values for our upcoming unit test use
+    data_gaia = ocelot.cluster.recenter_dataset(data_gaia, pixel_id=12238)
 
     # Define what our partition will look like
     constraints = [
@@ -218,8 +221,27 @@ def test_data_partition(show_figure=False):
                                                minimum_size=2500,
                                                verbose=True)
 
-    partitioner.plot_partition_bar_chart(figure_title='test of the partitioner', show_figure=show_figure)
+    # Check the total number of partitions
+    assert partitioner.total_partitions == 11
 
+    # Test that we can check whether or not something is internal to the partitions properly
+    # First off, check a single star in the first partition (easy)
+    partitioner.get_partition(0)
+    assert partitioner.test_if_in_current_partition(0, 0, 20)
+    
+    # Now, let's check some more values. The very last one is the only one with a bad parallax.
+    lons = np.asarray([-0.608355,  0.991817,  1.991817, 0.581063, 2.3,  0.])
+    lats = np.asarray([-2.737361, -0.958997, -0.958997, -2.1,     2.2, -2.])
+    parallaxes = np.asarray([1.3, 1.2, 1.1, 1.0, 0.9, -0.25])
+
+    partitioner.get_partition(8)
+    target_array = np.asarray([True, True, False, True, False, False])
+    result_array = partitioner.test_if_in_current_partition(lons, lats, parallaxes)
+
+    assert np.all(target_array == result_array)
+
+    # Run the plotting code (integration test alert!!!! Call the bad testing police on me why don't you)
+    partitioner.plot_partition_bar_chart(figure_title='test of the partitioner', show_figure=show_figure)
     partitioner.plot_partitions(figure_title='testing of the partitioner', show_figure=show_figure,
                                 cmd_plot_y_limits=[9, 16])
 
@@ -645,8 +667,8 @@ def test_generate_synthetic_clusters(plot_clusters=True):
 
 
 if __name__ == '__main__':
-    pd.set_option('display.max_columns', None)
-    pd.set_option('display.max_rows', None)
+    # pd.set_option('display.max_columns', None)
+    # pd.set_option('display.max_rows', None)
     # cut = test_cut_dataset()
     # gaia, rescaled = test_rescale_dataset()
     # spar, dist = test_precalculate_nn_distances()
@@ -663,4 +685,4 @@ if __name__ == '__main__':
     # gaia = test_recenter_dataset(show_figure=True)
     # gaia = test_recenter_dataset_healpix(show_figure=True).
     # largest = test_find_largest_cluster()
-    data, partition = test_data_partition(show_figure=True)
+    data, parter = test_data_partition(show_figure=True)
