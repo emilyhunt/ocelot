@@ -243,6 +243,7 @@ class DataPartition:
         # Now, let's cycle over every partition and work out which healpix pixels it needs
         self.partitions = []
         self._calculate_partitions(healpix_levels, healpix_overlaps, start_parallaxes, end_parallaxes, minimum_size)
+        self.minimum_partition_size = minimum_size
 
         if self.verbose:
             print(f"Created a dataset partitioning scheme!")

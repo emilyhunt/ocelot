@@ -4,7 +4,6 @@
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/cluster/partition.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/partition.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -327,14 +326,7 @@
       <workItem from="1586159901286" duration="1229000" />
       <workItem from="1586161215422" duration="634000" />
       <workItem from="1586161925436" duration="903000" />
-      <workItem from="1586163037005" duration="6145000" />
-    </task>
-    <task id="LOCAL-00011" summary="Implemented CMDInterpolator, a class for interpolating CMDs directly with a spline.&#10;- System is working well!&#10;- Unit tests are *nearly* finished, now also using a new synthetic open cluster from CMD 3.3 for testing&#10;- Also added a nearest neighbour search routine, although I don't think it will be useful enough to keep&#10;- Still in need of a better way to sort CMDs - although that may come later&#10;- Also still in need of an actual routine for then calculating scatter.&#10;&#10;This release completes the requirements for 0.2.0 feature c.">
-      <created>1572517572994</created>
-      <option name="number" value="00011" />
-      <option name="presentableId" value="LOCAL-00011" />
-      <option name="project" value="LOCAL" />
-      <updated>1572517572994</updated>
+      <workItem from="1586163037005" duration="6600000" />
     </task>
     <task id="LOCAL-00012" summary="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1.">
       <created>1572534359512</created>
@@ -672,7 +664,14 @@
       <option name="project" value="LOCAL" />
       <updated>1585747865720</updated>
     </task>
-    <option name="localTasksCounter" value="60" />
+    <task id="LOCAL-00060" summary="Dataset partitioning can now produce distance-dependant numbers of components.&#10;- Re-factored to specify things in terms of a desired number of stars per component at each distance.&#10;- Added new diagnostics to the bar chart to show the difference between a plain GMM and one using &quot;adaptive SPC&quot;.&#10;- Re-unit tested and it works like a charm!">
+      <created>1586175755218</created>
+      <option name="number" value="00060" />
+      <option name="presentableId" value="LOCAL-00060" />
+      <option name="project" value="LOCAL" />
+      <updated>1586175755219</updated>
+    </task>
+    <option name="localTasksCounter" value="61" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -694,7 +693,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have a simulated populations class... that is nearly totally developed!&#10;- Added lots of methods to make the cluster based on a mass, then calculate parameters for member stars (like photometry, positions, proper motions...)&#10;- Still need the overall wrapper function to be made &amp; also need a way to convolve Gaia errors onto our simulated stars!&#10;- Began writing a unit test for SimulatedPopulations.&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have most of SimulatedPopulations unit tested.&#10;- Going to make some changes to how radial profiles are drawn (the way I've done it has issues related to e.g. normal vs Rayleigh distributions.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Synthetic populations are now being correctly generated! The King profile was changed to be drawn from 3 times at once (i.e. in 3D.)&#10;- The class' runtime was sped up by a factor of ~15, by creating a sped up (check-free) version of the King profile, dramatically reducing the number of function calls by drawing a total number of points based on the expectation value of the accept/rejects, and by dropping stars below a conservative limiting magnitude very early in the process (making distant &amp; large clusters much smaller.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Finishing touches to synthetic cluster generation.&#10;- Made a generate_synthetic_cluster() function that wraps the SimulatedPopulations class&#10;- Lots of default parameters now exist in synthetic.py. Might be worth making them neater somehow!&#10;- Did visual unit tests and it seems to be working!&#10;This commit is experimental work for 0.3.0" />
@@ -719,7 +717,8 @@
     <MESSAGE value="Little usability improvements to DataPartitioner IV.&#10;- We now decrease the sub-partition HEALPix level until the number of stars in the partition is the same as some minimum_size." />
     <MESSAGE value="Minor change to the way the test_if_in_current_partition works. It can now return de-centered ra and dec values too!" />
     <MESSAGE value="Dataset partitioning bugfixes.&#10;- Added error checking to DataPartition.test_if_in_current_partition() to ensure that get_partition() has been called at least once and that it hence has some internals to work with.&#10;- Fixed a bug in DataPartition.test_if_in_current_partition() that caused no stars to be compared against if the partition in question covers the entire field.&#10;- Greatly improved the unit testing of DataPartition." />
-    <option name="LAST_COMMIT_MESSAGE" value="Dataset partitioning bugfixes.&#10;- Added error checking to DataPartition.test_if_in_current_partition() to ensure that get_partition() has been called at least once and that it hence has some internals to work with.&#10;- Fixed a bug in DataPartition.test_if_in_current_partition() that caused no stars to be compared against if the partition in question covers the entire field.&#10;- Greatly improved the unit testing of DataPartition." />
+    <MESSAGE value="Dataset partitioning can now produce distance-dependant numbers of components.&#10;- Re-factored to specify things in terms of a desired number of stars per component at each distance.&#10;- Added new diagnostics to the bar chart to show the difference between a plain GMM and one using &quot;adaptive SPC&quot;.&#10;- Re-unit tested and it works like a charm!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Dataset partitioning can now produce distance-dependant numbers of components.&#10;- Re-factored to specify things in terms of a desired number of stars per component at each distance.&#10;- Added new diagnostics to the bar chart to show the difference between a plain GMM and one using &quot;adaptive SPC&quot;.&#10;- Re-unit tested and it works like a charm!" />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -734,10 +733,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585747865216">
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1586175754994">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585747865216" />
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586175754994" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
