@@ -323,14 +323,11 @@
       <workItem from="1585552966819" duration="1387000" />
       <workItem from="1585554448308" duration="12222000" />
       <workItem from="1585642203135" duration="4502000" />
-      <workItem from="1585728538254" duration="3648000" />
-    </task>
-    <task id="LOCAL-00010" summary="Final work on isochrone plotting&#10;- Completed ocelot.plot.isochrone documentation&#10;- Added functionality to ocelot.isochrone.read_cmd_isochrone allowing it to be given a directory of files or a list of files, where each file is a separate set of isochrones.&#10;- Isochrone interpolation issues for sharp corners (e.g. logAge ~ 6.7) will be investigated later.&#10;&#10;This release completes the requirements for 2.0.0 feature b1.">
-      <created>1571306185897</created>
-      <option name="number" value="00010" />
-      <option name="presentableId" value="LOCAL-00010" />
-      <option name="project" value="LOCAL" />
-      <updated>1571306185897</updated>
+      <workItem from="1585728538254" duration="5105000" />
+      <workItem from="1586159901286" duration="1229000" />
+      <workItem from="1586161215422" duration="634000" />
+      <workItem from="1586161925436" duration="903000" />
+      <workItem from="1586163037005" duration="6145000" />
     </task>
     <task id="LOCAL-00011" summary="Implemented CMDInterpolator, a class for interpolating CMDs directly with a spline.&#10;- System is working well!&#10;- Unit tests are *nearly* finished, now also using a new synthetic open cluster from CMD 3.3 for testing&#10;- Also added a nearest neighbour search routine, although I don't think it will be useful enough to keep&#10;- Still in need of a better way to sort CMDs - although that may come later&#10;- Also still in need of an actual routine for then calculating scatter.&#10;&#10;This release completes the requirements for 0.2.0 feature c.">
       <created>1572517572994</created>
@@ -668,7 +665,14 @@
       <option name="project" value="LOCAL" />
       <updated>1585670509707</updated>
     </task>
-    <option name="localTasksCounter" value="59" />
+    <task id="LOCAL-00059" summary="Dataset partitioning bugfixes.&#10;- Added error checking to DataPartition.test_if_in_current_partition() to ensure that get_partition() has been called at least once and that it hence has some internals to work with.&#10;- Fixed a bug in DataPartition.test_if_in_current_partition() that caused no stars to be compared against if the partition in question covers the entire field.&#10;- Greatly improved the unit testing of DataPartition.">
+      <created>1585747865719</created>
+      <option name="number" value="00059" />
+      <option name="presentableId" value="LOCAL-00059" />
+      <option name="project" value="LOCAL" />
+      <updated>1585747865720</updated>
+    </task>
+    <option name="localTasksCounter" value="60" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -690,7 +694,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have a simulated populations class&#10;- Lots of thinking and head scratching about how to do this best&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have a simulated populations class... that is nearly totally developed!&#10;- Added lots of methods to make the cluster based on a mass, then calculate parameters for member stars (like photometry, positions, proper motions...)&#10;- Still need the overall wrapper function to be made &amp; also need a way to convolve Gaia errors onto our simulated stars!&#10;- Began writing a unit test for SimulatedPopulations.&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have most of SimulatedPopulations unit tested.&#10;- Going to make some changes to how radial profiles are drawn (the way I've done it has issues related to e.g. normal vs Rayleigh distributions.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Synthetic populations are now being correctly generated! The King profile was changed to be drawn from 3 times at once (i.e. in 3D.)&#10;- The class' runtime was sped up by a factor of ~15, by creating a sped up (check-free) version of the King profile, dramatically reducing the number of function calls by drawing a total number of points based on the expectation value of the accept/rejects, and by dropping stars below a conservative limiting magnitude very early in the process (making distant &amp; large clusters much smaller.)&#10;This commit is experimental work for 0.3.0" />
@@ -715,21 +718,26 @@
     <MESSAGE value="Little usability improvements to DataPartitioner III.&#10;- Small formatting changes on the bar chart plots." />
     <MESSAGE value="Little usability improvements to DataPartitioner IV.&#10;- We now decrease the sub-partition HEALPix level until the number of stars in the partition is the same as some minimum_size." />
     <MESSAGE value="Minor change to the way the test_if_in_current_partition works. It can now return de-centered ra and dec values too!" />
-    <option name="LAST_COMMIT_MESSAGE" value="Minor change to the way the test_if_in_current_partition works. It can now return de-centered ra and dec values too!" />
+    <MESSAGE value="Dataset partitioning bugfixes.&#10;- Added error checking to DataPartition.test_if_in_current_partition() to ensure that get_partition() has been called at least once and that it hence has some internals to work with.&#10;- Fixed a bug in DataPartition.test_if_in_current_partition() that caused no stars to be compared against if the partition in question covers the entire field.&#10;- Greatly improved the unit testing of DataPartition." />
+    <option name="LAST_COMMIT_MESSAGE" value="Dataset partitioning bugfixes.&#10;- Added error checking to DataPartition.test_if_in_current_partition() to ensure that get_partition() has been called at least once and that it hence has some internals to work with.&#10;- Fixed a bug in DataPartition.test_if_in_current_partition() that caused no stars to be compared against if the partition in question covers the entire field.&#10;- Greatly improved the unit testing of DataPartition." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452724048" />
+    <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1586161900915">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586161900915" />
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog" timestamp="1584709507322">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585670509562">
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1585747865216">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2326" y="82" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585670509562" />
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585747865216" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -742,9 +750,9 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585670475208" />
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1585554488109">
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1586161867569">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585554488109" />
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586161867569" />
   </component>
 </project>

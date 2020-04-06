@@ -209,8 +209,10 @@ def test_data_partition(show_figure=False):
     constraints = [
         [None, None, 0],
         [5, 7, 700],
-        [6, 8, 2000],
+        [6, 8, 3000],
     ]
+    
+    size_threshold = 4
 
     # Let's go!
     partitioner = ocelot.cluster.DataPartition(data_gaia,
@@ -218,21 +220,25 @@ def test_data_partition(show_figure=False):
                                                constraints=constraints,
                                                final_distance=np.inf,
                                                parallax_sigma_threshold=2.,
-                                               minimum_size=2500,
+                                               minimum_size=size_threshold,
+                                               n_stars_per_component=[800, 500, 200],
                                                verbose=True)
 
     # Check the total number of partitions
-    assert partitioner.total_partitions == 11
+    # assert partitioner.total_partitions == 11
 
     # Test that we can check whether or not something is internal to the partitions properly
     # First off, check a single star in the first partition (easy)
     partitioner.get_partition(0)
     assert partitioner.test_if_in_current_partition(0, 0, 20)
+
+    # Check that getting of n_components works
+    assert partitioner.get_n_components() == 11
     
     # Now, let's check some more values. The very last one is the only one with a bad parallax.
     lons = np.asarray([-0.608355,  0.991817,  1.991817, 0.581063, 2.3,  0.])
     lats = np.asarray([-2.737361, -0.958997, -0.958997, -2.1,     2.2, -2.])
-    parallaxes = np.asarray([1.3, 1.2, 1.1, 1.0, 0.9, -0.25])
+    parallaxes = np.asarray([1.3, 1.2, 1.1, 1.0, 0.9, 1.7])
 
     partitioner.get_partition(8)
     target_array = np.asarray([True, True, False, True, False, False])
@@ -241,7 +247,8 @@ def test_data_partition(show_figure=False):
     assert np.all(target_array == result_array)
 
     # Run the plotting code (integration test alert!!!! Call the bad testing police on me why don't you)
-    partitioner.plot_partition_bar_chart(figure_title='test of the partitioner', show_figure=show_figure)
+    partitioner.plot_partition_bar_chart(figure_title='test of the partitioner', show_figure=show_figure,
+                                         desired_size=size_threshold, base_n_stars_per_component=800)
     partitioner.plot_partitions(figure_title='testing of the partitioner', show_figure=show_figure,
                                 cmd_plot_y_limits=[9, 16])
 

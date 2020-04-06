@@ -141,7 +141,8 @@ class DataPartition:
                  constraints: Optional[Union[list, tuple, np.ndarray]] = None,
                  final_distance: float = np.inf,
                  parallax_sigma_threshold: float = 2.,
-                 minimum_size: int = 6400,
+                 minimum_size: int = 10,
+                 n_stars_per_component: Optional[Union[list, tuple, np.ndarray, int]] = None,
                  verbose: bool = False):
         """A class for creating Gaia dataset partitions. Checks the quality of the constraints and writes them to the
         class after some processing.
@@ -160,10 +161,12 @@ class DataPartition:
                 include stars. If zero, error is not considered at all and there won't be any overlap. If large, then
                 most stars will be in every parallax bin.
                 Default: 2. (i.e. ~90% of stars actually in a bin but outside of it within error will end up in the bin)
-            minimum_size (int): minimum size of each partition bin. If any in a parallax range are smaller than this,
-                then their HEALPix core level will be increased to compensate upto including all stars in the parallax
-                bin.
-                Default: 6400
+            minimum_size (int): special option when working with GMMs only! Allows a minimum size to be specified as a
+                multiplier of the n_stars_per_component of this bin.
+                Default: 10
+            n_stars_per_component (list-like or int, optional): n_components to use, if partitioning for a Gaussian Mixture
+                Model. May either be a list-like (of length n_distances) or a single int to use for all.
+                Default: None (i.e. this functionality is turned off)
             verbose (bool): whether or not to print a couple of info things to the console upon creation.
                 Default: False
 
@@ -189,6 +192,22 @@ class DataPartition:
         start_distances = np.asarray(constraints[:, 2], dtype=float)
         end_distances = np.append(start_distances[1:], final_distance)
         start_parallaxes, end_parallaxes = self._safe_distance_to_parallax(start_distances, end_distances)
+
+        # Let's also do some potential setup of the n_components functionality
+        if n_stars_per_component is not None:
+            # Cast an int into a longer list
+            if isinstance(n_stars_per_component, int):
+                n_stars_per_component = np.repeat(n_stars_per_component, len(start_parallaxes))
+
+            # Cycle over all these n_components, adding them to a dictionary indexed with parallax range tuples
+            self.n_stars_per_component = {}
+            for a_components, a_start_parallax, a_end_parallax in zip(
+                    n_stars_per_component, start_parallaxes, end_parallaxes):
+                parallax_range = (a_start_parallax, a_end_parallax)
+                self.n_stars_per_component[parallax_range] = a_components
+
+        else:
+            self.n_stars_per_component = None
 
         # Grab the level 5 healpix pixels and create a map that includes them
         self.level_5_pixels = np.append(central_pixel,
@@ -217,6 +236,7 @@ class DataPartition:
         self.current_healpix_level = None
         self.current_healpix_string = None
         self.current_parallax_range = None
+        self.current_n_stars = None
 
         self._stored_parallax_partitions = {}
 
@@ -228,7 +248,7 @@ class DataPartition:
             print(f"Created a dataset partitioning scheme!")
 
     def _calculate_partitions(self, healpix_levels, healpix_overlaps, start_parallaxes, end_parallaxes,
-                              minimum_size: int = 6400):
+                              minimum_size: int = 10):
         """Calculates all partitions! Will size them up if necessary to make them bigger."""
         if self.verbose:
             print("Calculating the partitions themselves!")
@@ -258,8 +278,14 @@ class DataPartition:
                 a_partition = self.get_partition(n_old_partitions + i, return_data=False)
                 counts[i] = np.count_nonzero(a_partition)
 
+            # Calculate the minimum number of stars per component
+            if self.n_stars_per_component is not None:
+                minimum_stars = minimum_size * self.n_stars_per_component[self.current_parallax_range]
+            else:
+                minimum_stars = -1
+
             # See if this partitioning fails
-            if np.any(counts < minimum_size) and healpix_levels[i_partitions] is not None:
+            if np.any(counts < minimum_stars) and healpix_levels[i_partitions] is not None:
                 first_run = False
                 healpix_levels[i_partitions] -= 1
 
@@ -543,6 +569,10 @@ class DataPartition:
                     np.append(self.current_core_pixels, neighbor_pixels))
                 self._stored_partitions[partition_number] = good_parallax
 
+        # Get & set the number of current stars in this partition
+        self.current_n_stars = np.count_nonzero(self._stored_partitions[partition_number])
+
+        # Return time!
         if return_data:
             if reset_index:
                 return self.data.loc[self._stored_partitions[partition_number]].reset_index(drop=True)
@@ -617,11 +647,24 @@ class DataPartition:
         else:
             return good_stars
 
+    def get_n_components(self, minimum_n_components: int = 1) -> int:
+        """Gets the value of n_components for the current partition, based on the current number of stars in the
+        partition. Rounds to the nearest integer."""
+        if self.n_stars_per_component is None:
+            raise ValueError("n_components was not set during initialisation of this class so cannot be used!")
+        elif self.current_parallax_range is None:
+            raise ValueError("get_partition must be run first before this function, as it uses internals produced by "
+                             "that function to calculate other things.")
+        else:
+            n_components = np.round(self.current_n_stars / self.n_stars_per_component[self.current_parallax_range])
+            return int(np.clip(n_components, minimum_n_components, np.inf))
+
     def plot_partition_bar_chart(self, figure_title: Optional[str] = None, save_name: Optional[str] = None,
                                  show_figure: bool = True, dpi: int = 100, y_log: bool = True,
                                  maximum_parallax_for_cluster_radii: float = 10.,
                                  desired_radius: float = 10.,
-                                 desired_count: float = 8000):
+                                 desired_size: float = 10,
+                                 base_n_stars_per_component: int = 600):
         """Makes histograms showing the number of members of different constraint bins.
 
         Args:
@@ -638,6 +681,14 @@ class DataPartition:
             maximum_parallax_for_cluster_radii (str): the maximum start parallax to consider calculating a largest valid
                 cluster radii for. Stops the plot from tending to inf for the first partition, basically.
                 Default: 10. (aka 100pc away)
+            desired_radius (float): point to mark on plot, in pc.
+                Default: 10
+            desired_size (float): point to mark on plot. I.e. the desired size of a bin as a multiplier of the number of
+                stars per component of each bin.
+                Default: 10
+            base_n_stars_per_component (int): when calculating GMM runtimes, this is the assumed value that would
+                otherwise be used if running on whole segments at once.
+                Default: 600
 
         Returns:
             fig, ax (i.e. the figure and axis elements for you to mess with if desired)
@@ -657,7 +708,9 @@ class DataPartition:
         # We also grab the current default colourmap so that we can colour things by parallax cut
         total_count = 0
         all_counts = np.zeros(self.total_partitions)
+        desired_counts = np.zeros(self.total_partitions)
         all_cluster_radii = np.zeros(self.total_partitions)
+        all_n_components = np.ones(self.total_partitions)
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         n_colors = len(colors)
         i_color = -1
@@ -689,6 +742,12 @@ class DataPartition:
             all_counts[i_partition] = count
             total_count += count
 
+            desired_counts[i_partition] = self.n_stars_per_component[self.current_parallax_range] * desired_size
+
+            # Also get information about the number of components, assuming that we're even using that functionality
+            if self.n_stars_per_component is not None:
+                all_n_components[i_partition] = self.get_n_components()
+
             # Also get information about the largest valid cluster radius of this pixel
             if a_partition[3][0] < maximum_parallax_for_cluster_radii:
                 # Get the current pixels, dealing with if it's None
@@ -710,9 +769,11 @@ class DataPartition:
         ax2.plot(np.arange(self.total_partitions), all_cluster_radii, 'ks', ms=3, zorder=100)
 
         # And add the desired values as horizontal lines
+        desired_counts_repeated = np.repeat(desired_counts, 2)
+        counts_x = np.repeat(np.arange(self.total_partitions), 2) + 0.5 * (-1)**(np.arange(self.total_partitions*2) + 1)
+        ax1.plot(counts_x, desired_counts_repeated, 'k-', lw=3, zorder=100, alpha=0.5)
+
         fraction_of_total = self.total_partitions / 10
-        ax1.plot([-1, fraction_of_total], [desired_count] * 2,
-                 'r-', lw=3, zorder=50)
         ax2.plot([self.total_partitions - fraction_of_total, self.total_partitions + 1], [desired_radius] * 2,
                  'r-', lw=3, zorder=50)
 
@@ -734,12 +795,14 @@ class DataPartition:
 
         initial_count = self.data.shape[0]
         runtime_fraction_nlogn = initial_count * np.log(initial_count) / np.sum(all_counts * np.log(all_counts))
-        runtime_fraction_nsquared = initial_count ** 2 / np.sum(all_counts ** 2)
+        runtime_fraction_nsquared = initial_count**2 / np.sum(all_counts**2)
+        runtime_fraction_gmm = (initial_count**2 / base_n_stars_per_component) / np.sum(all_counts * all_n_components)
 
         memory_fraction_n = np.max(all_counts) / initial_count
-        memory_fraction_nsquared = np.max(all_counts) ** 2 / initial_count ** 2
+        memory_fraction_nsquared = np.max(all_counts)**2 / initial_count**2
+        memory_fraction_gmm = np.max(all_counts * all_n_components) / (initial_count**2 / base_n_stars_per_component)
 
-        count_passes = np.count_nonzero(all_counts > desired_count)
+        count_passes = np.count_nonzero(all_counts > desired_counts)
         radius_passes = np.count_nonzero(all_cluster_radii[np.isfinite(all_cluster_radii)] > desired_radius)
 
         ax1.text(0., 1.05,
@@ -750,8 +813,11 @@ class DataPartition:
                  + f"\nradius passes:         {radius_passes:3d}  {radius_passes / self.total_partitions:5.1%}\n"
                  + f"\ntime saving for nlogn: {runtime_fraction_nlogn:.2f}x faster"
                  + f"\ntime saving for n^2:   {runtime_fraction_nsquared:.2f}x faster"
+                 + f"\ntime saving for GMM:   {runtime_fraction_gmm:.2f}x faster"
                  + f"\nRAM use for m ~ n:     {1 / memory_fraction_n:.2f}x less"
-                 + f"\nRAM use for m ~ n^2:   {1 / memory_fraction_nsquared:.2f}x less",
+                 + f"\nRAM use for m ~ n^2:   {1 / memory_fraction_nsquared:.2f}x less"
+                 + f"\nRAM use for GMM:       {1 / memory_fraction_gmm:.2f}x less"
+                 + f"\n(assuming base GMM has {base_n_stars_per_component} stars / component)",
                  transform=ax1.transAxes, va="bottom",
                  family='monospace')
 
@@ -850,14 +916,16 @@ class DataPartition:
             labels_view = labels[current_parallax_indices]
             a_labels = labels_view[np.argmax(random_vals, axis=0), np.arange(labels.shape[1])]
 
-            fig, ax = clustering_result(self.data,
-                                        a_labels,
-                                        current_parallax_indices,
-                                        figure_title=f"{figure_title}Partitions for parallax set {a_parallax_set}",
-                                        save_name=a_save_name,
-                                        dpi=dpi,
-                                        show_figure=show_figure,
-                                        **default_plot_args)
+            fig, ax = clustering_result(
+                self.data,
+                a_labels,
+                current_parallax_indices,
+                figure_title=
+                f"{figure_title}Partitions for parallax set ({a_parallax_set[0]:.2f}, {a_parallax_set[0]:.2f})",
+                save_name=a_save_name,
+                dpi=dpi,
+                show_figure=show_figure,
+                **default_plot_args)
 
             if not show_figure:
                 plt.close(fig)
