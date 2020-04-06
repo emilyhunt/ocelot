@@ -326,14 +326,7 @@
       <workItem from="1586159901286" duration="1229000" />
       <workItem from="1586161215422" duration="634000" />
       <workItem from="1586161925436" duration="903000" />
-      <workItem from="1586163037005" duration="6600000" />
-    </task>
-    <task id="LOCAL-00012" summary="Added support for a new sorting system.&#10;- Added find_nearest_points, which finds the nearest points on a line to a set of points to match for, in an efficient and fully vectorised way.&#10;- Added proximity_to_line_sort, which uses the output of the above to sort unordered CMDs.&#10;- Currently, to differentiate between points matched to the same line point, it then performs a further sort based on the last axis (y in 2D) between the point and the line point. This could be improved in the future (see Todo in the code if curious). For now, it won't make much/any difference as long as the line is well sampled enough.&#10;- Added two new unit tests for the above, which have been successfully passed.&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1.">
-      <created>1572534359512</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1572534359512</updated>
+      <workItem from="1586163037005" duration="6843000" />
     </task>
     <task id="LOCAL-00013" summary="Implemented the new proximity_to_line sorting system in CMD interpolation.&#10;- Re-factored ocelot.isochrone.CMDInterpolator to use a .fit() method&#10;- Added support for iterative proximity to line sorting&#10;- Implemented test_cmd_interpolation unit test &#10;&#10;Notes:&#10;- The CMD interpolation is such a struggle. Proximity to line sorting (and trying to use the momentum of spline fits to converge on an optimum fit) just isn't working how I'd like it to.&#10;- A totally different approach is probably needed to get this more precise - as it stands, it just isn't really working.&#10;- Could just fit a polynomial to the main sequence? Or fit to where the gradient doesn't turn up (aka where the MS stops)&#10;- Docs still need work!&#10;&#10;This release contributes to the requirements for 0.2.0 feature c1.">
       <created>1572966925707</created>
@@ -671,7 +664,14 @@
       <option name="project" value="LOCAL" />
       <updated>1586175755219</updated>
     </task>
-    <option name="localTasksCounter" value="61" />
+    <task id="LOCAL-00061" summary="Added attribute self.minimum_partition_size to the DatasetPartition class.">
+      <created>1586176109158</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1586176109158</updated>
+    </task>
+    <option name="localTasksCounter" value="62" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -693,7 +693,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Work on synthetic cluster generation.&#10;- Now have most of SimulatedPopulations unit tested.&#10;- Going to make some changes to how radial profiles are drawn (the way I've done it has issues related to e.g. normal vs Rayleigh distributions.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Work on synthetic cluster generation.&#10;- Synthetic populations are now being correctly generated! The King profile was changed to be drawn from 3 times at once (i.e. in 3D.)&#10;- The class' runtime was sped up by a factor of ~15, by creating a sped up (check-free) version of the King profile, dramatically reducing the number of function calls by drawing a total number of points based on the expectation value of the accept/rejects, and by dropping stars below a conservative limiting magnitude very early in the process (making distant &amp; large clusters much smaller.)&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Finishing touches to synthetic cluster generation.&#10;- Made a generate_synthetic_cluster() function that wraps the SimulatedPopulations class&#10;- Lots of default parameters now exist in synthetic.py. Might be worth making them neater somehow!&#10;- Did visual unit tests and it seems to be working!&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0." />
@@ -718,7 +717,8 @@
     <MESSAGE value="Minor change to the way the test_if_in_current_partition works. It can now return de-centered ra and dec values too!" />
     <MESSAGE value="Dataset partitioning bugfixes.&#10;- Added error checking to DataPartition.test_if_in_current_partition() to ensure that get_partition() has been called at least once and that it hence has some internals to work with.&#10;- Fixed a bug in DataPartition.test_if_in_current_partition() that caused no stars to be compared against if the partition in question covers the entire field.&#10;- Greatly improved the unit testing of DataPartition." />
     <MESSAGE value="Dataset partitioning can now produce distance-dependant numbers of components.&#10;- Re-factored to specify things in terms of a desired number of stars per component at each distance.&#10;- Added new diagnostics to the bar chart to show the difference between a plain GMM and one using &quot;adaptive SPC&quot;.&#10;- Re-unit tested and it works like a charm!" />
-    <option name="LAST_COMMIT_MESSAGE" value="Dataset partitioning can now produce distance-dependant numbers of components.&#10;- Re-factored to specify things in terms of a desired number of stars per component at each distance.&#10;- Added new diagnostics to the bar chart to show the difference between a plain GMM and one using &quot;adaptive SPC&quot;.&#10;- Re-unit tested and it works like a charm!" />
+    <MESSAGE value="Added attribute self.minimum_partition_size to the DatasetPartition class." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added attribute self.minimum_partition_size to the DatasetPartition class." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -733,10 +733,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1586175754994">
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1586176108972">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586175754994" />
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586176108972" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>

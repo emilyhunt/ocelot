@@ -698,11 +698,6 @@ class DataPartition:
         if self.verbose:
             print("Plotting a bar chart of the number of members in each partition!")
 
-        # Check that the user isn't a Total Biscuit
-        if self.data is None:
-            raise ValueError("The class currently has no data so there's nothing to plot! Please call the method "
-                             "set_data first and assign me a DataFrame to work with.")
-
         # Make a cute little bar chart with info of what's gone on
         fig, ax1 = plt.subplots(nrows=1, ncols=1, figsize=(6, 6), dpi=dpi)
 
@@ -794,7 +789,7 @@ class DataPartition:
         if figure_title is None:
             figure_title = ""
 
-        initial_count = self.data.shape[0]
+        initial_count = len(self.get_partition(0, return_data=False))
         runtime_fraction_nlogn = initial_count * np.log(initial_count) / np.sum(all_counts * np.log(all_counts))
         runtime_fraction_nsquared = initial_count**2 / np.sum(all_counts**2)
         runtime_fraction_gmm = (initial_count**2 / base_n_stars_per_component) / np.sum(all_counts * all_n_components)
