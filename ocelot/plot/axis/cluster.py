@@ -72,7 +72,7 @@ def position_and_pmotion(
 
     # We also clip the plot so that it will always include all found clusters
     if cluster_labels is not None and clip_to_fit_clusters:
-        clustered_stars = cluster_labels != -1
+        clustered_stars = np.isin(cluster_labels, cluster_indices)
         pmra_plot_limits = np.asarray(
             [np.clip(pmra_plot_limits[0], -np.inf, data_gaia.loc[clustered_stars, 'pmra'].min() - 1),
              np.clip(pmra_plot_limits[1], data_gaia.loc[clustered_stars, 'pmra'].max() + 1, np.inf)])
