@@ -265,7 +265,7 @@ class Catalogue:
 
         # Cycle over clusters with matches, storing things about their best matches
         columns_to_read = ["name_match", "angular_sep", "max_sigma", "mean_sigma"]
-        for i_cluster in cluster_has_a_match.index:
+        for i_cluster in names_of_clusters_with_matches.index:
             # Make a new DataFrame of the current matches and get a sorted list of the best IDs
             current_matches = match_data.loc[
                 match_data["name"] == names_of_clusters_with_matches[i_cluster], :].reset_index(drop=True)

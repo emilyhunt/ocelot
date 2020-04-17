@@ -3,7 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/plot/axis/cluster.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,7 +68,7 @@
       <recent name="$PROJECT_DIR$/ocelot/plot/axis" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test_cluster">
+  <component name="RunManager" selected="Python.test_crossmatch">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -157,20 +157,17 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="test_isochrone" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="test_crossmatch" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/test_isochrone.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/tests/test_crossmatch.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="true" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -218,19 +215,19 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.test_isochrone" />
       <item itemvalue="Python.test_plot" />
       <item itemvalue="Python.test_cluster" />
       <item itemvalue="Python.test_calculate" />
       <item itemvalue="Python.synthetic_" />
+      <item itemvalue="Python.test_crossmatch" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test_crossmatch" />
         <item itemvalue="Python.test_cluster" />
         <item itemvalue="Python.test_calculate" />
         <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.synthetic_" />
-        <item itemvalue="Python.test_isochrone" />
       </list>
     </recent_temporary>
   </component>
@@ -334,14 +331,9 @@
       <workItem from="1586507153119" duration="8000" />
       <workItem from="1586959241733" duration="632000" />
       <workItem from="1587037751877" duration="8000" />
-      <workItem from="1587043168519" duration="267000" />
-    </task>
-    <task id="LOCAL-00014" summary="Small bugfix in plot_figure - figure_size keyword in matplotlib calls (incorrect) changed to figsize">
-      <created>1578394624310</created>
-      <option name="number" value="00014" />
-      <option name="presentableId" value="LOCAL-00014" />
-      <option name="project" value="LOCAL" />
-      <updated>1578394624310</updated>
+      <workItem from="1587043168519" duration="967000" />
+      <workItem from="1587109984915" duration="5000" />
+      <workItem from="1587128978449" duration="2318000" />
     </task>
     <task id="LOCAL-00015" summary="Unit tests added for ocelot.plot along with a number of bugfixes">
       <created>1578405531737</created>
@@ -679,7 +671,14 @@
       <option name="project" value="LOCAL" />
       <updated>1586176348493</updated>
     </task>
-    <option name="localTasksCounter" value="63" />
+    <task id="LOCAL-00063" summary="clip_to_fit_clusters in plot_clustering_result will now only clip to clusters the user has explicitly requested the plotting of, instead of clipping to all clusters with a non- -1 label in the labels.">
+      <created>1587043535544</created>
+      <option name="number" value="00063" />
+      <option name="presentableId" value="LOCAL-00063" />
+      <option name="project" value="LOCAL" />
+      <updated>1587043535544</updated>
+    </task>
+    <option name="localTasksCounter" value="64" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -701,7 +700,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Finishing touches to synthetic cluster generation.&#10;- Made a generate_synthetic_cluster() function that wraps the SimulatedPopulations class&#10;- Lots of default parameters now exist in synthetic.py. Might be worth making them neater somehow!&#10;- Did visual unit tests and it seems to be working!&#10;This commit is experimental work for 0.3.0" />
     <MESSAGE value="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Added resampling and covariance matrix handling.&#10;- Added a new sub-submodule, ocelot.cluster.resample&#10;- It can create correctly shaped astrometric covariance matrices from scratch given standard Gaia data&#10;- It can also re-draw points from said Gaia multivariate normal distributions, although it's not yet super efficient (that would require some Cython unfortunately.)&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Small bugfixes and a new recenter_dataset preprocessing function.&#10;- Some little bugfixes done after starting using ocelot in anger&#10;- Added a new recenter_dataset function for centering fields on (0, 0)&#10;- Added (and then changed my mind about) some big changes to how plotting works. This could be improved upon at a later date.&#10;This commit is additional contributing work for 0.3.0." />
@@ -726,7 +724,8 @@
     <MESSAGE value="Dataset partitioning can now produce distance-dependant numbers of components.&#10;- Re-factored to specify things in terms of a desired number of stars per component at each distance.&#10;- Added new diagnostics to the bar chart to show the difference between a plain GMM and one using &quot;adaptive SPC&quot;.&#10;- Re-unit tested and it works like a charm!" />
     <MESSAGE value="Added attribute self.minimum_partition_size to the DatasetPartition class." />
     <MESSAGE value="plot_partition_bar_chart now no longer requires self.data to be defined." />
-    <option name="LAST_COMMIT_MESSAGE" value="plot_partition_bar_chart now no longer requires self.data to be defined." />
+    <MESSAGE value="clip_to_fit_clusters in plot_clustering_result will now only clip to clusters the user has explicitly requested the plotting of, instead of clipping to all clusters with a non- -1 label in the labels." />
+    <option name="LAST_COMMIT_MESSAGE" value="clip_to_fit_clusters in plot_clustering_result will now only clip to clusters the user has explicitly requested the plotting of, instead of clipping to all clusters with a non- -1 label in the labels." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -741,10 +740,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1586176348322">
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1587043535315">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586176348322" />
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587043535315" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -757,9 +756,9 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585670475208" />
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1586261617046">
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1587128982862">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586261617046" />
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587128982862" />
   </component>
 </project>
