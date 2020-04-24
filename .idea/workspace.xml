@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Semantic statistical changes to ocelot.calculate functions.&#10;- Mean values are now only weighted with membership probabilities (*not* error values too) as correlations between errors and error values could cause weighted means to be biased. See: Pleiades controversy.&#10;- We now correctly infer both standard deviations and errors for all parameters (where appropriate), with error values weighted by sqrt(n_obs). HOWEVER, membership probabilities will mess up the standard error calculation, as there is no accepted way to calculate a weighted standard error on the mean. This would have to be done with a Monte Carlo method instead. See: https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation&#10;- So, for now, membership probabilities will be hard set to None. lol. waste of time xD">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/calculate/calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/calculate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_calculate.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -47,7 +48,6 @@
   </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
-    <option name="showExcludedFiles" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">
@@ -58,7 +58,7 @@
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$USER_HOME$/Desktop" />
     <property name="run.code.analysis.last.selected.profile" value="aDefault" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.fonts.default" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -68,7 +68,7 @@
       <recent name="$PROJECT_DIR$/ocelot/plot/axis" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test_crossmatch">
+  <component name="RunManager" selected="Python.test_calculate">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -161,6 +161,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -209,6 +212,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
       <option name="_new_additionalArguments" value="&quot;&quot;" />
       <option name="_new_target" value="&quot;$PROJECT_DIR$/tests&quot;" />
       <option name="_new_targetType" value="&quot;PATH&quot;" />
@@ -223,9 +227,9 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.test_calculate" />
         <item itemvalue="Python.test_crossmatch" />
         <item itemvalue="Python.test_cluster" />
-        <item itemvalue="Python.test_calculate" />
         <item itemvalue="Python.test_plot" />
         <item itemvalue="Python.synthetic_" />
       </list>
@@ -333,14 +337,10 @@
       <workItem from="1587037751877" duration="8000" />
       <workItem from="1587043168519" duration="967000" />
       <workItem from="1587109984915" duration="5000" />
-      <workItem from="1587128978449" duration="2318000" />
-    </task>
-    <task id="LOCAL-00015" summary="Unit tests added for ocelot.plot along with a number of bugfixes">
-      <created>1578405531737</created>
-      <option name="number" value="00015" />
-      <option name="presentableId" value="LOCAL-00015" />
-      <option name="project" value="LOCAL" />
-      <updated>1578405531737</updated>
+      <workItem from="1587128978449" duration="4649000" />
+      <workItem from="1587366142473" duration="368000" />
+      <workItem from="1587366550746" duration="784000" />
+      <workItem from="1587715939945" duration="3648000" />
     </task>
     <task id="LOCAL-00016" summary="Added a cluster_marker_radius parameter to ocelot.plot.clustering_result">
       <created>1578405938513</created>
@@ -678,29 +678,34 @@
       <option name="project" value="LOCAL" />
       <updated>1587043535544</updated>
     </task>
-    <option name="localTasksCounter" value="64" />
+    <task id="LOCAL-00064" summary="Small bugfix to ocelot.crossmatch.Catalogue - line 268 used the wrong index, and was cycling over the index of all clusters being crossmatched against opposed to *only* clusters with a match.">
+      <created>1587132338481</created>
+      <option name="number" value="00064" />
+      <option name="presentableId" value="LOCAL-00064" />
+      <option name="project" value="LOCAL" />
+      <updated>1587132338482</updated>
+    </task>
+    <option name="localTasksCounter" value="65" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
-    <option name="version" value="1" />
+    <option name="version" value="2" />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
     <option name="TAB_STATES">
       <map>
         <entry key="MAIN">
           <value>
-            <State>
-              <option name="COLUMN_ORDER" />
-            </State>
+            <State />
           </value>
         </entry>
       </map>
     </option>
+    <option name="oldMeFiltersMigrated" value="true" />
   </component>
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Improvements to ocelot.plot.clustering_result and bugfixes to synthetic cluster generation.&#10;- clustering_result now uses scatter plotting and supports transparency on cluster points (ideal for use with HDBSCAN soft clustering or other measures of membership probability.)&#10;- Various bugfixes in synthetic cluster generation (the unit testing wasn't really all that good ;) )&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Added resampling and covariance matrix handling.&#10;- Added a new sub-submodule, ocelot.cluster.resample&#10;- It can create correctly shaped astrometric covariance matrices from scratch given standard Gaia data&#10;- It can also re-draw points from said Gaia multivariate normal distributions, although it's not yet super efficient (that would require some Cython unfortunately.)&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Small bugfixes and a new recenter_dataset preprocessing function.&#10;- Some little bugfixes done after starting using ocelot in anger&#10;- Added a new recenter_dataset function for centering fields on (0, 0)&#10;- Added (and then changed my mind about) some big changes to how plotting works. This could be improved upon at a later date.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Dataset partitioning and small documentation changes.&#10;- Now have a dataset partitioning class in the cluster.preprocessing submodule! It still requires unit testing.&#10;- Calculation of all_statistics now also adds the number of cluster member stars.&#10;This commit is additional contributing work for 0.3.0." />
@@ -725,40 +730,82 @@
     <MESSAGE value="Added attribute self.minimum_partition_size to the DatasetPartition class." />
     <MESSAGE value="plot_partition_bar_chart now no longer requires self.data to be defined." />
     <MESSAGE value="clip_to_fit_clusters in plot_clustering_result will now only clip to clusters the user has explicitly requested the plotting of, instead of clipping to all clusters with a non- -1 label in the labels." />
-    <option name="LAST_COMMIT_MESSAGE" value="clip_to_fit_clusters in plot_clustering_result will now only clip to clusters the user has explicitly requested the plotting of, instead of clipping to all clusters with a non- -1 label in the labels." />
+    <MESSAGE value="Small bugfix to ocelot.crossmatch.Catalogue - line 268 used the wrong index, and was cycling over the index of all clusters being crossmatched against opposed to *only* clusters with a match." />
+    <option name="LAST_COMMIT_MESSAGE" value="Small bugfix to ocelot.crossmatch.Catalogue - line 268 used the wrong index, and was cycling over the index of all clusters being crossmatched against opposed to *only* clusters with a match." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452724048" />
-    <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1586161900915">
+    <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1587366460731">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1586161900915" />
+    <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587366460731" />
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog" timestamp="1584709507322">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1587043535315">
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1587718674178">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587043535315" />
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718674178" />
+    <state x="605" y="62" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587132338173" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585327553641" />
-    <state x="2369" y="174" key="SettingsEditor" timestamp="1584452701822">
+    <state width="1874" height="354" key="GridCell.Tab.0.bottom" timestamp="1587718179261">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2369" y="174" key="SettingsEditor/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584452701822" />
+    <state width="1874" height="354" key="GridCell.Tab.0.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179261" />
+    <state width="1874" height="354" key="GridCell.Tab.0.center" timestamp="1587718179260">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="354" key="GridCell.Tab.0.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179260" />
+    <state width="1874" height="354" key="GridCell.Tab.0.left" timestamp="1587718179260">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="354" key="GridCell.Tab.0.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179260" />
+    <state width="1874" height="354" key="GridCell.Tab.0.right" timestamp="1587718179261">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="354" key="GridCell.Tab.0.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179261" />
+    <state width="1874" height="354" key="GridCell.Tab.1.bottom" timestamp="1587718179162">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="354" key="GridCell.Tab.1.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
+    <state width="1874" height="354" key="GridCell.Tab.1.center" timestamp="1587718179162">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="354" key="GridCell.Tab.1.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
+    <state width="1874" height="354" key="GridCell.Tab.1.left" timestamp="1587718179162">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="354" key="GridCell.Tab.1.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
+    <state width="1874" height="354" key="GridCell.Tab.1.right" timestamp="1587718179162">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state width="1874" height="354" key="GridCell.Tab.1.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
+    <state x="2623" y="138" key="SettingsEditor" timestamp="1587367300778">
+      <screen x="1920" y="0" width="1920" height="1080" />
+    </state>
+    <state x="2623" y="138" key="SettingsEditor/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587367300778" />
     <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1585670475208">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585670475208" />
-    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1587128982862">
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1587366233652">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
     <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587128982862" />
+    <state x="1232" y="366" key="com.intellij.ide.util.TipDialog/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587366233652" />
+    <state x="761" y="472" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1587136531099">
+      <screen x="67" y="27" width="1853" height="1053" />
+    </state>
+    <state x="761" y="472" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587136531099" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/ocelot$test_calculate.coverage" NAME="test_calculate Coverage Results" MODIFIED="1587718179126" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
   </component>
 </project>

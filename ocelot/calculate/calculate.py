@@ -145,13 +145,14 @@ def mean_distance(data_gaia: pd.DataFrame,
             }
 
     """
-    membership_probabilities = _change_none_into_one(membership_probabilities)
     inferred_parameters = {}
+    sqrt_n_stars = np.sqrt(data_gaia.shape[0])
 
     # Mean parallax
-    parallax_weights = membership_probabilities / np.abs(data_gaia[key_parallax_error])
-    inferred_parameters["parallax"] = np.average(data_gaia[key_parallax], weights=parallax_weights)
-    inferred_parameters["parallax_error"] = _weighted_standard_deviation(data_gaia[key_parallax], parallax_weights)
+    inferred_parameters["parallax"] = np.average(data_gaia[key_parallax], weights=membership_probabilities)
+    inferred_parameters["parallax_std"] = _weighted_standard_deviation(data_gaia[key_parallax],
+                                                                       membership_probabilities)
+    inferred_parameters["parallax_error"] = inferred_parameters["parallax_std"] / sqrt_n_stars
 
     # The inverse too (which is a shitty proxy for distance when you're feeling too lazy to be a Bayesian)
     inferred_parameters["inverse_parallax"] = 1000 / inferred_parameters["parallax"]
@@ -165,22 +166,15 @@ def mean_distance(data_gaia: pd.DataFrame,
     # We only want to work on stars with a result
     good_stars = data_gaia[key_result_flag] == 1
     r_est = data_gaia.loc[good_stars, key_r_est].values
-    r_low = data_gaia.loc[good_stars, key_r_low].values
-    r_high = data_gaia.loc[good_stars, key_r_high].values
 
     # Deal with the fact that dropping stars without an inferred distance means membership_probabilities might not have
     # the same length as our r_est
-    if type(membership_probabilities) is not float:
+    if type(membership_probabilities) is not float and membership_probabilities is not None:
         membership_probabilities = membership_probabilities[good_stars]
 
-    # Calculate low and high snr estimates and take the mean of them to get the overall snr
-    r_est_weight_low = 1 / np.abs(r_est - r_low)
-    r_est_weight_high = 1 / np.abs(r_est - r_high)
-    r_est_weight = np.mean(np.vstack((r_est_weight_low, r_est_weight_high)), axis=0)
-    r_est_weight = r_est_weight * membership_probabilities
-
-    inferred_parameters["distance"] = np.average(r_est, weights=r_est_weight)
-    inferred_parameters["distance_error"] = _weighted_standard_deviation(r_est, r_est_weight)
+    inferred_parameters["distance"] = np.average(r_est, weights=membership_probabilities)
+    inferred_parameters["distance_std"] = _weighted_standard_deviation(r_est, membership_probabilities)
+    inferred_parameters["distance_error"] = inferred_parameters["distance_std"] / sqrt_n_stars
 
     return inferred_parameters
 
@@ -216,19 +210,20 @@ def mean_proper_motion(data_gaia: pd.DataFrame,
             }
 
     """
-    membership_probabilities = _change_none_into_one(membership_probabilities)
     inferred_parameters = {}
-
-    # Calculate the weights
-    pmra_weights = membership_probabilities / data_gaia[key_pmra_error]
-    pmdec_weights = membership_probabilities / data_gaia[key_pmdec_error]
+    sqrt_n_stars = np.sqrt(data_gaia.shape[0])
 
     # Mean proper motion time!
-    inferred_parameters["pmra"] = np.average(data_gaia[key_pmra], weights=pmra_weights)
-    inferred_parameters["pmra_error"] = _weighted_standard_deviation(data_gaia[key_pmra], pmra_weights)
+    inferred_parameters["pmra"] = np.average(data_gaia[key_pmra], weights=membership_probabilities)
+    inferred_parameters["pmra_std"] = _weighted_standard_deviation(data_gaia[key_pmra], membership_probabilities)
+    inferred_parameters["pmra_error"] = inferred_parameters["pmra_std"] / sqrt_n_stars
 
-    inferred_parameters["pmdec"] = np.average(data_gaia[key_pmdec], weights=pmdec_weights)
-    inferred_parameters["pmdec_error"] = _weighted_standard_deviation(data_gaia[key_pmdec], pmdec_weights)
+    inferred_parameters["pmdec"] = np.average(data_gaia[key_pmdec], weights=membership_probabilities)
+    inferred_parameters["pmdec_std"] = _weighted_standard_deviation(data_gaia[key_pmdec], membership_probabilities)
+    inferred_parameters["pmdec_error"] = inferred_parameters["pmdec_std"] / sqrt_n_stars
+
+    inferred_parameters["pm_dispersion"] = np.sqrt(
+        inferred_parameters["pmra_std"]**2 + inferred_parameters["pmdec_std"]**2)
 
     return inferred_parameters
 
@@ -297,45 +292,47 @@ def mean_radius(data_gaia: pd.DataFrame,
 
     """
     inferred_parameters = {}
+    sqrt_n_stars = np.sqrt(data_gaia.shape[0])
 
     # Grab the distances if they aren't specified - we'll need them in a moment!
     if already_inferred_parameters is None:
         already_inferred_parameters = mean_distance(data_gaia, membership_probabilities)
 
     # Estimate the ra, dec of the cluster as the weighted mean
-    ra = np.average(data_gaia[key_ra], weights=membership_probabilities)
-    dec = np.average(data_gaia[key_dec], weights=membership_probabilities)
+    inferred_parameters['ra'] = np.average(data_gaia[key_ra], weights=membership_probabilities)
+    inferred_parameters['ra_std'] = _weighted_standard_deviation(data_gaia[key_ra], membership_probabilities)
+    inferred_parameters['ra_error'] = inferred_parameters['ra_std'] / sqrt_n_stars
+
+    inferred_parameters['dec'] = np.average(data_gaia[key_dec], weights=membership_probabilities)
+    inferred_parameters['dec_std'] = _weighted_standard_deviation(data_gaia[key_dec], membership_probabilities)
+    inferred_parameters['dec_error'] = inferred_parameters['dec_std'] / sqrt_n_stars
+
+    inferred_parameters['ang_dispersion'] = np.sqrt(inferred_parameters['ra_std']**2
+                                                    + inferred_parameters['dec_std']**2)
 
     # Calculate how far every star in the cluster is from the central point
-    distances_from_center = np.sqrt((data_gaia[key_ra] - ra)**2 + (data_gaia[key_dec] - dec)**2)
-    ang_radius_50 = np.median(distances_from_center)
-    ang_radius_t = np.max(distances_from_center)
+    distances_from_center = np.sqrt((data_gaia[key_ra] - inferred_parameters['ra'])**2
+                                    + (data_gaia[key_dec] - inferred_parameters['dec'])**2)
+    inferred_parameters['ang_radius_50'] = np.median(distances_from_center)
+    inferred_parameters['ang_radius_50_error'] = np.nan
+
+    inferred_parameters['ang_radius_c'] = np.nan
+    inferred_parameters['ang_radius_c_error'] = np.nan
+
+    inferred_parameters['ang_radius_t'] = np.max(distances_from_center)
+    inferred_parameters['ang_radius_t_error'] = np.nan
 
     # Convert the angular distances into parsecs
-    radius_50 = np.tan(ang_radius_50 * deg_to_rad) * already_inferred_parameters[distance_to_use]
-    radius_t = np.tan(ang_radius_t * deg_to_rad) * already_inferred_parameters[distance_to_use]
+    inferred_parameters['radius_50'] = (
+        np.tan(inferred_parameters['ang_radius_50'] * deg_to_rad) * already_inferred_parameters[distance_to_use])
+    inferred_parameters['radius_50_error'] = np.nan
+    inferred_parameters['radius_c'] = np.nan
+    inferred_parameters['radius_c_error'] = np.nan
+    inferred_parameters['radius_t'] = (
+        np.tan(inferred_parameters['ang_radius_t'] * deg_to_rad) * already_inferred_parameters[distance_to_use])
+    inferred_parameters['radius_t_error'] = np.nan
 
-    return {# Sky position
-            "ra": ra,
-            "ra_error": np.nan,
-            "dec": dec,
-            "dec_error": np.nan,
-
-            # Angular radii
-            "ang_radius_50": ang_radius_50,
-            "ang_radius_50_error": np.nan,
-            "ang_radius_c": np.nan,
-            "ang_radius_c_error": np.nan,
-            "ang_radius_t": ang_radius_t,
-            "ang_radius_t_error": np.nan,
-
-            # Parsec radii
-            "radius_50": radius_50,
-            "radius_50_error": np.nan,
-            "radius_c": np.nan,
-            "radius_c_error": np.nan,
-            "radius_t": radius_t,
-            "radius_t_error": np.nan}
+    return inferred_parameters
 
 
 def mean_internal_velocity_dispersion(data_gaia: pd.DataFrame,
@@ -406,6 +403,7 @@ def mean_internal_velocity_dispersion(data_gaia: pd.DataFrame,
 def all_statistics(data_gaia: pd.DataFrame,
                    membership_probabilities: Optional[np.ndarray] = None,
                    parameter_inference_mode: str = "mean",
+                   override_membership_probabilities_being_off: bool = False,
                    **kwargs):
     """Wraps all subfunctions in ocelot.calculate and calculates all the stats you could possibly ever want.
 
@@ -414,6 +412,8 @@ def all_statistics(data_gaia: pd.DataFrame,
         membership_probabilities (optional, np.ndarray): membership probabilities for the cluster. When specified,
             they can increase or decrease the effect of certain stars on the mean.
         parameter_inference_mode (str): mode to use when inferring parameters.
+        override_membership_probabilities_being_off (bool): little check to stop membership probabilities from being
+            used for now, as these actually mess up the
         **kwargs: keyword arguments to pass to the calculation functions this one calls.
 
 
@@ -428,6 +428,9 @@ def all_statistics(data_gaia: pd.DataFrame,
         this function holds.
 
     """
+    if not override_membership_probabilities_being_off:
+        membership_probabilities = None
+
     if parameter_inference_mode == "mean":
         # Calculate all parameters! We incrementally add to the dictionary as some of the later functions require
         # parameters that we've already calculated. This is done in a weird order to make sure that the final dict is in
