@@ -277,10 +277,20 @@ class Catalogue:
 
         # Make some summary statistics that use all of the above
         if self.n_extra_features != 0 and best_match_on != "just_position":
-            match_data["max_sigma"] = np.max(
-                match_data[list_of_sigmas + ["angular_sep_sigma"]], axis=1)
-            match_data["mean_sigma"] = np.mean(
-                match_data[list_of_sigmas + ["angular_sep_sigma"]], axis=1)
+
+            # angular_sep_sigma is irrelevant when working instead with tidal constraints, so we aren't interesting in
+            # them.
+            if best_match_on == "just_tidal_separation":
+                match_data["max_sigma"] = np.max(
+                    match_data[list_of_sigmas], axis=1)
+                match_data["mean_sigma"] = np.mean(
+                    match_data[list_of_sigmas], axis=1)
+
+            else:
+                match_data["max_sigma"] = np.max(
+                    match_data[list_of_sigmas + ["angular_sep_sigma"]], axis=1)
+                match_data["mean_sigma"] = np.mean(
+                    match_data[list_of_sigmas + ["angular_sep_sigma"]], axis=1)
         else:
             match_data["max_sigma"] = match_data["angular_sep_sigma"]
             match_data["mean_sigma"] = match_data["angular_sep_sigma"]
