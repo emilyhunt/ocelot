@@ -18,8 +18,10 @@ class Catalogue:
                  key_name: str = "Name",
                  key_ra: str = "ra",
                  key_dec: str = "dec",
+                 key_tidal_radius: str = "ang_radius_t",
                  extra_axes: Optional[Union[list, tuple, np.ndarray]] = None,
-                 assumed_position_systematic_error: float = 0.0):
+                 assumed_position_systematic_error: float = 0.0,
+                 match_tidal_radius: bool = False,):
         """Storage system for existing catalogues that handles cross-matching too.
 
         Args:
@@ -40,6 +42,9 @@ class Catalogue:
                 catalogue clusters.
                 Default: 0.0, although this is *rarely zero* as many catalogues will do a shitty job of inferring the
                 center of clusters!
+            match_tidal_radius (bool): whether or not to also match with tidal radii. We'll specify the angular
+                separation in terms of tidal radius between literature & found, too.
+                Default: False
 
         """
         # Initialise the catalogue's name, cluster names and co-ordinates
@@ -47,6 +52,10 @@ class Catalogue:
         self.names = data[key_name].to_numpy()
         self.coords = SkyCoord(ra=data[key_ra].to_numpy() << u.deg, dec=data[key_dec].to_numpy() << u.deg)
         self.assumed_position_systematic_error = assumed_position_systematic_error
+
+        self.match_tidal_radius = match_tidal_radius
+        if match_tidal_radius:
+            self.tidal_radius_data = data[key_tidal_radius].to_numpy()
 
         # Read in any extra axes
         if extra_axes is None:
@@ -100,13 +109,25 @@ class Catalogue:
 
         return id_clusters, id_catalog, distances_2d
 
+    @staticmethod
+    def _calculate_sigma(crossmatched_value: float, catalog_value: float,
+                         random_error: float, systematic_error: float = 0.0):
+        """A function for calculating sigma difference between a literature object and a crossmatching object. Can
+        also consider uniformly distributed systematic errors."""
+        # We calculate the difference, then reduce that difference by the systematic error, make sure the sigma is
+        # still >= 0.0 (sigma=0.0 means difference is systematic-dominated) and then divide by the random error toooo
+        return np.clip(np.abs(catalog_value - crossmatched_value) - systematic_error, 0.0, np.inf) / random_error
+
     def crossmatch(self,
                    data_cluster: pd.DataFrame,
                    extra_axes_keys: Union[Tuple[str], List[str]] = (),
                    max_separation: float = 1.,
                    best_match_on: str = "mean_sigma",
+                   tidal_radius_mode: str = "max",
                    matches_to_record: int = 2,
-                   max_sigma_threshold: float = 5):
+                   max_sigma_threshold: float = 5,
+                   position_systematics: float = 0.,
+                   extra_axes_systematics: Optional[Union[list, tuple, np.ndarray]] = None):
         """Crossmatches the stored catalogue with one/multiple clusters depending on what was specified by the
         user.
 
@@ -125,6 +146,12 @@ class Catalogue:
             best_match_on (str): what to make the best match on. May use "just_position" or may use "max_sigma" or
                 "mean_sigma" of all axes.
                 Default: "mean_sigma"
+            tidal_radius_mode (str): which tidal radius value to use or how. Allowed values:
+                - "literature": uses the literature value only
+                - "data":       uses the data value only
+                - "max":        uses the max value of the two
+                - "mean":       uses the mean value of the two
+                Default: "max"
             matches_to_record (int): the maximum number of matches to report back for a given cluster.
                 Default: 2
             max_sigma_threshold (float): the threshold maximum sigma level above which matches will not be considered
@@ -144,6 +171,10 @@ class Catalogue:
         if len(extra_axes_keys) != self.n_extra_features:
             raise ValueError("length of extra_axes_keys does not match the number of extra features specified at "
                              "initialisation of the catalogue.")
+
+        # Setup the extra axes systematics frames
+        if extra_axes_systematics is None:
+            extra_axes_systematics = np.zeros(self.n_extra_features)
 
         # Grab a list of extra axes key names from the class' ocelot parameter dict
         # We'll store main parameters in even indices (0, 2, 4) and their errors at the next odd one (1, 3, 5)...
@@ -180,19 +211,43 @@ class Catalogue:
                             + self.assumed_position_systematic_error**2)
 
         # We only find the sigma values where the error isn't zero - else we get division by 0 =(
+        # This should never happen, but we do the check here anyway!
         good_ra = ra_error != 0
         ra_sigma = np.empty(ra_error.shape)
-        ra_sigma[good_ra] = np.abs(ra[id_clusters] - self.coords.ra.value[id_catalog]) / ra_error
+        ra_sigma[good_ra] = self._calculate_sigma(
+            ra[id_clusters], self.coords.ra.value[id_catalog], ra_error, systematic_error=position_systematics)
         ra_sigma[np.invert(good_ra)] = 0.
 
         good_dec = dec_error != 0
         dec_sigma = np.empty(dec_error.shape)
-        dec_sigma[good_dec] = np.abs(dec[id_clusters] - self.coords.dec.value[id_catalog]) / dec_error
+        dec_sigma[good_dec] = self._calculate_sigma(
+            dec[id_clusters], self.coords.dec.value[id_catalog], dec_error, systematic_error=position_systematics)
         dec_sigma[np.invert(good_dec)] = 0.
 
         # Lastly, we can grab the total sigma values and convert this into a probability
         match_data["angular_sep_sigma"] = np.sqrt(ra_sigma**2 + dec_sigma**2)
         match_data["angular_sep_prob"] = 2 * norm.cdf(-match_data["angular_sep_sigma"], loc=0.0, scale=1.0)
+
+        # And also do some stuff with the tidal radii
+        if self.match_tidal_radius:
+
+            # Decide on which form to use
+            if tidal_radius_mode == "literature":
+                tidal_radii = self.tidal_radius_data[id_catalog]
+            elif tidal_radius_mode == "data":
+                tidal_radii = data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters]
+            elif tidal_radius_mode == "mean":
+                tidal_radii = np.mean(
+                    np.vstack([self.tidal_radius_data[id_catalog],
+                               data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters]]),
+                    axis=0)
+            elif tidal_radius_mode == "max":
+                tidal_radii = np.maximum(self.tidal_radius_data[id_catalog],
+                                         data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters])
+            else:
+                raise ValueError(f"specified tidal_radius_mode '{tidal_radius_mode}' not recognised/supported!")
+
+            match_data["tidal_sep_ratio"] = match_data["angular_sep"] / tidal_radii
 
         # -------------------------------------
         # EXTENSION OF MATCH DATA FRAME TO THE EXTRA AXES
@@ -214,7 +269,9 @@ class Catalogue:
                 (self.extra_axes_data[i_axis])[id_catalog] - extra_axes[id_clusters, 2*i_axis])
 
             # Quantify the separation in terms of the error
-            match_data[an_axis_name_sigma] = match_data[an_axis_name] / combined_error
+            match_data[an_axis_name_sigma] = self._calculate_sigma(
+                extra_axes[id_clusters, 2*i_axis], (self.extra_axes_data[i_axis])[id_catalog],
+                combined_error, systematic_error=extra_axes_systematics[i_axis])
 
             i_axis += 1
 
@@ -247,9 +304,11 @@ class Catalogue:
             best_match_column = "mean_sigma"
         elif best_match_on == "just_position":
             best_match_column = "angular_sep_sigma"
+        elif best_match_on == "just_tidal_separation":
+            best_match_column = "tidal_sep_ratio"
         else:
-            raise ValueError("specified best_match_on invalid: may only be one of 'max_sigma', 'mean_sigma' or "
-                             "'just_position'.")
+            raise ValueError("specified best_match_on invalid: may only be one of 'max_sigma', 'mean_sigma', "
+                             "'just_position' or 'just_tidal_separation'.")
 
         # Create a summary DataFrame with the best matches for each cluster
         summary_match_data = pd.DataFrame({"name": names,
@@ -259,12 +318,18 @@ class Catalogue:
         while i_match < matches_to_record:
             summary_match_data[f"match_{i_match}"] = np.nan
             summary_match_data[f"match_{i_match}_angular_sep"] = np.nan
+            if self.match_tidal_radius:
+                summary_match_data[f"match_{i_match}_tidal_sep_ratio"] = np.nan
             summary_match_data[f"match_{i_match}_max_sigma"] = np.nan
             summary_match_data[f"match_{i_match}_mean_sigma"] = np.nan
             i_match += 1
 
         # Cycle over clusters with matches, storing things about their best matches
-        columns_to_read = ["name_match", "angular_sep", "max_sigma", "mean_sigma"]
+        if self.match_tidal_radius:
+            columns_to_read = ["name_match", "angular_sep", "tidal_sep_ratio", "max_sigma", "mean_sigma"]
+        else:
+            columns_to_read = ["name_match", "angular_sep", "max_sigma", "mean_sigma"]
+
         for i_cluster in names_of_clusters_with_matches.index:
             # Make a new DataFrame of the current matches and get a sorted list of the best IDs
             current_matches = match_data.loc[
@@ -283,7 +348,12 @@ class Catalogue:
                 match = f"match_{i_match}"
 
                 # And now, write the data to the overall DataFrame
-                columns_to_write = [match, match + "_angular_sep", match + "_max_sigma", match + "_mean_sigma"]
+                if self.match_tidal_radius:
+                    columns_to_write = [match, match + "_angular_sep", match + "_tidal_sep_ratio",
+                                        match + "_max_sigma", match + "_mean_sigma"]
+                else:
+                    columns_to_write = [match, match + "_angular_sep",
+                                        match + "_max_sigma", match + "_mean_sigma"]
 
                 summary_match_data.loc[i_cluster, columns_to_write] = (
                     current_matches.loc[an_id, columns_to_read].values)

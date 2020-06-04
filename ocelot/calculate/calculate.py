@@ -4,6 +4,7 @@ Todo: error treatment here could be made more bayesian
 """
 
 from typing import Optional, Union
+from astropy.coordinates import SkyCoord
 
 import numpy as np
 import pandas as pd
@@ -23,6 +24,47 @@ def _weighted_standard_deviation(x, weights):
     # Todo: not sure that this deals with small numbers of points correctly!
     #   See: unit test fails when v. few points used
     return np.sqrt(np.cov(x, aweights=weights))
+
+
+def _handle_ra_discontinuity(ra_data):
+    """Tries to detect when the ras in a field cross the (0, 360) ra discontinuity and returns corrected results. Will
+    raise an error if ras are all over the place (which will happen e.g. at very high declinations) in which you
+    ought to instead switch to a method free of spherical distortions.
+
+    Args:
+        ra_data (pd.Series or np.ndarray): data on ras.
+
+    Returns:
+        ra_data but corrected for distortions. If values are both <90 and >270, the new ra data will be in the range
+            (-90, 90).
+
+    """
+    # Firstly, check that the ras are valid ras
+    if np.any(ra_data >= 360) or np.any(ra_data < 0):
+        raise ValueError("at least one input ra value was invalid! Ras must be in the range [0, 360).")
+
+    # Next, grab all the locations of dodgy friends and check that all three aren't ever in use at the same time
+    low_ra = ra_data < 90
+    high_ra = ra_data > 270
+    middle_ra = np.logical_not(np.logical_or(low_ra, high_ra))
+
+    # Proceed if we have both low and high ras
+    if np.any(low_ra) and np.any(high_ra):
+
+        # Stop if we have middle too (would imply stars everywhere or an extreme dec value)
+        if np.any(middle_ra):
+            raise ValueError("ra values are in all three ranges: [0, 90), [90, 270] and (270, 360). This cluster can't "
+                             "be processed by this function! Spherical distortions must be removed first.")
+
+        # Otherwise, apply the discontinuity removal
+        else:
+            # Make a copy so nothing weird happens
+            ra_data = ra_data.copy()
+
+            # And remove the distortion for all high numbers
+            ra_data[high_ra] = ra_data[high_ra] - 360
+
+    return ra_data
 
 
 def king_surface_density(r_values: Union[float, np.ndarray], r_core: float, r_tidal: float, normalise: bool = False):
@@ -299,9 +341,14 @@ def mean_radius(data_gaia: pd.DataFrame,
         already_inferred_parameters = mean_distance(data_gaia, membership_probabilities)
 
     # Estimate the ra, dec of the cluster as the weighted mean
-    inferred_parameters['ra'] = np.average(data_gaia[key_ra], weights=membership_probabilities)
-    inferred_parameters['ra_std'] = _weighted_standard_deviation(data_gaia[key_ra], membership_probabilities)
+    ra_data = _handle_ra_discontinuity(data_gaia[key_ra])
+
+    inferred_parameters['ra'] = np.average(ra_data, weights=membership_probabilities)
+    inferred_parameters['ra_std'] = _weighted_standard_deviation(ra_data, membership_probabilities)
     inferred_parameters['ra_error'] = inferred_parameters['ra_std'] / sqrt_n_stars
+
+    if inferred_parameters['ra'] < 0:
+        inferred_parameters['ra'] += 360
 
     inferred_parameters['dec'] = np.average(data_gaia[key_dec], weights=membership_probabilities)
     inferred_parameters['dec_std'] = _weighted_standard_deviation(data_gaia[key_dec], membership_probabilities)
@@ -311,8 +358,12 @@ def mean_radius(data_gaia: pd.DataFrame,
                                                     + inferred_parameters['dec_std']**2)
 
     # Calculate how far every star in the cluster is from the central point
-    distances_from_center = np.sqrt((data_gaia[key_ra] - inferred_parameters['ra'])**2
-                                    + (data_gaia[key_dec] - inferred_parameters['dec'])**2)
+    center_skycoord = SkyCoord(ra=inferred_parameters['ra'], dec=inferred_parameters['dec'], unit="deg")
+    star_skycoords = SkyCoord(ra=data_gaia[key_ra].to_numpy(), dec=data_gaia[key_dec].to_numpy(), unit="deg")
+
+    distances_from_center = center_skycoord.separation(star_skycoords).degree
+
+    # And say something about the radii in this case
     inferred_parameters['ang_radius_50'] = np.median(distances_from_center)
     inferred_parameters['ang_radius_50_error'] = np.nan
 

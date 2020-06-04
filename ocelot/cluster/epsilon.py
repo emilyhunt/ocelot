@@ -209,7 +209,7 @@ class _SummedKNNOneClusterCurveFit:
         |   _   /       `  _
         |  / |_/             `
         |____________________>
-    kth nearest neighbour distance
+        kth nearest neighbour distance
 
         Args:
             k (int): the order of the knn plot. E.g. k=4 corresponds to a 4th nearest neighbor fit.

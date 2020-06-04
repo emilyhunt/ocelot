@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="Semantic statistical changes to ocelot.calculate functions.&#10;- Mean values are now only weighted with membership probabilities (*not* error values too) as correlations between errors and error values could cause weighted means to be biased. See: Pleiades controversy.&#10;- We now correctly infer both standard deviations and errors for all parameters (where appropriate), with error values weighted by sqrt(n_obs). HOWEVER, membership probabilities will mess up the standard error calculation, as there is no accepted way to calculate a weighted standard error on the mean. This would have to be done with a Monte Carlo method instead. See: https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation&#10;- So, for now, membership probabilities will be hard set to None. lol. waste of time xD">
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/ocelot/calculate/calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/calculate/calculate.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tests/test_calculate.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_calculate.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -117,9 +119,6 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -340,14 +339,23 @@
       <workItem from="1587128978449" duration="4649000" />
       <workItem from="1587366142473" duration="368000" />
       <workItem from="1587366550746" duration="784000" />
-      <workItem from="1587715939945" duration="3648000" />
-    </task>
-    <task id="LOCAL-00016" summary="Added a cluster_marker_radius parameter to ocelot.plot.clustering_result">
-      <created>1578405938513</created>
-      <option name="number" value="00016" />
-      <option name="presentableId" value="LOCAL-00016" />
-      <option name="project" value="LOCAL" />
-      <updated>1578405938513</updated>
+      <workItem from="1587715939945" duration="6061000" />
+      <workItem from="1588076328017" duration="609000" />
+      <workItem from="1588234808772" duration="4836000" />
+      <workItem from="1588926036883" duration="10000" />
+      <workItem from="1589188556571" duration="3217000" />
+      <workItem from="1589276535861" duration="27000" />
+      <workItem from="1589284619756" duration="3000" />
+      <workItem from="1589381190423" duration="1436000" />
+      <workItem from="1589457574110" duration="14000" />
+      <workItem from="1590396016705" duration="3495000" />
+      <workItem from="1590405754675" duration="599000" />
+      <workItem from="1590590952856" duration="2076000" />
+      <workItem from="1591256214778" duration="79000" />
+      <workItem from="1591273436236" duration="2370000" />
+      <workItem from="1591281222109" duration="378000" />
+      <workItem from="1591281773857" duration="83000" />
+      <workItem from="1591281885704" duration="1056000" />
     </task>
     <task id="LOCAL-00017" summary="Little fix to figure saving in ocelot.plot - we had the wrong method written (.save() instead of .savefig())">
       <created>1578408465043</created>
@@ -685,7 +693,14 @@
       <option name="project" value="LOCAL" />
       <updated>1587132338482</updated>
     </task>
-    <option name="localTasksCounter" value="65" />
+    <task id="LOCAL-00065" summary="Semantic statistical changes to ocelot.calculate functions.&#10;- Mean values are now only weighted with membership probabilities (*not* error values too) as correlations between errors and error values could cause weighted means to be biased. See: Pleiades controversy.&#10;- We now correctly infer both standard deviations and errors for all parameters (where appropriate), with error values weighted by sqrt(n_obs). HOWEVER, membership probabilities will mess up the standard error calculation, as there is no accepted way to calculate a weighted standard error on the mean. This would have to be done with a Monte Carlo method instead. See: https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation&#10;- So, for now, membership probabilities will be hard set to None. lol. waste of time xD&#10;- Have also added dispersion values for angular coordinates and proper motions (to make TCG cutting easier)">
+      <created>1587719814686</created>
+      <option name="number" value="00065" />
+      <option name="presentableId" value="LOCAL-00065" />
+      <option name="project" value="LOCAL" />
+      <updated>1587719814687</updated>
+    </task>
+    <option name="localTasksCounter" value="66" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -706,7 +721,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Added resampling and covariance matrix handling.&#10;- Added a new sub-submodule, ocelot.cluster.resample&#10;- It can create correctly shaped astrometric covariance matrices from scratch given standard Gaia data&#10;- It can also re-draw points from said Gaia multivariate normal distributions, although it's not yet super efficient (that would require some Cython unfortunately.)&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Small bugfixes and a new recenter_dataset preprocessing function.&#10;- Some little bugfixes done after starting using ocelot in anger&#10;- Added a new recenter_dataset function for centering fields on (0, 0)&#10;- Added (and then changed my mind about) some big changes to how plotting works. This could be improved upon at a later date.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Dataset partitioning and small documentation changes.&#10;- Now have a dataset partitioning class in the cluster.preprocessing submodule! It still requires unit testing.&#10;- Calculation of all_statistics now also adds the number of cluster member stars.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Small change to ACG epsilon determination with ocelot.cluster.epsilon.acg_18.&#10;- acg_18() now accepts list-like n_repeats as argument, and will calculate and return all of them&#10;- acg_18() now returns a pd.DataFrame of everything it found. The advantage of doing this with pandas is consistency when n_repeats is list-like - the number min_samples of each epsilon value is saved for future use.&#10;This commit is additional contributing work for 0.3.0." />
@@ -731,7 +745,8 @@
     <MESSAGE value="plot_partition_bar_chart now no longer requires self.data to be defined." />
     <MESSAGE value="clip_to_fit_clusters in plot_clustering_result will now only clip to clusters the user has explicitly requested the plotting of, instead of clipping to all clusters with a non- -1 label in the labels." />
     <MESSAGE value="Small bugfix to ocelot.crossmatch.Catalogue - line 268 used the wrong index, and was cycling over the index of all clusters being crossmatched against opposed to *only* clusters with a match." />
-    <option name="LAST_COMMIT_MESSAGE" value="Small bugfix to ocelot.crossmatch.Catalogue - line 268 used the wrong index, and was cycling over the index of all clusters being crossmatched against opposed to *only* clusters with a match." />
+    <MESSAGE value="Semantic statistical changes to ocelot.calculate functions.&#10;- Mean values are now only weighted with membership probabilities (*not* error values too) as correlations between errors and error values could cause weighted means to be biased. See: Pleiades controversy.&#10;- We now correctly infer both standard deviations and errors for all parameters (where appropriate), with error values weighted by sqrt(n_obs). HOWEVER, membership probabilities will mess up the standard error calculation, as there is no accepted way to calculate a weighted standard error on the mean. This would have to be done with a Monte Carlo method instead. See: https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation&#10;- So, for now, membership probabilities will be hard set to None. lol. waste of time xD&#10;- Have also added dispersion values for angular coordinates and proper motions (to make TCG cutting easier)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Semantic statistical changes to ocelot.calculate functions.&#10;- Mean values are now only weighted with membership probabilities (*not* error values too) as correlations between errors and error values could cause weighted means to be biased. See: Pleiades controversy.&#10;- We now correctly infer both standard deviations and errors for all parameters (where appropriate), with error values weighted by sqrt(n_obs). HOWEVER, membership probabilities will mess up the standard error calculation, as there is no accepted way to calculate a weighted standard error on the mean. This would have to be done with a Monte Carlo method instead. See: https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation&#10;- So, for now, membership probabilities will be hard set to None. lol. waste of time xD&#10;- Have also added dispersion values for angular coordinates and proper motions (to make TCG cutting easier)" />
   </component>
   <component name="WindowStateProjectService">
     <state x="2485" y="180" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1584452724048">
@@ -746,47 +761,47 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2657" y="261" width="436" height="556" key="#com.jetbrains.python.refactoring.move.PyMoveModuleMembersDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1584709507322" />
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1587718674178">
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1587719814411">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718674178" />
+    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587719814411" />
     <state x="605" y="62" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587132338173" />
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl" timestamp="1585327553641">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2653" y="297" width="424" height="484" key="FileChooserDialogImpl/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585327553641" />
-    <state width="1874" height="354" key="GridCell.Tab.0.bottom" timestamp="1587718179261">
+    <state width="1874" height="376" key="GridCell.Tab.0.bottom" timestamp="1591282933153">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.0.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179261" />
-    <state width="1874" height="354" key="GridCell.Tab.0.center" timestamp="1587718179260">
+    <state width="1874" height="376" key="GridCell.Tab.0.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933153" />
+    <state width="1874" height="376" key="GridCell.Tab.0.center" timestamp="1591282933153">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.0.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179260" />
-    <state width="1874" height="354" key="GridCell.Tab.0.left" timestamp="1587718179260">
+    <state width="1874" height="376" key="GridCell.Tab.0.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933153" />
+    <state width="1874" height="376" key="GridCell.Tab.0.left" timestamp="1591282933153">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.0.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179260" />
-    <state width="1874" height="354" key="GridCell.Tab.0.right" timestamp="1587718179261">
+    <state width="1874" height="376" key="GridCell.Tab.0.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933153" />
+    <state width="1874" height="376" key="GridCell.Tab.0.right" timestamp="1591282933153">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.0.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179261" />
-    <state width="1874" height="354" key="GridCell.Tab.1.bottom" timestamp="1587718179162">
+    <state width="1874" height="376" key="GridCell.Tab.0.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933153" />
+    <state width="1874" height="376" key="GridCell.Tab.1.bottom" timestamp="1591282933022">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.1.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
-    <state width="1874" height="354" key="GridCell.Tab.1.center" timestamp="1587718179162">
+    <state width="1874" height="376" key="GridCell.Tab.1.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933022" />
+    <state width="1874" height="376" key="GridCell.Tab.1.center" timestamp="1591282933022">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.1.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
-    <state width="1874" height="354" key="GridCell.Tab.1.left" timestamp="1587718179162">
+    <state width="1874" height="376" key="GridCell.Tab.1.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933022" />
+    <state width="1874" height="376" key="GridCell.Tab.1.left" timestamp="1591282933022">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.1.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
-    <state width="1874" height="354" key="GridCell.Tab.1.right" timestamp="1587718179162">
+    <state width="1874" height="376" key="GridCell.Tab.1.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933022" />
+    <state width="1874" height="376" key="GridCell.Tab.1.right" timestamp="1591282933022">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="354" key="GridCell.Tab.1.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587718179162" />
+    <state width="1874" height="376" key="GridCell.Tab.1.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1591282933022" />
     <state x="2623" y="138" key="SettingsEditor" timestamp="1587367300778">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -806,6 +821,6 @@
     <state x="761" y="472" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587136531099" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/ocelot$test_calculate.coverage" NAME="test_calculate Coverage Results" MODIFIED="1587718179126" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/ocelot$test_calculate.coverage" NAME="test_calculate Coverage Results" MODIFIED="1591282932981" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
   </component>
 </project>
