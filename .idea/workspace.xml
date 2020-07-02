@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/crossmatch/_catalogue.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -116,6 +115,9 @@
       <module name="ocelot" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -353,6 +355,9 @@
       <workItem from="1591281222109" duration="378000" />
       <workItem from="1591281773857" duration="83000" />
       <workItem from="1591281885704" duration="3424000" />
+      <workItem from="1592379517906" duration="2313000" />
+      <workItem from="1592398010530" duration="1921000" />
+      <workItem from="1593681828088" duration="1480000" />
     </task>
     <task id="LOCAL-00018" summary="Work on ocelot.cluster preprocessing functionality.&#10;- Added ocelot.cluster.cut_dataset, which is able to make (clear comparative) cuts on Gaia-style data&#10;- Added ocelot.cluster.rescale_dataset, which wraps sklearn rescaling options and prevents nasty errors&#10;- Both of the above have unit tests and appear to be working well.&#10;This releases satisfies 0.3.0 feature a.">
       <created>1578921227669</created>
