@@ -60,16 +60,42 @@ def generate_gaia_covariance_matrix(data_gaia: pd.DataFrame, type='pmra_pmdec_pa
 
 
 def resample_gaia_astrometry(data_gaia: pd.DataFrame, covariance_matrix: np.ndarray,
-                             check_valid: str = 'ignore') -> pd.DataFrame:
-    """ Todo fstring
+                             check_valid: str = 'ignore', method: str = "eigh") -> pd.DataFrame:
+    """Resample Gaia astrometric parameters for pmra, pmdec and parallax, given input best estimate means and covariance
+    matrices. Numerous methods are available, with some faster than others!
+
+    Todo: requires a unit test!
+
     Notes:
-        CHECKS ARE TURNED OFF TO MAKE THIS FUNCTION FASTER, so please make sure that data_gaia is correct and that
-        no values have been messed up! No warranty is included on this BlazingFastTM function.
+        - CHECKS ARE TURNED OFF TO MAKE THIS FUNCTION FASTER, so please make sure that data_gaia is correct and that
+          no values have been messed up! No warranty is included on this BlazingFastTM function.
+        - When using cholesky decomposition to speed this up, ALL COVARIANCE MATRICES MUST BE POSITIVE
+          DEFINITE. Basically, this means they should be symmetric and have no negative numbers.
+
+    Args:
+        data_gaia (pd.DataFrame): data for the field, including keys 'pmra', 'pmdec' and 'parallax'.
+            Shape (n_samples, :).
+        covariance_matrix (np.ndarray): covariances for the field, with shape (n_samples, 3, 3). Make one with
+            ocelot.cluster.generate_gaia_covariance_matrix!
+        check_valid (str, optional): whether or not to check if input matrices are valid for methods svd and eigh. May
+            be one of 'warn’, ‘raise’ or ‘ignore’.
+            Default: 'ignore'
+        method (str, optional): method used by numpy.random.Generator.multivariate_normal to compute the factor. Can be
+            one of:
+            - 'svd': slowest
+            - 'eigh': slightly faster
+            - 'cholesky': fastest, but unstable (matrices MUST be positive definite).
+            Default: 'eigh'
+
+    Returns:
+         a np.ndarray of shape (n_samples, 3) of the resampled pmra, pmdec and parallax values respectively.
     """
+    generator = np.random.default_rng()
 
     vectorized_multivariate_normal = np.vectorize(
-        np.random.multivariate_normal, excluded='check_valid', cache=True, signature='(n),(n,n),()->(n)')
+        generator.multivariate_normal, excluded=('check_valid', 'method'), cache=True, signature='(n),(n,n),(),()->(n)')
 
     return vectorized_multivariate_normal(mean=data_gaia[['pmra', 'pmdec', 'parallax']].to_numpy(),
                                           cov=covariance_matrix,
-                                          check_valid=check_valid)
+                                          check_valid=check_valid,
+                                          method=method)
