@@ -14,17 +14,18 @@ from pathlib import Path
 
 from typing import Union, Optional
 
-from .epsilon import _kth_nn_distribution, _constrained_a
+from ..cluster.epsilon import kth_nn_distribution, constrained_a
+from ..plot.utilities import calculate_alpha
 
 
-def get_field_stars_around_clusters(data_rescaled, labels, min_samples=10, overcalculation_factor=2.,
+def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_samples=10, overcalculation_factor=2.,
                                     min_field_stars=100, n_jobs=-1, nn_kwargs=None, max_iter=100):
     """Gets and returns a cloud of representative field stars around each reported cluster.
 
     Args:
-        data_rescaled (np.ndarray): data to calculate SNRs for with shape (n_samples, n_features).
+        data_rescaled (np.ndarray): array of rescaled data, in shape (n_samples, n_features.)
         labels (np.ndarray): labels of the data with shape (n_samples,), in the sklearn format for density-based
-            clustering with at least field_sample stars with a noise label of -1.
+            clustering with at least min_samples stars with a noise label of -1.
         min_samples (int): the min_samples nearest neighbour will be returned.
         overcalculation_factor (float): min_samples*overcalculation_factor nearest neighbors of cluster stars will be
             searched to try and find compatible field stars to evaluate against for the field step.
@@ -165,7 +166,7 @@ class KthNNDistributionCDF:
         """Precalculates a grid of kth nn distribution CDF values for a given a, d and k."""
         # Precalculate cumulatively summed values!
         x_range = np.linspace(*limits, num=grid_size)
-        y_range = np.cumsum(_kth_nn_distribution(x_range, a, d, k))
+        y_range = np.cumsum(kth_nn_distribution(x_range, a, d, k))
 
         # Normalise these values so that the max val is just 1!
         y_range /= np.max(y_range)
@@ -182,7 +183,7 @@ class KthNNDistributionPDF:
         """Precalculates a grid of kth nn distribution PDF values for a given a, d and k."""
         # Precalculate cumulatively summed values!
         x_range = np.linspace(*limits, num=grid_size)
-        y_range = _kth_nn_distribution(x_range, a, d, k)
+        y_range = kth_nn_distribution(x_range, a, d, k)
 
         # Normalise these values so that the max val is just 1!
         y_range /= np.trapz(y_range, x=x_range)
@@ -209,7 +210,7 @@ class _CurveToFit:
             y_range of points evaluated at x_range values!
 
         """
-        y_func = np.cumsum(_kth_nn_distribution(x_range, params[0], params[1], self.k))
+        y_func = np.cumsum(kth_nn_distribution(x_range, params[0], params[1], self.k))
         y_func /= np.trapz(y_func, x=x_range)
 
         return y_func
@@ -234,7 +235,7 @@ def fit_kth_nn_distribution(nn_distances, min_samples, resolution=200):
     # Get starting guesses
     k = min_samples
     d_0 = min_samples / 2  # Might want a better estimate sometimes!
-    a_0 = _constrained_a(d_0, k, np.mean(nn_distances))
+    a_0 = constrained_a(d_0, k, np.mean(nn_distances))
 
     # Minimize
     result, covariance = curve_fit(
@@ -284,8 +285,10 @@ def _likelihood_ratio_test(x_cluster, membership_probabilities, cluster_fit_para
 
 DEFAULT_DIAGNOSTIC_PLOT_SETTINGS = dict(
     dpi=100,
-    ncols=3,
+    n_cols=2,
     inches_per_ax=4,
+    supertitle_y_coord=1.05,
+    file_prefix="",
 )
 
 
@@ -301,7 +304,9 @@ def _plot_points_cropped_on_ax(ax, x_data, y_data, cluster_star_bool_array, fiel
 
     good_field_stars = np.logical_and.reduce(
         (x_data > x_limits[0], x_data < x_limits[1], y_data > y_limits[0], y_data < y_limits[1]))
-    ax.scatter(x_data[good_field_stars], y_data[good_field_stars], s=2, c=(0.5, 0.5, 0.5, 0.5), zorder=0)
+    ax.scatter(x_data[good_field_stars], y_data[good_field_stars], s=2, c='k', zorder=0,
+               alpha=calculate_alpha(ax.figure, ax, np.count_nonzero(good_field_stars), 2, scatter_plot=True,
+                                     max_alpha=0.1))
 
     # Reset limits (so that the plot is as cropped as possible) and return
     ax.set(xlim=x_limits, ylim=y_limits)
@@ -315,8 +320,8 @@ def _plot_cluster_probability_distributions(ax, nn_distances, fit_params, cluste
     x_range = np.linspace(0,
                           np.max(np.hstack((nn_distances[0][cluster_number], nn_distances[1][cluster_number]))),
                           num=100)
-    y_cluster = _kth_nn_distribution(x_range, *fit_params[0][cluster_number])
-    y_field = _kth_nn_distribution(x_range, *fit_params[1][cluster_number])
+    y_cluster = kth_nn_distribution(x_range, *fit_params[0][cluster_number])
+    y_field = kth_nn_distribution(x_range, *fit_params[1][cluster_number])
 
     y_cluster /= np.trapz(y_cluster, x=x_range)
     y_field /= np.trapz(y_field, x=x_range)
@@ -335,7 +340,7 @@ def _plot_cluster_probability_distributions(ax, nn_distances, fit_params, cluste
 
     # Beautify and return
     ax.legend(edgecolor='k')
-    ax.set(xlabel=f"{fit_params[0][-1]}th nearest neighbour distances",
+    ax.set(xlabel="kth nearest neighbour distance",
            ylabel="probability")
     return ax
 
@@ -345,8 +350,32 @@ def _cluster_significance_diagnostic_plots(data_rescaled: np.ndarray, labels: np
                                            cluster_significances: dict, field_star_indices: dict,
                                            plot_kwargs: Optional[dict] = None,
                                            output_dir: Optional[Union[Path, str]] = None):
-    """Plotter for calculate_cluster_significance diagnostic plots! Will make a *lot* of plots. Turn on only when
-    you're very stuck. =)"""
+    """Plotter for cluster_significance_test diagnostic plots! Will make a *lot* of plots - one for every cluster!
+    Turn on only when you're very stuck. =)
+
+    Args:
+        data_rescaled (np.ndarray): array of rescaled data, in shape (n_samples, n_features.)
+        labels (np.ndarray): integer label produced by your clustering algorithm of choice for data_rescaled. Noise
+            (unclustered stars) should have the label -1. Shape (n_samples,).
+        nn_distances (tuple, list): length 2 list-like of nearest neighbour distance dicts for the cluster and the field
+            stars respectively.
+        fit_params (tuple, list): length 2 list-like of fit parameter dicts for the clusters and field stars
+            respectively.
+        cluster_significances (dict): a dict of cluster significances to include on the plots.
+        field_star_indices (dict): a dict of the indices into data_rescaled of all the field stars selected for each
+            cluster.
+        plot_kwargs (dict, optional): kwargs to pass to the plotting routine.
+            Default: None, which reverts to:
+                dpi=100
+                ncols=3
+                inches_per_ax=4
+                supertitle_y_coord=1.05
+                file_prefix: ''
+        output_dir (str, pathlib.Path, optional): where to save diagnostic plots. If not specified, will revert to
+            "./cluster_significance_diagnostic_plots".
+            Default: None
+
+    """
     # Setup of input args
     if output_dir is None:
         output_dir = Path("./cluster_significance_diagnostic_plots")
@@ -360,26 +389,24 @@ def _cluster_significance_diagnostic_plots(data_rescaled: np.ndarray, labels: np
     else:
         plot_settings = DEFAULT_DIAGNOSTIC_PLOT_SETTINGS
 
+    # Work out how many plots we'll need and the requisite figure geometry
+    required_plots = int(np.ceil(data_rescaled.shape[1]/2) + 1)
+    plot_settings['n_rows'] = int(np.ceil(required_plots / plot_settings['n_cols']))
+
     # Loop over every cluster, making a plot!
     for a_cluster in field_star_indices:
-        # Numerical setup!
+        # Matplotlib setup!
         cluster_stars = labels == a_cluster
-
-        # First off, work out how many plots we'll need and the requisite figure geometry
-        required_plots = int(np.ceil(data_rescaled.shape[1]/2) + 1)
-
-        plot_settings['n_rows'] = int(np.ceil(required_plots / plot_settings['n_cols']))
         fig = plt.figure(figsize=(plot_settings['inches_per_ax'] * plot_settings['n_cols'],
                                   plot_settings['inches_per_ax'] * plot_settings['n_rows']),
                          dpi=plot_settings['dpi'])
         axes = []
 
         # Loop over, plotting the data dimensions
-        i_plot = 0
-        while i_plot < required_plots - 1:
+        for i_plot in range(1, required_plots):  # 1 indexing since matplotlib's add_subplot is 1-indexed
             # Grab whichever dimension we're plotting on, being careful if we have an odd number of dimensions to loop
-            # back around
-            dim_1 = i_plot * 2
+            # back around when we get to the last one
+            dim_1 = (i_plot - 1) * 2
             if dim_1 + 1 >= data_rescaled.shape[1]:
                 dim_2 = 0
             else:
@@ -392,19 +419,18 @@ def _cluster_significance_diagnostic_plots(data_rescaled: np.ndarray, labels: np
                 field_star_indices[a_cluster])
             axes[-1].set(xlabel=f"dim {dim_1}", ylabel=f"dim {dim_2}")
 
-            i_plot += 1
-
         # Also plot the nearest neighbour probability distributions and model fits
-        axes.append(fig.add_subplot(plot_settings['n_rows'], plot_settings['n_cols'], i_plot))
+        axes.append(fig.add_subplot(plot_settings['n_rows'], plot_settings['n_cols'], required_plots))
         axes[-1] = _plot_cluster_probability_distributions(axes[-1], nn_distances, fit_params, a_cluster)
 
         # Final beautification and output
-        fig.suptitle(f"Cluster {a_cluster}: sig {cluster_significances[a_cluster]:.2f}\n"
-                     f"  cluster/local field members: {np.count_nonzero(cluster_stars)}"
-                     f" / {len(field_star_indices[a_cluster])}",
-                     ha='left', fontsize="medium")
+        axes[0].set_title(f"Cluster {a_cluster}, sig: {cluster_significances[a_cluster]:.2f}\n"
+                          f"cluster/local field members: {np.count_nonzero(cluster_stars)}"
+                          f" / {len(field_star_indices[a_cluster])}", ha='left', x=0.00,
+                          fontsize="medium")
         fig.tight_layout()
-        fig.savefig(output_dir / f"{a_cluster} significance.png", dpi=plot_settings['dpi'])
+        fig.savefig(output_dir / f"{plot_settings['file_prefix']}{a_cluster}_significance.png",
+                    dpi=plot_settings['dpi'])
 
         plt.close(fig)
 
@@ -417,12 +443,58 @@ DEFAULT_KNN_KWARGS = dict(
     max_iter=100)
 
 
-def calculate_cluster_significance(data_rescaled, labels, min_samples=10, membership_probabilities=None,
-                                   knn_kwargs=None, sampling_resolution=200, return_field_star_indices=False,
-                                   make_diagnostic_plots=False, plot_kwargs=None, plot_output_dir=None):
+def cluster_significance_test(data_rescaled: np.ndarray, labels: np.ndarray, min_samples: int = 10,
+                              membership_probabilities: Optional[np.ndarray] = None,
+                              knn_kwargs: Optional[dict] = None, sampling_resolution: int = 200,
+                              return_field_star_indices: bool = False,
+                              make_diagnostic_plots: bool = False, plot_kwargs: Optional[dict] = None,
+                              plot_output_dir: Optional[Union[Path, str]] = None):
     """Calculates the significance of a cluster by looking at the nearest neighbour distribution of local field
     stars, fitting Chandrasekhar1943 models, and performing a likelihood ratio hypothesis test to evaluate
     whether or not cluster stars are more compatible with a cluster or the field.
+
+    # Todo: k = min_samples (current) or k = min_samples - 1 (ACG?)
+
+    Args:
+        data_rescaled (np.ndarray): array of rescaled data, in shape (n_samples, n_features.)
+        labels (np.ndarray): integer label produced by your clustering algorithm of choice for data_rescaled. Noise
+            (unclustered stars) should have the label -1. Shape (n_samples,).
+        min_samples (int): min_samples used by your clustering algorithm, aka the kth nearest neighbour to
+            look at.
+            Default: 10
+        membership_probabilities (np.ndarray, optional): array of shape (n_samples,) giving membership probabilities for
+            stars in data_rescaled into cluster labels.
+            Default: None
+        knn_kwargs (dict, optional): extra kwargs for the kth nearest neighbour process in
+            get_field_stars_around_clusters.
+            Default: None, which reverts to:
+                overcalculation_factor=3.
+                min_field_stars=100
+                n_jobs=-1
+                nn_kwargs=None
+                max_iter=100
+        sampling_resolution (int): resolution to sample fitted kth nn models at.
+            Default: 200
+        return_field_star_indices (bool): whether or not to also return indices of field stars selected by the algorithm
+            for your own analysis.
+            Default: False
+        make_diagnostic_plots (bool): whether or not to output diagnostic plots *for every cluster in labels* showing
+            the cluster stars, selected field stars & model fits.
+            Default: False
+        plot_kwargs (dict, optional): kwargs to pass to the plotting routine.
+            Default: None, which reverts to:
+                dpi=100
+                ncols=3
+                inches_per_ax=4
+        plot_output_dir (str, pathlib.Path, optional): where to save diagnostic plots. If not specified, will revert to
+            "./cluster_significance_diagnostic_plots".
+            Default: None
+
+    Returns:
+        dict of significances, with cluster labels as keys
+        dict of log likelihoods (not normalised by the number of stars in each cluster!), mostly for diagnostics
+        (a dict of indices into data_rescaled of selected field stars for each cluster, returned if
+            return_field_star_indices is True)
     """
     if membership_probabilities is None:
         membership_probabilities = np.ones(labels.shape[0])

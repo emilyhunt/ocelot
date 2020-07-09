@@ -123,7 +123,7 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
         return acg_epsilon_dataframe
 
 
-def _kth_nn_distribution(r_range, a, dimension, k):
+def kth_nn_distribution(r_range, a, dimension, k):
     """Returns the kth nearest neighbor distribution for a multi-dimensional ideal gas. Not normalised!
 
     f = r_range^(dimension + k - 1) / a^dimension * exp(-(r_range/a)^dimension)
@@ -168,10 +168,10 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
                                   "field model for epsilon determination.")
 
     # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
-    y_field = np.cumsum(_kth_nn_distribution(r_range, parameters[0], parameters[1], k))
+    y_field = np.cumsum(kth_nn_distribution(r_range, parameters[0], parameters[1], k))
     normalisation_field = np.trapz(y_field, x=r_range) / (1 - parameters[4])
 
-    y_cluster = np.cumsum(_kth_nn_distribution(r_range, parameters[2], parameters[3], k))
+    y_cluster = np.cumsum(kth_nn_distribution(r_range, parameters[2], parameters[3], k))
     normalisation_cluster = np.trapz(y_cluster, x=r_range) / parameters[4]
 
     y_field /= normalisation_field
@@ -189,7 +189,7 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
     return log_array
 
 
-def _constrained_a(d, k, epsilon_max):
+def constrained_a(d, k, epsilon_max):
     # Todo I think this can just be a part of the class _SummedKNNOneClusterCurveFit
     return epsilon_max / (((k - 1) / d + 1) ** (1 / d))
 
@@ -236,14 +236,14 @@ class _SummedKNNOneClusterCurveFit:
 
         """
         # Calculate the as
-        a_field = _constrained_a(parameters[0], self.k, self.epsilon_max)
-        a_cluster = _constrained_a(parameters[2], self.k, parameters[1])
+        a_field = constrained_a(parameters[0], self.k, self.epsilon_max)
+        a_cluster = constrained_a(parameters[2], self.k, parameters[1])
 
         # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
-        y_field = np.cumsum(_kth_nn_distribution(r_range, a_field, parameters[0], self.k))
+        y_field = np.cumsum(kth_nn_distribution(r_range, a_field, parameters[0], self.k))
         normalisation_field = np.trapz(y_field, x=r_range) / (1 - parameters[3])
 
-        y_cluster = np.cumsum(_kth_nn_distribution(r_range, a_cluster, parameters[2], self.k))
+        y_cluster = np.cumsum(kth_nn_distribution(r_range, a_cluster, parameters[2], self.k))
         normalisation_cluster = np.trapz(y_cluster, x=r_range) / parameters[3]
 
         y_field /= normalisation_field
@@ -564,8 +564,8 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     # Process the result array back into the array of parameters we like to see around these parts
     # Since result unprocessed is [field_dimension, cluster_maximum , cluster_dimension, cluster_fraction]
     # but we want [field_constant, field_dimension, cluster_constant, cluster_dimension, cluster_fraction]
-    field_constant = _constrained_a(result_unprocessed[0], min_samples, modal_epsilon_value)
-    cluster_constant = _constrained_a(result_unprocessed[2], min_samples, result_unprocessed[1])
+    field_constant = constrained_a(result_unprocessed[0], min_samples, modal_epsilon_value)
+    cluster_constant = constrained_a(result_unprocessed[2], min_samples, result_unprocessed[1])
     result = np.asarray(
         [field_constant, result_unprocessed[0], cluster_constant, result_unprocessed[2], result_unprocessed[3]])
 

@@ -349,7 +349,7 @@ def test_acg18():
 
 
 def test__summed_kth_nn_distribution_one_cluster():
-    """Tests ocelot.cluster.epsilon_summed_kth_nn_distribution_one_cluster (and by extension, _kth_nn_distribution)."""
+    """Tests ocelot.cluster.epsilon_summed_kth_nn_distribution_one_cluster (and by extension, kth_nn_distribution)."""
     # Set some parameters to play with
     field_constant = 0.3
     field_dimension = 5
