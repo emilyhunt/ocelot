@@ -275,12 +275,16 @@ def _likelihood_ratio_test(x_cluster, membership_probabilities, cluster_fit_para
     # Log and square the ratio!
     log_likelihood = 2 * (likelihood_cluster - likelihood_field)
 
-    # Convert to a pval, then to a sigma significance
+    # Convert to a pval, then to a sigma significance - using a weird formula because it gives me better floating pt.
+    # precision, and dividing by 2 since our test is implicitly one-sided. I quite like this explanation of why:
+    # https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faq-what-are-the-differences-between-one-tailed-and-two-tailed-tests/
+    # Basically, in our one tailed test we're only interested in the likelihood of the cluster being better than the
+    # field. We don't care about the field being better than the cluster: either way, that's a Z=0.0 not worth our
+    # consideration as an OC candidate.
     p_val = chi2.sf(log_likelihood, (len(x_cluster) - 1) * (len(cluster_fit_params) - 1))
-    significance = -norm.ppf(p_val / 2)
+    significance = np.abs(-norm.ppf(p_val / 2))  # Stop -0.0 from happening. Only 0.0 is allowed!
 
-    # Stop -0.0 from happening. Only 0.0 is allowed!
-    return np.abs(significance), log_likelihood
+    return significance, log_likelihood
 
 
 DEFAULT_DIAGNOSTIC_PLOT_SETTINGS = dict(
