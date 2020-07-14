@@ -58,7 +58,8 @@ def test_cluster_significance_test():
         labels,
         min_samples=10,
         make_diagnostic_plots=True,
-        plot_output_dir=Path("./test_results/cluster_significance_test")
+        plot_output_dir=Path("./test_results/cluster_significance_test2"),
+        test_type="all"
     )
 
 

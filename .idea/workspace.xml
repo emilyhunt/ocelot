@@ -2,16 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/ocelot/verify/__init__.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test/0_significance.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test/1_significance.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test/2_significance.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_verify.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test2/0_significance.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test2/1_significance.png" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test2/2_significance.png" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/cluster/epsilon.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/cluster/hypothesis.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/verify/significance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_cluster.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_cluster.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/verify/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/verify/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/verify/significance.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/verify/significance.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_verify.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_verify.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -368,14 +365,9 @@
       <workItem from="1593681828088" duration="1480000" />
       <workItem from="1594111373564" duration="52000" />
       <workItem from="1594201215364" duration="10675000" />
-      <workItem from="1594280382910" duration="10757000" />
-    </task>
-    <task id="LOCAL-00019" summary="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added precalculate_nn_distances to precalculate kth nearest neighbor distance matrices for algorithms like DBSCAN.&#10;- Still need to unit test this!&#10;This releases partially satisfies 0.3.0 feature b.">
-      <created>1578927323955</created>
-      <option name="number" value="00019" />
-      <option name="presentableId" value="LOCAL-00019" />
-      <option name="project" value="LOCAL" />
-      <updated>1578927323955</updated>
+      <workItem from="1594280382910" duration="11005000" />
+      <workItem from="1594713955437" duration="465000" />
+      <workItem from="1594730142433" duration="7522000" />
     </task>
     <task id="LOCAL-00020" summary="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added a unit test for precalculate_nn_distances.&#10;- Added ACG+18 epsilon determination, complete with a unit test.&#10;This releases partially satisfies 0.3.0 feature b.">
       <created>1579101043906</created>
@@ -713,7 +705,14 @@
       <option name="project" value="LOCAL" />
       <updated>1594219805141</updated>
     </task>
-    <option name="localTasksCounter" value="68" />
+    <task id="LOCAL-00068" summary="Updates to the hypothesis testing docs and bugfixes.&#10;- Hypothesis testing will henceforth be called the cluster significance test (CST) in the code!&#10;- It now lives in a separate module, ocelot.verify. The idea is that ocelot.cluster will be kept for *only* things you'd need to do *before* running a clustering algorithm.&#10;- All user-facing ocelot.verify things are now nicely documented, although more docs for KNN kwargs and diagnostic plot kwargs would be nice.&#10;- Created a basic unit test that I can expand later for these features. I expect to make more immediate changes to the knn step especially and there's no point writing firm unit test numbers in until that's done.&#10;- Got it running on Blanco 1! Solved a few small bugs in the plotting code to fix this. Everything transferred from the notebook seems to be working perfectly.">
+      <created>1594307608530</created>
+      <option name="number" value="00068" />
+      <option name="presentableId" value="LOCAL-00068" />
+      <option name="project" value="LOCAL" />
+      <updated>1594307608531</updated>
+    </task>
+    <option name="localTasksCounter" value="69" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -734,7 +733,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Small change to ACG epsilon determination with ocelot.cluster.epsilon.acg_18.&#10;- acg_18() now accepts list-like n_repeats as argument, and will calculate and return all of them&#10;- acg_18() now returns a pd.DataFrame of everything it found. The advantage of doing this with pandas is consistency when n_repeats is list-like - the number min_samples of each epsilon value is saved for future use.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Added HEALPix support to ocelot.cluster.recenter_dataset.&#10;- Can now specify pixel_id instead of the center of a field for HEALPix pixels&#10;- Can rotate the HEALPix pixel to have the edges of the boundary aligned with the latitude/longitude axes. &#10;- Passed its tests!&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="A little bit of extra ocelot.cluster.epsilon.acg_18 functionality.&#10;- The acg_18 epsilon determination function can now also output standard deviations of values.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Small bugfix to how acg epsilon determination works.&#10;- The nearest neighbor k is now correctly defined as min_samples - 1. This slightly reduces the estimates of this function." />
@@ -759,7 +757,8 @@
     <MESSAGE value="Semantic statistical changes to ocelot.calculate functions.&#10;- Mean values are now only weighted with membership probabilities (*not* error values too) as correlations between errors and error values could cause weighted means to be biased. See: Pleiades controversy.&#10;- We now correctly infer both standard deviations and errors for all parameters (where appropriate), with error values weighted by sqrt(n_obs). HOWEVER, membership probabilities will mess up the standard error calculation, as there is no accepted way to calculate a weighted standard error on the mean. This would have to be done with a Monte Carlo method instead. See: https://stats.stackexchange.com/questions/25895/computing-standard-error-in-weighted-mean-estimation&#10;- So, for now, membership probabilities will be hard set to None. lol. waste of time xD&#10;- Have also added dispersion values for angular coordinates and proper motions (to make TCG cutting easier)" />
     <MESSAGE value="Crossmatch improvements and calculation improvements.&#10;- ocelot.crossmatch.Catalogue objects now support crossmatching based on tidal radius and allow for extra uniform systematic tolerances to be built into the crossmatch process.&#10;- ocelot.calculate.mean_radius() now correctly handles ra values that fall across the 0/360 discontinuity and now correctly calculates angular separations with astropy in spherical co-ordinates.&#10;- Tiny indent bugfix in an fstring in ocelot.cluster.epsilon._SummedKNNOneClusterCurveFit" />
     <MESSAGE value="Added hypothesis testing (no unit tests yet!) and a small change to resampling.&#10;- Moved the hypothesis testing code over from oc_testing/200626_signal_to_noise_ratios/0_snr_playing.ipynb.&#10;- Added diagnostic plotting code to the hypothesis testing, that should be able to output a looot of diagnostics for use by the user.&#10;- Small change to star resampling - we now use a default_rng() instance (newer addition to np.random that should be used now) that also lets you choose the method used, making it potentially a lot faster when e.g. 'cholesky' is used!" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added hypothesis testing (no unit tests yet!) and a small change to resampling.&#10;- Moved the hypothesis testing code over from oc_testing/200626_signal_to_noise_ratios/0_snr_playing.ipynb.&#10;- Added diagnostic plotting code to the hypothesis testing, that should be able to output a looot of diagnostics for use by the user.&#10;- Small change to star resampling - we now use a default_rng() instance (newer addition to np.random that should be used now) that also lets you choose the method used, making it potentially a lot faster when e.g. 'cholesky' is used!" />
+    <MESSAGE value="Updates to the hypothesis testing docs and bugfixes.&#10;- Hypothesis testing will henceforth be called the cluster significance test (CST) in the code!&#10;- It now lives in a separate module, ocelot.verify. The idea is that ocelot.cluster will be kept for *only* things you'd need to do *before* running a clustering algorithm.&#10;- All user-facing ocelot.verify things are now nicely documented, although more docs for KNN kwargs and diagnostic plot kwargs would be nice.&#10;- Created a basic unit test that I can expand later for these features. I expect to make more immediate changes to the knn step especially and there's no point writing firm unit test numbers in until that's done.&#10;- Got it running on Blanco 1! Solved a few small bugs in the plotting code to fix this. Everything transferred from the notebook seems to be working perfectly." />
+    <option name="LAST_COMMIT_MESSAGE" value="Updates to the hypothesis testing docs and bugfixes.&#10;- Hypothesis testing will henceforth be called the cluster significance test (CST) in the code!&#10;- It now lives in a separate module, ocelot.verify. The idea is that ocelot.cluster will be kept for *only* things you'd need to do *before* running a clustering algorithm.&#10;- All user-facing ocelot.verify things are now nicely documented, although more docs for KNN kwargs and diagnostic plot kwargs would be nice.&#10;- Created a basic unit test that I can expand later for these features. I expect to make more immediate changes to the knn step especially and there's no point writing firm unit test numbers in until that's done.&#10;- Got it running on Blanco 1! Solved a few small bugs in the plotting code to fix this. Everything transferred from the notebook seems to be working perfectly." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1587366460731">
@@ -770,51 +769,47 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="3144" y="358" key="#xdebugger.evaluate/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594304557129" />
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1594219804940">
+    <state x="2294" y="38" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1594307608305">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2477" y="36" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594219804940" />
+    <state x="2294" y="38" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594307608305" />
     <state x="605" y="62" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587132338173" />
-    <state width="1874" height="273" key="GridCell.Tab.0.bottom" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.0.bottom" timestamp="1594742813535">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.0.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
-    <state width="1874" height="273" key="GridCell.Tab.0.center" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.0.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813535" />
+    <state width="1874" height="273" key="GridCell.Tab.0.center" timestamp="1594742813534">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.0.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
-    <state width="1874" height="273" key="GridCell.Tab.0.left" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.0.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813534" />
+    <state width="1874" height="273" key="GridCell.Tab.0.left" timestamp="1594742813534">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.0.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
-    <state width="1874" height="273" key="GridCell.Tab.0.right" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.0.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813534" />
+    <state width="1874" height="273" key="GridCell.Tab.0.right" timestamp="1594742813534">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.0.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
-    <state width="1874" height="273" key="GridCell.Tab.1.bottom" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.0.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813534" />
+    <state width="1874" height="273" key="GridCell.Tab.1.bottom" timestamp="1594742813535">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.1.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
-    <state width="1874" height="273" key="GridCell.Tab.1.center" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.1.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813535" />
+    <state width="1874" height="273" key="GridCell.Tab.1.center" timestamp="1594742813535">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.1.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
-    <state width="1874" height="273" key="GridCell.Tab.1.left" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.1.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813535" />
+    <state width="1874" height="273" key="GridCell.Tab.1.left" timestamp="1594742813535">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.1.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
-    <state width="1874" height="273" key="GridCell.Tab.1.right" timestamp="1594305043327">
+    <state width="1874" height="273" key="GridCell.Tab.1.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813535" />
+    <state width="1874" height="273" key="GridCell.Tab.1.right" timestamp="1594742813535">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state width="1874" height="273" key="GridCell.Tab.1.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="1874" height="273" key="GridCell.Tab.1.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813535" />
     <state x="2623" y="138" key="SettingsEditor" timestamp="1587367300778">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2623" y="138" key="SettingsEditor/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587367300778" />
-    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog" timestamp="1585670475208">
-      <screen x="1920" y="0" width="1920" height="1080" />
-    </state>
-    <state x="2020" y="98" width="1720" height="882" key="com.intellij.history.integration.ui.views.FileHistoryDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1585670475208" />
     <state x="1232" y="366" key="com.intellij.ide.util.TipDialog" timestamp="1587366233652">
       <screen x="67" y="27" width="1853" height="1053" />
     </state>
@@ -827,6 +822,6 @@
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/ocelot$test_calculate.coverage" NAME="test_calculate Coverage Results" MODIFIED="1591282932981" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
-    <SUITE FILE_PATH="coverage/ocelot$test_verify.coverage" NAME="test_verify Coverage Results" MODIFIED="1594304582866" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/ocelot$test_verify.coverage" NAME="test_verify Coverage Results" MODIFIED="1594742459711" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
   </component>
 </project>
