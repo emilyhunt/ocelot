@@ -1,15 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test2/0_significance.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test2/1_significance.png" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test2/2_significance.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/verify/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/verify/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ocelot/verify/significance.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/verify/significance.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/tests/test_verify.py" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_verify.py" afterDir="false" />
-    </list>
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -367,14 +359,7 @@
       <workItem from="1594201215364" duration="10675000" />
       <workItem from="1594280382910" duration="11005000" />
       <workItem from="1594713955437" duration="465000" />
-      <workItem from="1594730142433" duration="7522000" />
-    </task>
-    <task id="LOCAL-00020" summary="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added a unit test for precalculate_nn_distances.&#10;- Added ACG+18 epsilon determination, complete with a unit test.&#10;This releases partially satisfies 0.3.0 feature b.">
-      <created>1579101043906</created>
-      <option name="number" value="00020" />
-      <option name="presentableId" value="LOCAL-00020" />
-      <option name="project" value="LOCAL" />
-      <updated>1579101043906</updated>
+      <workItem from="1594730142433" duration="7740000" />
     </task>
     <task id="LOCAL-00021" summary="Work on ocelot.cluster nearest neighbor plotting.&#10;- Added ocelot.plot.nearest_neighbor_distance and various functions to contribute to it&#10;- Implemented unit tests for the above &#10;This releases partially satisfies 0.3.0 feature b.">
       <created>1579188183015</created>
@@ -712,7 +697,14 @@
       <option name="project" value="LOCAL" />
       <updated>1594307608531</updated>
     </task>
-    <option name="localTasksCounter" value="69" />
+    <task id="LOCAL-00069" summary="Added Kolmogorov-Smirnov testing options (one and two sample!) to the cluster significance test.&#10;- You can do all tests at once or just the one&#10;- Also changed the code to be neater in this case by making the helper functions in verify.py natively for looped, to free up space in cluster significance test&#10;- Removed membership probabilities from the likelihood ratio test because I'm not convinced my equation was correct/it would make things go towards zero eeeeven more than before. This also gels better with the KS test, for which it has to be assumed that all members are members.">
+      <created>1594743977124</created>
+      <option name="number" value="00069" />
+      <option name="presentableId" value="LOCAL-00069" />
+      <option name="project" value="LOCAL" />
+      <updated>1594743977125</updated>
+    </task>
+    <option name="localTasksCounter" value="70" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -733,7 +725,6 @@
   <component name="VcsManagerConfiguration">
     <option name="CHECK_NEW_TODO" value="false" />
     <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
-    <MESSAGE value="Added HEALPix support to ocelot.cluster.recenter_dataset.&#10;- Can now specify pixel_id instead of the center of a field for HEALPix pixels&#10;- Can rotate the HEALPix pixel to have the edges of the boundary aligned with the latitude/longitude axes. &#10;- Passed its tests!&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="A little bit of extra ocelot.cluster.epsilon.acg_18 functionality.&#10;- The acg_18 epsilon determination function can now also output standard deviations of values.&#10;This commit is additional contributing work for 0.3.0." />
     <MESSAGE value="Small bugfix to how acg epsilon determination works.&#10;- The nearest neighbor k is now correctly defined as min_samples - 1. This slightly reduces the estimates of this function." />
     <MESSAGE value="Began re-working the DataPartition class to work with HEALPix for CAC20.&#10;- Split the existing class into a SquareDataPartition and a DataPartition superclass.&#10;- This can be developed further, though I'll leave the square one as-is for now because I'm not using it." />
@@ -758,7 +749,8 @@
     <MESSAGE value="Crossmatch improvements and calculation improvements.&#10;- ocelot.crossmatch.Catalogue objects now support crossmatching based on tidal radius and allow for extra uniform systematic tolerances to be built into the crossmatch process.&#10;- ocelot.calculate.mean_radius() now correctly handles ra values that fall across the 0/360 discontinuity and now correctly calculates angular separations with astropy in spherical co-ordinates.&#10;- Tiny indent bugfix in an fstring in ocelot.cluster.epsilon._SummedKNNOneClusterCurveFit" />
     <MESSAGE value="Added hypothesis testing (no unit tests yet!) and a small change to resampling.&#10;- Moved the hypothesis testing code over from oc_testing/200626_signal_to_noise_ratios/0_snr_playing.ipynb.&#10;- Added diagnostic plotting code to the hypothesis testing, that should be able to output a looot of diagnostics for use by the user.&#10;- Small change to star resampling - we now use a default_rng() instance (newer addition to np.random that should be used now) that also lets you choose the method used, making it potentially a lot faster when e.g. 'cholesky' is used!" />
     <MESSAGE value="Updates to the hypothesis testing docs and bugfixes.&#10;- Hypothesis testing will henceforth be called the cluster significance test (CST) in the code!&#10;- It now lives in a separate module, ocelot.verify. The idea is that ocelot.cluster will be kept for *only* things you'd need to do *before* running a clustering algorithm.&#10;- All user-facing ocelot.verify things are now nicely documented, although more docs for KNN kwargs and diagnostic plot kwargs would be nice.&#10;- Created a basic unit test that I can expand later for these features. I expect to make more immediate changes to the knn step especially and there's no point writing firm unit test numbers in until that's done.&#10;- Got it running on Blanco 1! Solved a few small bugs in the plotting code to fix this. Everything transferred from the notebook seems to be working perfectly." />
-    <option name="LAST_COMMIT_MESSAGE" value="Updates to the hypothesis testing docs and bugfixes.&#10;- Hypothesis testing will henceforth be called the cluster significance test (CST) in the code!&#10;- It now lives in a separate module, ocelot.verify. The idea is that ocelot.cluster will be kept for *only* things you'd need to do *before* running a clustering algorithm.&#10;- All user-facing ocelot.verify things are now nicely documented, although more docs for KNN kwargs and diagnostic plot kwargs would be nice.&#10;- Created a basic unit test that I can expand later for these features. I expect to make more immediate changes to the knn step especially and there's no point writing firm unit test numbers in until that's done.&#10;- Got it running on Blanco 1! Solved a few small bugs in the plotting code to fix this. Everything transferred from the notebook seems to be working perfectly." />
+    <MESSAGE value="Added Kolmogorov-Smirnov testing options (one and two sample!) to the cluster significance test.&#10;- You can do all tests at once or just the one&#10;- Also changed the code to be neater in this case by making the helper functions in verify.py natively for looped, to free up space in cluster significance test&#10;- Removed membership probabilities from the likelihood ratio test because I'm not convinced my equation was correct/it would make things go towards zero eeeeven more than before. This also gels better with the KS test, for which it has to be assumed that all members are members." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added Kolmogorov-Smirnov testing options (one and two sample!) to the cluster significance test.&#10;- You can do all tests at once or just the one&#10;- Also changed the code to be neater in this case by making the helper functions in verify.py natively for looped, to free up space in cluster significance test&#10;- Removed membership probabilities from the likelihood ratio test because I'm not convinced my equation was correct/it would make things go towards zero eeeeven more than before. This also gels better with the KS test, for which it has to be assumed that all members are members." />
   </component>
   <component name="WindowStateProjectService">
     <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog" timestamp="1587366460731">
@@ -769,10 +761,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="3144" y="358" key="#xdebugger.evaluate/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594304557129" />
-    <state x="2294" y="38" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1594307608305">
+    <state x="2294" y="38" width="1210" height="966" key="CommitChangelistDialog2" timestamp="1594743976911">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
-    <state x="2294" y="38" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594307608305" />
+    <state x="2294" y="38" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594743976911" />
     <state x="605" y="62" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587132338173" />
     <state width="1874" height="273" key="GridCell.Tab.0.bottom" timestamp="1594742813535">
       <screen x="1920" y="0" width="1920" height="1080" />
