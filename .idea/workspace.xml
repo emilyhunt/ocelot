@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
+<<<<<<< HEAD
     <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="" />
+=======
+    <list default="true" id="1305b59b-76b3-4d6c-a337-285f223ed99a" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ocelot/verify/significance.py" beforeDir="false" afterPath="$PROJECT_DIR$/ocelot/verify/significance.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tests/test_results/cluster_significance_test/0_significance.png" beforeDir="false" afterPath="$PROJECT_DIR$/tests/test_results/cluster_significance_test/0_significance.png" afterDir="false" />
+    </list>
+>>>>>>> 7a51d4c4fc776237b1f81851844a5d64ecbf2bd0
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -357,9 +365,28 @@
       <workItem from="1593681828088" duration="1480000" />
       <workItem from="1594111373564" duration="52000" />
       <workItem from="1594201215364" duration="10675000" />
+<<<<<<< HEAD
       <workItem from="1594280382910" duration="11005000" />
       <workItem from="1594713955437" duration="465000" />
       <workItem from="1594730142433" duration="7740000" />
+=======
+      <workItem from="1594280382910" duration="10757000" />
+      <workItem from="1594369685941" duration="11516000" />
+    </task>
+    <task id="LOCAL-00019" summary="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added precalculate_nn_distances to precalculate kth nearest neighbor distance matrices for algorithms like DBSCAN.&#10;- Still need to unit test this!&#10;This releases partially satisfies 0.3.0 feature b.">
+      <created>1578927323955</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1578927323955</updated>
+    </task>
+    <task id="LOCAL-00020" summary="Work on ocelot.cluster nearest neighbor calculation.&#10;- Added a unit test for precalculate_nn_distances.&#10;- Added ACG+18 epsilon determination, complete with a unit test.&#10;This releases partially satisfies 0.3.0 feature b.">
+      <created>1579101043906</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1579101043906</updated>
+>>>>>>> 7a51d4c4fc776237b1f81851844a5d64ecbf2bd0
     </task>
     <task id="LOCAL-00021" summary="Work on ocelot.cluster nearest neighbor plotting.&#10;- Added ocelot.plot.nearest_neighbor_distance and various functions to contribute to it&#10;- Implemented unit tests for the above &#10;This releases partially satisfies 0.3.0 feature b.">
       <created>1579188183015</created>
@@ -757,6 +784,10 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state x="2563" y="267" width="624" height="544" key="#com.intellij.openapi.updateSettings.impl.PluginUpdateInfoDialog/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1587366460731" />
+    <state x="777" y="289" width="422" height="535" key="#xdebugger.XInspectDialog" timestamp="1594382622333">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state x="777" y="289" width="422" height="535" key="#xdebugger.XInspectDialog/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594382622333" />
     <state x="3144" y="358" key="#xdebugger.evaluate" timestamp="1594304557129">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -766,6 +797,7 @@
     </state>
     <state x="2294" y="38" width="1210" height="966" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594743976911" />
     <state x="605" y="62" key="CommitChangelistDialog2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587132338173" />
+<<<<<<< HEAD
     <state width="1874" height="273" key="GridCell.Tab.0.bottom" timestamp="1594742813535">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -798,6 +830,48 @@
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
     <state width="1874" height="273" key="GridCell.Tab.1.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594742813535" />
+=======
+    <state width="904" height="340" key="GridCell.Tab.0.bottom" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.0.bottom/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.0.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="904" height="340" key="GridCell.Tab.0.center" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.0.center/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.0.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="904" height="340" key="GridCell.Tab.0.left" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.0.left/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.0.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="904" height="340" key="GridCell.Tab.0.right" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.0.right/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.0.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="904" height="340" key="GridCell.Tab.1.bottom" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.1.bottom/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.1.bottom/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="904" height="340" key="GridCell.Tab.1.center" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.1.center/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.1.center/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="904" height="340" key="GridCell.Tab.1.left" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.1.left/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.1.left/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+    <state width="904" height="340" key="GridCell.Tab.1.right" timestamp="1594384426339">
+      <screen x="66" y="27" width="1854" height="1053" />
+    </state>
+    <state width="904" height="340" key="GridCell.Tab.1.right/66.27.1854.1053/1920.0.1280.1024@66.27.1854.1053" timestamp="1594384426339" />
+    <state width="1874" height="273" key="GridCell.Tab.1.right/67.27.1853.1053/1920.0.1920.1080@1920.0.1920.1080" timestamp="1594305043327" />
+>>>>>>> 7a51d4c4fc776237b1f81851844a5d64ecbf2bd0
     <state x="2623" y="138" key="SettingsEditor" timestamp="1587367300778">
       <screen x="1920" y="0" width="1920" height="1080" />
     </state>
@@ -813,7 +887,11 @@
     <state x="761" y="472" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/67.27.1853.1053/1920.0.1920.1080@67.27.1853.1053" timestamp="1587136531099" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/ocelot$test_verify.coverage" NAME="test_verify Coverage Results" MODIFIED="1594376514414" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
     <SUITE FILE_PATH="coverage/ocelot$test_calculate.coverage" NAME="test_calculate Coverage Results" MODIFIED="1591282932981" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+<<<<<<< HEAD
     <SUITE FILE_PATH="coverage/ocelot$test_verify.coverage" NAME="test_verify Coverage Results" MODIFIED="1594742459711" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+=======
+>>>>>>> 7a51d4c4fc776237b1f81851844a5d64ecbf2bd0
   </component>
 </project>
