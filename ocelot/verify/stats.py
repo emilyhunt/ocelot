@@ -147,7 +147,8 @@ def _likelihood_ratio_test(nn_distances, cluster_fit_params, field_fit_params,
         # Basically, in our one tailed test we're only interested in the likelihood of the cluster being better than the
         # field. We don't care about the field being better than the cluster: either way, that's a Z=0.0 not worth our
         # consideration as an OC candidate.
-        p_val = chi2.sf(log_likelihoods[a_cluster], (len(nn_distances[a_cluster]) - 1) * (len(cluster_fit_params) - 1))
+        p_val = chi2.sf(log_likelihoods[a_cluster],
+                        (len(nn_distances[a_cluster]) - 1) * (len(cluster_fit_params[a_cluster]) - 1))
         significances[a_cluster] = _convert_one_sided_p_value_to_z_score(p_val)
 
     return significances, log_likelihoods

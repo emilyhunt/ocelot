@@ -8,7 +8,7 @@ from sklearn.neighbors import NearestNeighbors
 
 def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_samples=10, overcalculation_factor=2.,
                                     min_field_stars=100, max_field_stars=500, n_jobs=-1, nn_kwargs=None, max_iter=100,
-                                    kd_tree=None, minimum_next_stars_to_check=10):
+                                    kd_tree=None, minimum_next_stars_to_check=10, cluster_nn_distance_type="internal"):
     """Gets and returns a cloud of representative field stars around each reported cluster.
 
     Args:
@@ -41,6 +41,11 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
             before we automatically increase the overcalculation_factor to ensure that we don't run out of field
             stars to look at.
             Default: 10
+        cluster_nn_distance_type (str): type of cluster internal nearest neighbour distance to calculate. If "internal",
+            then cluster nn distances will only be made for cluster stars. If "external", these nn distances will also
+            include any nearby field stars, which may or may not produce more accurate tails of the cluster nn
+            distribution. Depends on what you're going for, though.
+            Default: 'internal'
 
     Returns:
         a dict of cluster nn distances
@@ -71,6 +76,13 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
                       "of cluster points.", RuntimeWarning)
     if min_field_stars > max_field_stars:
         raise ValueError("min_field_stars may not be greater than max_field_stars!")
+    if cluster_nn_distance_type == "internal":
+        internal_cluster_nn_distances = True
+    elif cluster_nn_distance_type == "external":
+        internal_cluster_nn_distances = False
+    else:
+        raise ValueError("selected nearest neighbor distance mode for clusters not recognised! Must be one of "
+                         "'internal' or 'external'.")
 
     # Let's make a KD tree for the entire field and fit it
     if kd_tree is None:
@@ -90,7 +102,11 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
         cluster_stars = labels == a_cluster
 
         # Grab nearest neighbor distances for the cluster & field
-        cluster_nn_distances = _calculate_cluster_nn_distances(data_rescaled, cluster_stars, nn_kwargs)
+        if internal_cluster_nn_distances:
+            cluster_nn_distances = _calculate_cluster_nn_distances_internal(data_rescaled, cluster_stars, nn_kwargs)
+        else:
+            cluster_nn_distances = _calculate_cluster_nn_distances_external(data_rescaled, cluster_stars,
+                                                                            field_nn_classifier)
 
         field_star_distances, field_star_indices = _calculate_field_nn_distances(
             data_rescaled,
@@ -201,13 +217,24 @@ def _calculate_field_nn_distances(data_rescaled, field_nn_classifier, cluster_st
     return np.hstack(field_star_distances), np.hstack(field_star_indices)
 
 
-def _calculate_cluster_nn_distances(data_rescaled, cluster_stars, nn_kwargs):
-    """Function for getting the internal nearest neighbour distribution of stars within a cluster."""
+def _calculate_cluster_nn_distances_internal(data_rescaled, cluster_stars, nn_kwargs):
+    """Function for getting the internal nearest neighbour distribution of stars within a cluster.
+    (I.e. the distribution but only of cluster stars)
+    """
     # Firstly, get the nearest neighbour distances for the cluster alone
     cluster_nn_classifier = NearestNeighbors(**nn_kwargs)
     cluster_nn_classifier.fit(data_rescaled[cluster_stars])
 
     # And get the nn distances!
     cluster_nn_distances, cluster_nn_indices = cluster_nn_classifier.kneighbors(data_rescaled[cluster_stars])
+
+    return cluster_nn_distances
+
+
+def _calculate_cluster_nn_distances_external(data_rescaled, cluster_stars, field_nn_classifier):
+    """Function for getting the external nearest neighbour distribution of stars within a cluster.
+    (I.e. the distribution of both cluster and field stars, may produce more or less accurate distribution tails)
+    """
+    cluster_nn_distances, cluster_nn_indices = field_nn_classifier.kneighbors(data_rescaled[cluster_stars])
 
     return cluster_nn_distances

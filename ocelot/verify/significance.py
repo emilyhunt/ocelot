@@ -182,10 +182,12 @@ def _cluster_significance_diagnostic_plots(data_rescaled: np.ndarray, labels: np
 DEFAULT_KNN_KWARGS = dict(
     overcalculation_factor=3.,
     min_field_stars=100,
+    max_field_stars=500,
     n_jobs=-1,
     nn_kwargs=None,
     max_iter=100,
     kd_tree=None,
+    cluster_nn_distance_type="internal",
 )
 
 
@@ -211,11 +213,14 @@ def cluster_significance_test(data_rescaled: np.ndarray, labels: np.ndarray, min
         knn_kwargs (dict, optional): extra kwargs for the kth nearest neighbour process in
             get_field_stars_around_clusters.
             Default: None, which reverts to:
-                overcalculation_factor=3.
-                min_field_stars=100
-                n_jobs=-1
-                nn_kwargs=None
-                max_iter=100
+                overcalculation_factor=3.,
+                min_field_stars=100,
+                max_field_stars=500,
+                n_jobs=-1,
+                nn_kwargs=None,
+                max_iter=100,
+                kd_tree=None,
+                cluster_nn_distance_type="internal",
         sampling_resolution (int): resolution to sample fitted kth nn models at.
             Default: 200
         return_field_star_indices (bool): whether or not to also return indices of field stars selected by the algorithm
