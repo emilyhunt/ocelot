@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import ocelot
 import hdbscan
 import pickle
+import time
 
 from pathlib import Path
 
@@ -36,7 +37,8 @@ name_10_ocs = ["_".join(location_dr2_10_ocs_iterable[x].stem.rsplit("-")[0].rspl
 
 # Cycle over everyone!
 start = 0
-end = 10
+end = 5
+output_dir_name = "500_stars_locked"
 
 for i, a_name in enumerate(name_10_ocs[start:end], start=start):
 
@@ -57,25 +59,32 @@ for i, a_name in enumerate(name_10_ocs[start:end], start=start):
 
     # Get labels and probs
     print("  doing clustering analysis")
-    clusterer = hdbscan.HDBSCAN(min_cluster_size=40, min_samples=10, cluster_selection_method='leaf')
+    start_time = time.time()
+    clusterer = hdbscan.HDBSCAN(min_cluster_size=10, min_samples=10, cluster_selection_method='leaf')
     labels = clusterer.fit_predict(data_rescaled)
     probabilities = clusterer.probabilities_
     persistences = clusterer.cluster_persistence_
+    cluster_time = time.time() - start_time
 
     del clusterer
 
     # Grab all of our cluster significances for every cluster
     print("  doing significance analysis")
 
+    start_time = time.time()
     significances, log_likelihoods = ocelot.verify.cluster_significance_test(
         data_rescaled,
         labels,
         min_samples=10,
         make_diagnostic_plots=True,
-        plot_output_dir=Path(f"./external_cluster_nn/{a_name}"),
-        knn_kwargs={'overcalculation_factor': 5, 'cluster_nn_distance_type': 'external'},
+        plot_output_dir=Path(f"./{output_dir_name}/{a_name}"),
+        knn_kwargs={'overcalculation_factor': 5, 'cluster_nn_distance_type': 'internal', 'n_jobs': 1,
+                    'min_field_stars': 500, 'max_field_stars': 500},
         test_type='all',
     )
+    sig_time = time.time() - start_time
+
+    print(f"  cluster: {cluster_time:.2f}s -- sig: {sig_time:.2f}s")
 
     # Also want unique labels without -1
     unique_labels, counts = np.unique(labels, return_counts=True)
@@ -87,9 +96,17 @@ for i, a_name in enumerate(name_10_ocs[start:end], start=start):
         print(f"  plotting {a_cluster+1} of {len(unique_labels)}")
 
         # Get significance and log likelihood in a good format
-        sig = (f"lr: {significances['likelihood'][a_cluster]:.2f} / "
-               f"ks1: {significances['ks_one'][a_cluster]:.2f} / "
-               f"ks2: {significances['ks_two'][a_cluster]:.2f} ")
+        sig = (
+            f"lr: {significances['likelihood'][a_cluster]:.2f}  /  "
+            f"t: {significances['welch_t'][a_cluster]:.2f}  /  "
+            f"mw: {significances['mann_w'][a_cluster]:.2f} \n"
+            f"k1+: {significances['ks_one+'][a_cluster]:.2f}  /  "
+            f"k1-: {significances['ks_one-'][a_cluster]:.2f}  /  "
+            f"diff: {significances['ks_one+'][a_cluster] - significances['ks_one-'][a_cluster]:.2f}"
+            f"\nk2+: {significances['ks_two+'][a_cluster]:.2f}  /  "
+            f"k2-: {significances['ks_two-'][a_cluster]:.2f}  /  "
+            f"diff: {significances['ks_two+'][a_cluster] - significances['ks_two-'][a_cluster]:.2f}"
+        )
 
         fig, ax = ocelot.plot.clustering_result(
             data_gaia, labels, [-2, -2, -2] + [a_cluster], probabilities, make_parallax_plot=True,
@@ -108,6 +125,6 @@ for i, a_name in enumerate(name_10_ocs[start:end], start=start):
 
         fig.subplots_adjust(wspace=0.3)
 
-        fig.savefig(f"./external_cluster_nn/{a_name}/{a_cluster}_ocelot.png", bbox_inches="tight")
+        fig.savefig(f"./{output_dir_name}/{a_name}/{a_cluster}_ocelot.png", bbox_inches="tight")
 
         plt.close(fig)

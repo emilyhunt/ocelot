@@ -7,7 +7,7 @@ from sklearn.neighbors import NearestNeighbors
 
 
 def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_samples=10, overcalculation_factor=2.,
-                                    min_field_stars=100, max_field_stars=500, n_jobs=-1, nn_kwargs=None, max_iter=100,
+                                    min_field_stars=100, max_field_stars=500, n_jobs=1, nn_kwargs=None, max_iter=100,
                                     kd_tree=None, minimum_next_stars_to_check=10, cluster_nn_distance_type="internal"):
     """Gets and returns a cloud of representative field stars around each reported cluster.
 
@@ -27,7 +27,9 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
             Must be less than min_field_stars.
             Default: 500
         n_jobs (int or None): number of jobs to use for calculating nn distances. -1 uses all cores. None uses 1.
-            Default: -1
+            In general, unless the numbers of stars invovled are very large, it can actually be a lot quicker just to
+            use one core.
+            Default: 1
         nn_kwargs (dict): a dict of kwargs to pass to sklearn.neighbors.NearestNeighbors when running on
             cluster or field stars.
             Default: None

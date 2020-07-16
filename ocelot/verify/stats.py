@@ -4,7 +4,7 @@ import numpy as np
 import warnings
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
-from scipy.stats import norm, chi2, kstest
+from scipy.stats import norm, chi2, kstest, ttest_ind_from_stats, mannwhitneyu
 
 from ocelot.cluster.epsilon import kth_nn_distribution, constrained_a
 
@@ -91,12 +91,18 @@ def _fit_kth_nn_distribution(nn_distances: dict, min_samples: int, resolution: i
 
         # Minimize - we suppress warnings because it's quite common for the curve_fit method to go into disallowed areas
         # sometimes
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            minimisation_result, covariance = curve_fit(
-                _CurveToFit(k), x_range, y_range, p0=np.asarray([a_0, d_0]), method="trf",
-                bounds=([0, 0], [np.inf, np.inf]),
-                verbose=False)
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                minimisation_result, covariance = curve_fit(
+                    _CurveToFit(k), x_range, y_range, p0=np.asarray([a_0, d_0]), method="trf",
+                    bounds=([0, 0], [np.inf, np.inf]),
+                    verbose=False)
+
+        # Catch if the fitting fails
+        except RuntimeError as e:
+            warnings.warn("fitting failed for a cluster!", RuntimeWarning)
+            minimisation_result = (np.nan, np.nan)
 
         result[a_cluster] = (minimisation_result[0], minimisation_result[1], k)
 
@@ -115,9 +121,29 @@ def _likelihood_of_object(x_data, a, d, k, cdf_resolution=200):
     return np.sum(np.log(func(x_data)))
 
 
-def _convert_one_sided_p_value_to_z_score(p_value):
+def _convert_two_sided_p_value_to_z_score(p_value):
+    """Convert to a p value, then to a sigma significance - using a weird formula because it gives me better floating
+    precision, and dividing by 2 since a z test is implicitly one-sided. I quite like this explanation of why:
+    https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faq-what-are-the-differences-between-one-tailed-and-two-tailed-tests/
+    Basically, in our one tailed test we're only interested in the likelihood of the cluster being better than the
+    field. We don't care about the field being better than the cluster: either way, that's a Z=0.0 not worth our
+    consideration as an OC candidate.
+
+    This differs slightly from a z score because it never gives you the sign of a result, only the "sigma significance"
+    of the result. Handling the sign of your p-value should be done a-priori. For instance, you could first convert your
+    p-value to a one sided test and *then* perform this.
+    """
     # np.abs is to stop -0.0 from happening. Only 0.0 is allowed!
     return np.abs(-norm.ppf(p_value / 2))
+
+
+def _convert_one_sided_p_value_to_z_score(p_value):
+    """Converts a one-sided p value to a z score. Clipped so that p values greater than 0.5 will always return 0, since
+    in that case there is effectively negative evidence that the alternate hypothesis is true.
+
+    This is a nice explainer: https://www.youtube.com/watch?v=Z_pwYU5FVIs
+    """
+    return np.clip(-norm.ppf(p_value), 0.0, np.inf)
 
 
 def _likelihood_ratio_test(nn_distances, cluster_fit_params, field_fit_params,
@@ -140,22 +166,15 @@ def _likelihood_ratio_test(nn_distances, cluster_fit_params, field_fit_params,
 
         # Log and square the ratio!
         log_likelihoods[a_cluster] = 2 * (likelihood_cluster - likelihood_field)
-
-        # Convert to a pval, then to a sigma significance - using a weird formula because it gives me better floating pt.
-        # precision, and dividing by 2 since our test is implicitly one-sided. I quite like this explanation of why:
-        # https://stats.idre.ucla.edu/other/mult-pkg/faq/general/faq-what-are-the-differences-between-one-tailed-and-two-tailed-tests/
-        # Basically, in our one tailed test we're only interested in the likelihood of the cluster being better than the
-        # field. We don't care about the field being better than the cluster: either way, that's a Z=0.0 not worth our
-        # consideration as an OC candidate.
         p_val = chi2.sf(log_likelihoods[a_cluster],
                         (len(nn_distances[a_cluster]) - 1) * (len(cluster_fit_params[a_cluster]) - 1))
-        significances[a_cluster] = _convert_one_sided_p_value_to_z_score(p_val)
+        significances[a_cluster] = _convert_two_sided_p_value_to_z_score(p_val)
 
     return significances, log_likelihoods
 
 
 def _ks_test(cluster_nn_distances: dict, field_nn_distances: dict, one_sample: bool = True,
-             cdf_resolution: int = 200):
+             alternative: str = "greater", cdf_resolution: int = 200):
     """Performs a KS test (one-sided) of cluster stars and field stars to see if they're compatible or not.
 
     Args:
@@ -166,6 +185,10 @@ def _ks_test(cluster_nn_distances: dict, field_nn_distances: dict, one_sample: b
             (since the number of field stars will stop being a factor) but requires that the fitting procedure was
             correct.
             Default: True
+        alternative (str): nature of the alternative hypothesis. May be one of ‘two-sided’, ‘less’ or ‘greater’. Greater
+            will test that the cluster is *more tightly* distributed than the field, while less will test if it is
+            *less tightly* distributed.
+            Default: 'greater' (you shouldn't need anything else other than in exceptional circumstances)
         cdf_resolution (int): resolution to sample the cdf at if one_sample=True.
             Default: 200
 
@@ -186,8 +209,50 @@ def _ks_test(cluster_nn_distances: dict, field_nn_distances: dict, one_sample: b
 
         # Do the KS test, get a p-value, go home
         ks_test_statistics[a_cluster], p_value = kstest(
-            cluster_nn_distances[a_cluster], field_distribution, alternative="greater")
+            cluster_nn_distances[a_cluster], field_distribution, alternative=alternative)
 
         significances[a_cluster] = _convert_one_sided_p_value_to_z_score(p_value)
 
     return significances, ks_test_statistics
+
+
+def _welch_t_test(cluster_nn_distances: dict, field_nn_distances: dict):
+    """Compares the mean value of two nearest neighbour distributions to see if the cluster one is compatible with
+    being more tightly distributed than the field one."""
+    significances, t_test_statistics = {}, {}
+
+    for a_cluster in cluster_nn_distances:
+        # Calculate the means, stds, etc
+        mean_c, std_c = np.mean(cluster_nn_distances[a_cluster]), np.std(cluster_nn_distances[a_cluster])
+        mean_f, std_f = np.mean(field_nn_distances[a_cluster]), np.std(field_nn_distances[a_cluster])
+
+        # We have to do a bit of work ourselves since scipy only has two-tailed t tests.
+        # Immediately reject if mean_c > mean_f, i.e. the cluster is never gonna be more tightly distributed than f
+        if mean_c > mean_f:
+            significances[a_cluster], t_test_statistics[a_cluster] = 0.0, np.nan
+
+        # Otherwise, we calculate the t test
+        else:
+            t_test_statistics[a_cluster], p_value = ttest_ind_from_stats(
+                mean_c, std_c, len(cluster_nn_distances[a_cluster]),
+                mean_f, std_f, len(field_nn_distances[a_cluster]),
+                equal_var=False
+            )
+            significances[a_cluster] = _convert_two_sided_p_value_to_z_score(p_value)
+
+    return significances, t_test_statistics
+
+
+def _mann_whitney_rank_test(cluster_nn_distances: dict, field_nn_distances: dict):
+    """Computes the Mann-Whitney rank test on the cluster and field distributions. Can be more robust than the t-test
+    for non-Gaussian data.
+    """
+    significances, mw_test_statistics = {}, {}
+
+    for a_cluster in cluster_nn_distances:
+        # Calculate the test!
+        mw_test_statistics[a_cluster], p_value = mannwhitneyu(
+            cluster_nn_distances[a_cluster], field_nn_distances[a_cluster], alternative="less")
+        significances[a_cluster] = _convert_one_sided_p_value_to_z_score(p_value)
+
+    return significances, mw_test_statistics

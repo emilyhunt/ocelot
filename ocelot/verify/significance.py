@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Union, Optional
 
 from .find import get_field_stars_around_clusters
-from .stats import _fit_kth_nn_distribution, _likelihood_ratio_test, _ks_test
+from .stats import _fit_kth_nn_distribution, _likelihood_ratio_test, _ks_test, _welch_t_test, _mann_whitney_rank_test
 from ..cluster.epsilon import kth_nn_distribution
 from ..plot.utilities import calculate_alpha
 
@@ -160,19 +160,27 @@ def _cluster_significance_diagnostic_plots(data_rescaled: np.ndarray, labels: np
         # Also, we don't use fig.suptitle (sadly) because that gets cropped by fig.tight_layout, but I can't get rid
         # of fig.tight_layout because it stops things being fucked (I think) when there are lots of plots
         if test_type == "all":
-            significance_string = (f"lr: {cluster_significances['likelihood'][a_cluster]:.2f} / "
-                                   f"ks1: {cluster_significances['ks_one'][a_cluster]:.2f} / "
-                                   f"ks2: {cluster_significances['ks_two'][a_cluster]:.2f} ")
+            significance_string = (
+                f"lr: {cluster_significances['likelihood'][a_cluster]:.2f}  /  "
+                f"t: {cluster_significances['welch_t'][a_cluster]:.2f}  /  "
+                f"mw: {cluster_significances['mann_w'][a_cluster]:.2f} \n"
+                f"k1+: {cluster_significances['ks_one+'][a_cluster]:.2f}  /  "
+                f"k1-: {cluster_significances['ks_one-'][a_cluster]:.2f}  /  "
+                f"diff: {cluster_significances['ks_one+'][a_cluster] - cluster_significances['ks_one-'][a_cluster]:.2f}"
+                f"\nk2+: {cluster_significances['ks_two+'][a_cluster]:.2f}  /  "
+                f"k2-: {cluster_significances['ks_two-'][a_cluster]:.2f}  /  "
+                f"diff: {cluster_significances['ks_two+'][a_cluster] - cluster_significances['ks_two-'][a_cluster]:.2f}"
+            )
         else:
             significance_string = f"sig: {cluster_significances[a_cluster]}"
 
-        axes[0].set_title(f"Cluster {a_cluster} -- {significance_string}\n"
-                          f"cluster/local field members: {np.count_nonzero(cluster_stars)}"
-                          f" / {len(field_star_indices[a_cluster])}", ha='left', x=0.00,
-                          fontsize="medium")
+        fig.suptitle(f"Cluster {a_cluster}\n{significance_string}\n"
+                     f"cluster/local field members: {np.count_nonzero(cluster_stars)}"
+                     f" / {len(field_star_indices[a_cluster])}", ha='left', x=0.10,
+                     fontsize="medium")
 
         # Final beautification and output
-        fig.tight_layout()
+        fig.subplots_adjust(hspace=0.25, wspace=0.3)
         fig.savefig(output_dir / f"{plot_settings['file_prefix']}{a_cluster}_significance.png",
                     dpi=plot_settings['dpi'])
 
@@ -183,7 +191,7 @@ DEFAULT_KNN_KWARGS = dict(
     overcalculation_factor=3.,
     min_field_stars=100,
     max_field_stars=500,
-    n_jobs=-1,
+    n_jobs=1,
     nn_kwargs=None,
     max_iter=100,
     kd_tree=None,
@@ -268,10 +276,22 @@ def cluster_significance_test(data_rescaled: np.ndarray, labels: np.ndarray, min
         significances['likelihood'], test_statistics['likelihood'] = _likelihood_ratio_test(
             cluster_nn_distances, cluster_fit_params, field_fit_params, cdf_resolution=sampling_resolution)
 
-        significances['ks_one'], test_statistics['ks_one'] = _ks_test(
+        significances['ks_one+'], test_statistics['ks_one+'] = _ks_test(
             cluster_nn_distances, field_fit_params, one_sample=True, cdf_resolution=sampling_resolution)
-        significances['ks_two'], test_statistics['ks_two'] = _ks_test(
+        significances['ks_two+'], test_statistics['ks_two+'] = _ks_test(
             cluster_nn_distances, field_nn_distances, one_sample=False)
+
+        significances['ks_one-'], test_statistics['ks_one-'] = _ks_test(
+            cluster_nn_distances, field_fit_params, one_sample=True, cdf_resolution=sampling_resolution,
+            alternative="less")
+        significances['ks_two-'], test_statistics['ks_two-'] = _ks_test(
+            cluster_nn_distances, field_nn_distances, one_sample=False, alternative="less")
+
+        significances['welch_t'], test_statistics['welch_t'] = _welch_t_test(
+            cluster_nn_distances, field_nn_distances)
+
+        significances['mann_w'], test_statistics['mann_w'] = _mann_whitney_rank_test(
+            cluster_nn_distances, field_nn_distances)
 
     # LIKELIHOOD TEST
     elif test_type == "likelihood":
@@ -294,10 +314,20 @@ def cluster_significance_test(data_rescaled: np.ndarray, labels: np.ndarray, min
         significances, test_statistics = _ks_test(
             cluster_nn_distances, field_nn_distances, one_sample=True)
 
+    # T TEST  (We do the Welch t-test - not the student's - which doesn't assume equal variance.)
+    elif test_type == "t_test":
+        cluster_fit_params, field_fit_params = None, None
+        significances, test_statistics = _welch_t_test(cluster_nn_distances, field_nn_distances)
+
+    # MANN WHITNEY
+    elif test_type == "mann_whitney":
+        cluster_fit_params, field_fit_params = None, None
+        significances, test_statistics = _mann_whitney_rank_test(cluster_nn_distances, field_nn_distances)
+
     # BAD test_type VALUE
     else:
         raise ValueError(f"specified test_type {test_type} was not recognised! Please specify one of the following: "
-                         "'all', 'likelihood', 'ks_one_sample' or 'ks_two_sample'.")
+                         "'all', 'likelihood', 'ks_one_sample', 'ks_two_sample' or 't_test'.")
 
     # Diagnostic plot time!
     if make_diagnostic_plots:
