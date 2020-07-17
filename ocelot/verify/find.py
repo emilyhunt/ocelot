@@ -110,16 +110,31 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
             cluster_nn_distances = _calculate_cluster_nn_distances_external(data_rescaled, cluster_stars,
                                                                             field_nn_classifier)
 
-        field_star_distances, field_star_indices = _calculate_field_nn_distances(
-            data_rescaled,
-            field_nn_classifier,
-            cluster_stars,
-            max_iter=max_iter,
-            min_field_stars=min_field_stars,
-            max_field_stars=max_field_stars,
-            min_samples=min_samples,
-            minimum_next_stars_to_check=minimum_next_stars_to_check,
-            overcalculation_factor=overcalculation_factor)
+        # We have a lot of error handling for the field to make sure edge cases don't ruin us!
+        current_overcalculation_factor = overcalculation_factor
+        n_attempts = 0
+        while n_attempts < 10:
+            try:
+                field_star_distances, field_star_indices = _calculate_field_nn_distances(
+                    data_rescaled,
+                    field_nn_classifier,
+                    cluster_stars,
+                    max_iter=max_iter,
+                    min_field_stars=min_field_stars,
+                    max_field_stars=max_field_stars,
+                    min_samples=min_samples,
+                    minimum_next_stars_to_check=minimum_next_stars_to_check,
+                    overcalculation_factor=current_overcalculation_factor)
+                n_attempts = 100
+
+            except RuntimeError:
+                n_attempts += 1
+                if n_attempts >= 10:
+                    raise RuntimeError("unable to find neighbors for cluster despite 10 attempts at doing so.")
+
+                warnings.warn(f"failed to find enough neighbors for cluster {a_cluster}! "
+                              f"Doubling the overcalculation factor and starting again.", RuntimeWarning)
+                current_overcalculation_factor *= 2
 
         # Save these nearest neighbor distances
         cluster_nn_distances_dict[a_cluster] = cluster_nn_distances[:, min_samples - 1]
@@ -205,6 +220,9 @@ def _calculate_field_nn_distances(data_rescaled, field_nn_classifier, cluster_st
         if len(next_stars_to_check) < minimum_next_stars_to_check:
             next_stars_to_check = stars_to_check
             current_overcalculation_factor *= 2
+
+        if current_overcalculation_factor * min_samples > len(data_rescaled):
+            raise RuntimeError("unable to find enough neighbors for this cluster, since n_neighbors > n_samples!")
 
         # Otherwise, we can record these stars as being already done!
         else:

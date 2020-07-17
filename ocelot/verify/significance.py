@@ -345,6 +345,6 @@ def cluster_significance_test(data_rescaled: np.ndarray, labels: np.ndarray, min
 
     # Return time!
     if return_field_star_indices:
-        return significances, test_statistics, field_star_indices
+        return significances, test_statistics, field_star_indices, cluster_nn_distances, field_nn_distances
     else:
         return significances, test_statistics
