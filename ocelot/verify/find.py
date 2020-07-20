@@ -8,7 +8,8 @@ from sklearn.neighbors import NearestNeighbors
 
 def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_samples=10, overcalculation_factor=2.,
                                     min_field_stars=100, max_field_stars=500, n_jobs=1, nn_kwargs=None, max_iter=100,
-                                    kd_tree=None, minimum_next_stars_to_check=10, cluster_nn_distance_type="internal"):
+                                    kd_tree=None, minimum_next_stars_to_check=10, cluster_nn_distance_type="internal",
+                                    verbose=True):
     """Gets and returns a cloud of representative field stars around each reported cluster.
 
     Args:
@@ -101,6 +102,9 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
 
     # Now, let's cycle over everything and find cluster nearest neighbour info
     for a_cluster in unique_labels:
+        if verbose:
+            print(f"\r    working on cluster {a_cluster}", end="")
+
         cluster_stars = labels == a_cluster
 
         # Grab nearest neighbor distances for the cluster & field
@@ -140,6 +144,9 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
         cluster_nn_distances_dict[a_cluster] = cluster_nn_distances[:, min_samples - 1]
         field_nn_distances_dict[a_cluster] = field_star_distances
         field_star_indices_dict[a_cluster] = field_star_indices
+
+    if verbose:
+        print("\r    finished nn distance calculations!")
 
     # Return time!
     return cluster_nn_distances_dict, field_nn_distances_dict, field_star_indices_dict

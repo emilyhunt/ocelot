@@ -64,9 +64,12 @@ class _CurveToFit:
         return y_func
 
 
-def _fit_kth_nn_distribution(nn_distances: dict, min_samples: int, resolution: int = 200):
+def _fit_kth_nn_distribution(nn_distances: dict, min_samples: int, resolution: int = 200, verbose=True):
     """Fits a kth nn distribution model to a dict of arrays of nn distances."""
     result = {}
+
+    if verbose:
+        print("    fitting kth nn distributions!")
 
     for a_cluster in nn_distances:
 
