@@ -244,6 +244,9 @@ class Catalogue:
             elif tidal_radius_mode == "max":
                 tidal_radii = np.maximum(self.tidal_radius_data[id_catalog],
                                          data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters])
+            elif tidal_radius_mode == "min":
+                tidal_radii = np.minimum(self.tidal_radius_data[id_catalog],
+                                         data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters])
             else:
                 raise ValueError(f"specified tidal_radius_mode '{tidal_radius_mode}' not recognised/supported!")
 
