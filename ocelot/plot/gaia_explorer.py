@@ -4,9 +4,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.patches import Rectangle, Circle
 import sys
 
-from typing import Union
+from typing import Union, Optional
 from ..cluster.preprocess import cut_dataset
 from .utilities import calculate_alpha
 
@@ -28,9 +29,13 @@ def ioff():
 
 class GaiaExplorer:
     def __init__(self, data_gaia: pd.DataFrame, cluster_location: Union[pd.Series, dict],
+                 extra_catalogue_to_plot: Optional[pd.DataFrame] = None,
+                 extra_catalogue_cmap: Optional[dict] = None,
+                 extra_catalogue_cmap_key: str = "source",
                  magnitude_range: Union[tuple, list, np.ndarray] = ((8, 18), (-1, 5)),
                  initial_guess_factor: float = 2.,
                  adaptive_alpha: bool = True,
+                 error_regions_multiplier: Union[int, float] = 0,
                  debug: bool = False):
         """A little class for live exploration of a Gaia dataset.
 
@@ -38,7 +43,8 @@ class GaiaExplorer:
             data_gaia (pd.DataFrame): your standard Gaia dataframe with astrometry & magnitude info.
             cluster_location (pd.Series, dict): information on the location of the cluster to look for.
                 Mandatory keys: 'name', 'ra', 'dec', 'pmra', 'pmdec', 'parallax'
-                Optional keys: 'ang_radius_t', 'pm_dispersion' or 'pmra_std' and 'pmdec_std', 'parallax_std'
+                Optional keys for initial guess: 'ang_radius_t', 'pm_dispersion' or 'pmra_std' and 'pmdec_std',
+                    'parallax_std'
             magnitude_range (list-like): magnitude range to plot.
                 Default: (8, 18)
             initial_guess_factor (float): amount to multiply dispersions by when generating an initial guess zone. A bit
@@ -46,15 +52,47 @@ class GaiaExplorer:
                     Default: 2.0  (tends to be a pretty good value)
             adaptive_alpha (bool): whether or not to adaptively change the alpha value while moving around the plot.
                 Default: True
+            error_regions_multiplier (int or float): size (in sigma) of error regions to add. Only activates when
+                greater than 0. If greater than 0, then 'ang_radius_t', 'pmra_error', 'pmdec_error' and 'parallax_error'
+                are required keys.
+                Default: 0  (off)
             debug (bool): if True, print extra stuff to the console.
                 Default: False
         """
+        # Initial setup of the data
         self.data = data_gaia
         self.data['bp_rp'] = self.data['phot_bp_mean_mag'] - self.data['phot_rp_mean_mag']
 
         # Check we have the minimum amount of information
-        if not np.all(np.isin(("name", "ra", "dec", "pmra", "pmdec", "parallax"), tuple(cluster_location.keys()))):
+        required_keys = ("name", "ra", "dec", "pmra", "pmdec", "parallax")
+        if not np.all(np.isin(required_keys, tuple(cluster_location.keys()))):
             raise ValueError("initial cluster location must contain all 5 astrometric dimensions and a name!")
+
+        # Setup error region highlighting
+        self.error_regions_multiplier = error_regions_multiplier
+        if self.error_regions_multiplier > 0:
+            required_keys = ("ang_radius_t", "pmra_error", "pmdec_error", "parallax_error")
+            if not np.all(np.isin(required_keys, tuple(cluster_location.keys()))):
+                raise ValueError("initial cluster location must contain the following keys to add error regions: "
+                                 "'ang_radius_t', 'pmra_error', 'pmdec_error' and 'parallax_error'.")
+
+        # Initial setup of the catalogue too
+        self.literature_data = extra_catalogue_to_plot
+        if self.literature_data is not None:
+            # Check that we have something to use for the cmap key
+            if extra_catalogue_cmap_key not in self.literature_data.keys():
+                raise ValueError("Column not found: to decide how to colour code literature objects, a column with name"
+                                 " 'extra_catalogue_cmap_key' must be in extra_catalogue_to_plot!")
+
+            # Generate a cmap if one wasn't provided
+            self.literature_data_cmap_key = extra_catalogue_cmap_key
+            if extra_catalogue_cmap is None:
+                unique_cmap_keys = np.unique(self.literature_data[self.literature_data_cmap_key])
+                cmap = plt.get_cmap("tab10")(np.arange(len(unique_cmap_keys)))
+                self.literature_data_cmap = {k: v for (k, v) in zip(unique_cmap_keys, cmap)}
+            else:
+                self.literature_data_cmap = extra_catalogue_cmap
+
 
         # Guess initial limit information if it isn't given
         # Firstly, guess the angular radius: assume 20pc if none given, or a minimum of 0.1 degrees
@@ -138,6 +176,8 @@ class GaiaExplorer:
 
         # Save to the class and add the initial data
         self.fig, self.ax = fig, ax
+        self._add_catalogue_clusters()
+        self._add_error_regions()
         self._update_data()
         self._update_active_axis(0)
         self._initialise_matplotlib_connections()
@@ -147,6 +187,62 @@ class GaiaExplorer:
         """Refreshes the figure so that any change is displayed."""
         self.fig.canvas.draw()
         # self.fig.canvas.flush_events()
+
+    def _add_catalogue_clusters(self):
+        """Call for updating the figure with locations of clusters as marked by other catalogues."""
+        if self.literature_data is not None:
+            if len(self.literature_data) > 0:
+                # Cycle over every literature object
+                for index_literature, a_row in self.literature_data.iterrows():
+                    color = self.literature_data_cmap[a_row[self.literature_data_cmap_key]]
+
+                    # Add it to every axis!
+                    for i_ax in range(3):
+                        x_value, y_value = a_row[self.axis_labels[i_ax][0]], a_row[self.axis_labels[i_ax][1]]
+                        name = " ".join(a_row['name'].rsplit("_"))
+                        self.ax[i_ax].plot(x_value, y_value, 'x', ms=5, color=color)  # , mec='w', mew=0.5)
+                        self.ax[i_ax].text(
+                            x_value, y_value, name, va='bottom', ha='center', color=color, fontsize=8, clip_on=True)
+                        # .set_path_effects([patheffects.withStroke(linewidth=0.5, foreground='w')])
+
+            self._refresh_figure()
+
+    def _add_error_regions(self):
+        """Adds error regions to the figure if requested by the user."""
+        if self.error_regions_multiplier > 0:
+            # Firstly, let's try and grab a colour for our circle if it's in the literature_data list and hence has
+            # a consistent catalogue colour we could use
+            if self.literature_data is not None:
+                if np.all(np.isin(self.cluster_location['name'], self.literature_data['name'])):
+                    first_match = np.asarray(self.literature_data['name'].to_numpy() == self.cluster_location['name']
+                                             ).nonzero()[0][0]
+                    color = self.literature_data_cmap[
+                        self.literature_data.loc[first_match, self.literature_data_cmap_key]]
+                else:
+                    color = 'r'
+
+            # Otherwise, just use red!
+            else:
+                color = 'r'
+
+            # Add them to the plots!
+            style = dict(fc='None', ec=color)
+
+            # ra/dec
+            location = (self.cluster_location['ra'], self.cluster_location['dec'])
+            self.ax[0].add_patch(Circle(location, radius=self.cluster_location['ang_radius_t'], **style))
+
+            # pmra/pmdec
+            width = self.cluster_location['pmra_error'] * self.error_regions_multiplier
+            height = self.cluster_location['pmdec_error'] * self.error_regions_multiplier
+            location = (self.cluster_location['pmra'] - width / 2, self.cluster_location['pmdec'] - height / 2)
+            self.ax[1].add_patch(Rectangle(location, width, height, **style))
+
+            # ra/parallax
+            width = self.cluster_location['ang_radius_t']
+            height = self.cluster_location['parallax_error'] * self.error_regions_multiplier
+            location = (self.cluster_location['ra'] - width / 2, self.cluster_location['parallax'] - height / 2)
+            self.ax[2].add_patch(Rectangle(location, width, height, **style))
 
     def _update_data(self):
         """Call for updating the figure with new cuts."""

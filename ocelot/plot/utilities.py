@@ -62,7 +62,11 @@ def calculate_alpha(fig, ax, n_points: int, marker_size: float, desired_max_dens
         total_area = area * 100**2  # If not, we just use the default area
     current_max_density = marker_area / total_area
 
-    return np.clip(desired_max_density / current_max_density, min_alpha, max_alpha)
+    # We only do the alpha calculation if current max density is non-zero, just to avoid a lil error
+    if current_max_density != 0:
+        return np.clip(desired_max_density / current_max_density, min_alpha, max_alpha)
+    else:
+        return max_alpha
 
 
 def normalise_a_curve(x_values: np.ndarray, y_values: np.ndarray, normalisation_constant: Union[int, float]):

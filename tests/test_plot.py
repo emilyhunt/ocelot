@@ -12,6 +12,7 @@ except ModuleNotFoundError:
     raise ModuleNotFoundError('Unable to find ocelot')
 
 import pickle
+import pandas as pd
 from pathlib import Path
 
 import numpy as np
@@ -211,11 +212,24 @@ def test_gaia_explorer():
         data_gaia = pickle.load(handle)
 
     # Let's guess at where the cluster is
-    cluster_location = dict(name="Blanco 1", ra=1.0, dec=-30.0, pmra=20., pmdec=3., parallax=4.)
+    cluster_location = dict(name="Blanco 1", ra=1.0, dec=-30.0, pmra=18.7, pmdec=2.9, parallax=4.25,
+                            ang_radius_t=2, pmra_error=1., pmdec_error=1., parallax_error=0.25)
+
+    # Let's also make a cheeky little dataframe of fake locations to test things
+    catalogue = pd.DataFrame(
+        dict(name=["Blanco 1", "not Blanco", "ocelots r cute", "emily", "lauren"],
+             ra=[1.0, 1.5, 1.7, 0.5, 0.0],
+             dec=[-30.0, -30.5, -29.5, -30.5, -30],
+             pmra=[18.7, 22, 18, 16, 0],
+             pmdec=[2.9, 5, 7, -3, 0],
+             parallax=[4.25, 2, 3, 1, 0],
+             source=["TCG+20", "bob", "bob", "me", "me"]))
 
     # And plot it!
     # ocelot.plot.ion()
-    gaia_explorer = ocelot.plot.GaiaExplorer(data_gaia, cluster_location, debug=True)
+    gaia_explorer = ocelot.plot.GaiaExplorer(data_gaia, cluster_location, debug=True, extra_catalogue_to_plot=catalogue,
+                                             extra_catalogue_cmap={'TCG+20': 'b', 'bob': 'c', 'me': 'm'},
+                                             error_regions_multiplier=5.)
     gaia_explorer()
 
 
