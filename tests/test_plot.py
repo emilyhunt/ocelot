@@ -204,11 +204,27 @@ def test_nearest_neighbour_plotting(show_figure=True):
                                            show_numerical_derivatives=False)
 
 
+def test_gaia_explorer():
+    """Tests the Gaia explorer figure thing of fun"""
+    # Firstly, we're gonna need a Blanco 1 to test with
+    with open(path_to_blanco_1, 'rb') as handle:
+        data_gaia = pickle.load(handle)
+
+    # Let's guess at where the cluster is
+    cluster_location = dict(name="Blanco 1", ra=1.0, dec=-30.0, pmra=20., pmdec=3., parallax=4.)
+
+    # And plot it!
+    # ocelot.plot.ion()
+    gaia_explorer = ocelot.plot.GaiaExplorer(data_gaia, cluster_location, debug=True)
+    gaia_explorer()
+
+
 # Run tests manually if the file is ran
 if __name__ == '__main__':
     #test_curve_normalisation()
     #test_percentile_based_plot_limits()
     #iso = test_isochrone_plotting(show_figure=True)
-    clustering_result = test_clustering_result_plotting(show_figure=True)
+    #clustering_result = test_clustering_result_plotting(show_figure=True)
     #location = test_location_plotting(show_figure=True)
     #test_nearest_neighbour_plotting(True)
+    test_gaia_explorer()

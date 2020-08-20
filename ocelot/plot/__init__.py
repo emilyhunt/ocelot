@@ -5,3 +5,4 @@ from .plot_figure import clustering_result
 from .plot_figure import isochrone
 from .plot_figure import location
 from .plot_figure import nearest_neighbor_distances
+from .gaia_explorer import GaiaExplorer, ion, ioff
