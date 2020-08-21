@@ -36,6 +36,7 @@ class GaiaExplorer:
                  initial_guess_factor: float = 2.,
                  adaptive_alpha: bool = True,
                  error_regions_multiplier: Union[int, float] = 0,
+                 error_regions_systematic_tol: Union[int, float] = 0,
                  debug: bool = False):
         """A little class for live exploration of a Gaia dataset.
 
@@ -56,6 +57,9 @@ class GaiaExplorer:
                 greater than 0. If greater than 0, then 'ang_radius_t', 'pmra_error', 'pmdec_error' and 'parallax_error'
                 are required keys.
                 Default: 0  (off)
+            error_regions_systematic_tol (int or float): an extra amount to add on to the error regions for when your
+                crossmatching also has a linear systematic tolerance. Only applies to pmra/pmdec/parallax.
+                Default: 0
             debug (bool): if True, print extra stuff to the console.
                 Default: False
         """
@@ -70,6 +74,7 @@ class GaiaExplorer:
 
         # Setup error region highlighting
         self.error_regions_multiplier = error_regions_multiplier
+        self.error_regions_systematic_tol = error_regions_systematic_tol
         if self.error_regions_multiplier > 0:
             required_keys = ("ang_radius_t", "pmra_error", "pmdec_error", "parallax_error")
             if not np.all(np.isin(required_keys, tuple(cluster_location.keys()))):
@@ -233,14 +238,17 @@ class GaiaExplorer:
             self.ax[0].add_patch(Circle(location, radius=self.cluster_location['ang_radius_t'], **style))
 
             # pmra/pmdec
-            width = self.cluster_location['pmra_error'] * self.error_regions_multiplier
-            height = self.cluster_location['pmdec_error'] * self.error_regions_multiplier
+            width = self.cluster_location['pmra_error'] * 2 * self.error_regions_multiplier \
+                + 2 * self.error_regions_systematic_tol
+            height = self.cluster_location['pmdec_error'] * 2 * self.error_regions_multiplier \
+                + 2 * self.error_regions_systematic_tol
             location = (self.cluster_location['pmra'] - width / 2, self.cluster_location['pmdec'] - height / 2)
             self.ax[1].add_patch(Rectangle(location, width, height, **style))
 
             # ra/parallax
             width = self.cluster_location['ang_radius_t']
-            height = self.cluster_location['parallax_error'] * self.error_regions_multiplier
+            height = self.cluster_location['parallax_error'] * 2 * self.error_regions_multiplier \
+                + 2 * self.error_regions_systematic_tol
             location = (self.cluster_location['ra'] - width / 2, self.cluster_location['parallax'] - height / 2)
             self.ax[2].add_patch(Rectangle(location, width, height, **style))
 
