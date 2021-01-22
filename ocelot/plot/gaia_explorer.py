@@ -6,10 +6,12 @@ import matplotlib.pyplot as plt
 import matplotlib
 from matplotlib.patches import Rectangle, Circle
 import sys
+from datetime import datetime
 
 from typing import Union, Optional
 from ..cluster.preprocess import cut_dataset
 from .utilities import calculate_alpha
+from pathlib import Path
 
 
 DEFAULT_BACKEND = matplotlib.get_backend()
@@ -37,6 +39,7 @@ class GaiaExplorer:
                  adaptive_alpha: bool = True,
                  error_regions_multiplier: Union[int, float] = 0,
                  error_regions_systematic_tol: Union[int, float] = 0,
+                 fig_dir: Union[str, Path] = "figs",
                  debug: bool = False):
         """A little class for live exploration of a Gaia dataset.
 
@@ -60,12 +63,15 @@ class GaiaExplorer:
             error_regions_systematic_tol (int or float): an extra amount to add on to the error regions for when your
                 crossmatching also has a linear systematic tolerance. Only applies to pmra/pmdec/parallax.
                 Default: 0
+            fig_dir (str or pathlib.Path): directory to save figures to when the user asks to save a figure.
+                Default: 'figs'
             debug (bool): if True, print extra stuff to the console.
                 Default: False
         """
         # Initial setup of the data
         self.data = data_gaia
         self.data['bp_rp'] = self.data['phot_bp_mean_mag'] - self.data['phot_rp_mean_mag']
+        self.fig_dir = Path(fig_dir)
 
         # Check we have the minimum amount of information
         required_keys = ("name", "ra", "dec", "pmra", "pmdec", "parallax")
@@ -97,7 +103,6 @@ class GaiaExplorer:
                 self.literature_data_cmap = {k: v for (k, v) in zip(unique_cmap_keys, cmap)}
             else:
                 self.literature_data_cmap = extra_catalogue_cmap
-
 
         # Guess initial limit information if it isn't given
         # Firstly, guess the angular radius: assume 20pc if none given, or a minimum of 0.1 degrees
@@ -368,6 +373,17 @@ class GaiaExplorer:
 
         self._update_data()
 
+    def _save_figure(self):
+        """Saves the current view of the figure!"""
+        # Make sure the folder exists and save to it!
+        self.fig_dir.mkdir(parents=True, exist_ok=True)
+        now = datetime.now()
+        date_string = f"{now.year}-{now.month:0>2}-{now.day:0>2}--{now.hour:0>2}-{now.minute:0>2}-{now.second:0>2}"
+        fig_name = f"{self.cluster_name}_{date_string}.png"
+        self.fig.savefig(self.fig_dir / fig_name, bbox_inches="tight")
+        print(f"  saved figure {fig_name}")
+        sys.stdout.flush()
+
     def _close_figure(self):
         plt.close(self.fig)
 
@@ -400,6 +416,10 @@ class GaiaExplorer:
         # Change current alpha multiplier
         elif event.key in ("pageup", "pagedown"):
             self._change_alpha(event.key == "pageup")
+
+        # Save the current figure
+        elif event.key == 'end':
+            self._save_figure()
 
         # Quit the figure
         elif event.key == "q":
