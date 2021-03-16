@@ -229,6 +229,7 @@ def clustering_result(data_gaia: pd.DataFrame,
                       pmdec_plot_limits: Optional[Union[list, np.ndarray]] = None,
                       cmd_plot_x_limits: Optional[Union[list, np.ndarray]] = None,
                       cmd_plot_y_limits: Optional[Union[list, np.ndarray]] = None,
+                      cmd_plot_color_key: bool = None,
                       parallax_plot_x_limits: Optional[Union[list, np.ndarray]] = None,
                       parallax_plot_y_limits: Optional[Union[list, np.ndarray]] = None,
                       plot_std_limit: float = 1.5,
@@ -255,8 +256,9 @@ def clustering_result(data_gaia: pd.DataFrame,
             proper motion in the right ascension direction plot limits.
         pmdec_plot_limits (list-like, optional): the minimum and maximum
             proper motion in the declination direction plot limits.
-        cmd_plot_x_limits (list-like, optional): the minimum and maximum x (blue minus red) limits in the cmd plot.
+        cmd_plot_x_limits (list-like, optional): the minimum and maximum x (color) limits in the cmd plot.
         cmd_plot_y_limits (list-like, optional): the minimum and maximum y (apparent magnitude) limits in the cmd plot.
+        cmd_plot_color_key (string, optional): optional other color in data_gaia to use instead of calculating G - RP.
         parallax_plot_x_limits (list-like, optional): as above for ra on the parallax plot.
         parallax_plot_y_limits (list-like, optional): as above for parallax on the parallax plot.
         plot_std_limit (float): standard deviation of proper motion to use to find plotting limits if none are
@@ -305,7 +307,9 @@ def clustering_result(data_gaia: pd.DataFrame,
         x_limits=cmd_plot_x_limits,
         y_limits=cmd_plot_y_limits,
         plot_std_limit=cmd_plot_std_limit,
-        cluster_marker_radius=cluster_marker_radius[2])
+        cluster_marker_radius=cluster_marker_radius[2],
+        cmd_plot_color_key=cmd_plot_color_key
+    )
 
     if make_parallax_plot:
         ax[1, 1] = cluster.ra_versus_parallax(

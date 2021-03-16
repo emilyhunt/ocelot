@@ -159,6 +159,7 @@ def mean_distance(data_gaia: pd.DataFrame,
                   key_r_low: str = "r_lo",
                   key_r_high: str = "r_hi",
                   key_result_flag: str = "result_flag",
+                  calculate_cbj_mean_distance: bool = False,
                   **kwargs):
     """Produces mean parallax and distance statistics, including a basic handling of error.
 
@@ -175,6 +176,8 @@ def mean_distance(data_gaia: pd.DataFrame,
         key_r_low (str): Gaia parameter name. Corresponds to Bailer-Jones+18 distance column names.
         key_r_high (str): Gaia parameter name. Corresponds to Bailer-Jones+18 distance column names.
         key_result_flag (str): Gaia parameter name. Corresponds to Bailer-Jones+18 distance column names.
+        calculate_cbj_mean_distance (bool): whether or not to even bother calculating a mean CBJ distance.
+            Default: False
 
     Returns:
         a dict, formatted with:
@@ -204,19 +207,20 @@ def mean_distance(data_gaia: pd.DataFrame,
         1000 / (inferred_parameters["parallax"] - inferred_parameters["parallax_error"]))
 
     # Mean distance, but a bit shit for now lol
-    # Todo this could infer a mean/MAP value in a Bayesian way
-    # We only want to work on stars with a result
-    good_stars = data_gaia[key_result_flag] == 1
-    r_est = data_gaia.loc[good_stars, key_r_est].values
+    if calculate_cbj_mean_distance:
+        # Todo this could infer a mean/MAP value in a Bayesian way
+        # We only want to work on stars with a result
+        good_stars = data_gaia[key_result_flag] == 1
+        r_est = data_gaia.loc[good_stars, key_r_est].values
 
-    # Deal with the fact that dropping stars without an inferred distance means membership_probabilities might not have
-    # the same length as our r_est
-    if type(membership_probabilities) is not float and membership_probabilities is not None:
-        membership_probabilities = membership_probabilities[good_stars]
+        # Deal with the fact that dropping stars without an inferred distance means membership_probabilities might not
+        # have the same length as our r_est
+        if type(membership_probabilities) is not float and membership_probabilities is not None:
+            membership_probabilities = membership_probabilities[good_stars]
 
-    inferred_parameters["distance"] = np.average(r_est, weights=membership_probabilities)
-    inferred_parameters["distance_std"] = _weighted_standard_deviation(r_est, membership_probabilities)
-    inferred_parameters["distance_error"] = inferred_parameters["distance_std"] / sqrt_n_stars
+        inferred_parameters["distance"] = np.average(r_est, weights=membership_probabilities)
+        inferred_parameters["distance_std"] = _weighted_standard_deviation(r_est, membership_probabilities)
+        inferred_parameters["distance_error"] = inferred_parameters["distance_std"] / sqrt_n_stars
 
     return inferred_parameters
 

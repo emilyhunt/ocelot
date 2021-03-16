@@ -129,14 +129,16 @@ def position_and_pmotion(
                            marker='.',
                            s=cluster_marker_radius[0]**2,
                            c=colors,
-                           zorder=100)
+                           zorder=100,
+                           label=a_cluster)
 
             axis_2.scatter(data_gaia.loc[stars_in_this_cluster, 'pmra'],
                            data_gaia.loc[stars_in_this_cluster, 'pmdec'],
                            marker='.',
                            s=cluster_marker_radius[1]**2,
                            c=colors,
-                           zorder=100)
+                           zorder=100,
+                           label=a_cluster)
 
     # Add a red cross at a defined location on the pmra/pmdec plot if desired
     if open_cluster_pm_to_mark is not None:
@@ -256,7 +258,8 @@ def color_magnitude_diagram(fig,
                             plot_std_limit: float = 3.0,
                             x_limits: Optional[Union[list, np.ndarray]] = None,
                             y_limits: Optional[Union[list, np.ndarray]] = None,
-                            cluster_marker_radius: float = 1.0):
+                            cluster_marker_radius: float = 1.0,
+                            cmd_plot_color_key: bool = None):
     """Makes a colour magnitude diagram plot of a given star field, and may
     also overplot star clusters within that field.
 
@@ -284,6 +287,7 @@ def color_magnitude_diagram(fig,
             plotting limits.
         y_limits (list-like, optional): the minimum and maximum absolute
             magnitude plotting limits.
+        cmd_plot_color_key (string, optional): optional other color in data_gaia to use instead of calculating G - RP.
         cluster_marker_radius (float): radius of the cluster marker. Useful to increase when clusters are hard to see
             against background points.
             Default: 1.0
@@ -297,13 +301,16 @@ def color_magnitude_diagram(fig,
     # M = m - 5 * log10(d [pc]) + 5
     apparent_magnitude = data_gaia["phot_g_mean_mag"]
 
-    bp_minus_rp_colour = (data_gaia["phot_bp_mean_mag"]
-                          - data_gaia["phot_rp_mean_mag"])
+    if cmd_plot_color_key is None:
+        color = (data_gaia["phot_bp_mean_mag"]
+                 - data_gaia["phot_rp_mean_mag"])
+    else:
+        color = data_gaia[cmd_plot_color_key]
 
     # Calculate our own plotting limits if none have been specified
     if x_limits is None:
-        x_limits = (np.mean(bp_minus_rp_colour)
-                    + np.std(bp_minus_rp_colour)
+        x_limits = (np.mean(color)
+                    + np.std(color)
                     * np.array([-plot_std_limit, plot_std_limit]))
 
     if y_limits is None:
@@ -315,7 +322,7 @@ def color_magnitude_diagram(fig,
         cluster_shading = np.ones(data_gaia.shape[0])
 
     # Work out how many points will fall in the pm range
-    good_x = np.logical_and(bp_minus_rp_colour > x_limits[0], bp_minus_rp_colour < x_limits[1])
+    good_x = np.logical_and(color > x_limits[0], color < x_limits[1])
     good_y = np.logical_and(apparent_magnitude > y_limits[0], apparent_magnitude < y_limits[1])
     n_points = np.count_nonzero(np.logical_and(good_x, good_y))
 
@@ -323,7 +330,7 @@ def color_magnitude_diagram(fig,
     alpha_estimate = utilities.calculate_alpha(fig, axis, n_points, 1)
 
     # CMD plot
-    axis.plot(bp_minus_rp_colour, apparent_magnitude,
+    axis.plot(color, apparent_magnitude,
               '.', ms=1, alpha=alpha_estimate, c='k')
 
     axis.set_xlabel(r'm_{bp} - m_{gp}')
@@ -346,12 +353,13 @@ def color_magnitude_diagram(fig,
             colors = np.tile(cmap(i_color % 10), (np.count_nonzero(stars_in_this_cluster), 1))
             colors[:, 3] = cluster_shading[stars_in_this_cluster]
 
-            axis.scatter(bp_minus_rp_colour[stars_in_this_cluster],
+            axis.scatter(color[stars_in_this_cluster],
                          apparent_magnitude[stars_in_this_cluster],
                          marker='.',
                          s=cluster_marker_radius**2,
                          c=colors,
-                         zorder=100)
+                         zorder=100,
+                         label=a_cluster)
 
     return axis
 
@@ -454,6 +462,7 @@ def ra_versus_parallax(fig,
                          marker='.',
                          s=cluster_marker_radius**2,
                          c=colors,
-                         zorder=100)
+                         zorder=100,
+                         label=a_cluster)
 
     return axis

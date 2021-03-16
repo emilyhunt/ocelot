@@ -322,14 +322,14 @@ def cluster_significance_test(data_rescaled: np.ndarray, labels: np.ndarray, min
         significances, test_statistics = _welch_t_test(cluster_nn_distances, field_nn_distances)
 
     # MANN WHITNEY
-    elif test_type == "mann_whitney":
+    elif test_type == "mann_w":
         cluster_fit_params, field_fit_params = None, None
         significances, test_statistics = _mann_whitney_rank_test(cluster_nn_distances, field_nn_distances)
 
     # BAD test_type VALUE
     else:
         raise ValueError(f"specified test_type {test_type} was not recognised! Please specify one of the following: "
-                         "'all', 'likelihood', 'ks_one_sample', 'ks_two_sample' or 't_test'.")
+                         "'all', 'likelihood', 'ks_one_sample', 'ks_two_sample', 't_test', or 'mann_w'.")
 
     # Diagnostic plot time!
     if make_diagnostic_plots:
