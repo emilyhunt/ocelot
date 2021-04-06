@@ -9,7 +9,7 @@ from sklearn.neighbors import NearestNeighbors
 def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_samples=10, overcalculation_factor=2.,
                                     min_field_stars=100, max_field_stars=500, n_jobs=1, nn_kwargs=None, max_iter=100,
                                     kd_tree=None, minimum_next_stars_to_check=10, cluster_nn_distance_type="internal",
-                                    verbose=True):
+                                    verbose=False):
     """Gets and returns a cloud of representative field stars around each reported cluster.
 
     Args:
@@ -49,6 +49,8 @@ def get_field_stars_around_clusters(data_rescaled: np.ndarray, labels, min_sampl
             include any nearby field stars, which may or may not produce more accurate tails of the cluster nn
             distribution. Depends on what you're going for, though.
             Default: 'internal'
+        verbose (bool): whether or not to print to the console about the current cluster we're working on.
+            Default: False
 
     Returns:
         a dict of cluster nn distances

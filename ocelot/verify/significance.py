@@ -196,6 +196,7 @@ DEFAULT_KNN_KWARGS = dict(
     max_iter=100,
     kd_tree=None,
     cluster_nn_distance_type="internal",
+    verbose=False
 )
 
 
@@ -272,8 +273,6 @@ def cluster_significance_test(data_rescaled: np.ndarray, labels: np.ndarray, min
 
         # Do the tests
         significances, test_statistics = {}, {}
-
-        print("    calculating test stats!")
 
         significances['likelihood'], test_statistics['likelihood'] = _likelihood_ratio_test(
             cluster_nn_distances, cluster_fit_params, field_fit_params, cdf_resolution=sampling_resolution)
