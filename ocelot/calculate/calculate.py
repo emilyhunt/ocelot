@@ -26,13 +26,17 @@ def _weighted_standard_deviation(x, weights):
     return np.sqrt(np.cov(x, aweights=weights))
 
 
-def _handle_ra_discontinuity(ra_data):
+def _handle_ra_discontinuity(ra_data, middle_ras_raise_error=True):
     """Tries to detect when the ras in a field cross the (0, 360) ra discontinuity and returns corrected results. Will
     raise an error if ras are all over the place (which will happen e.g. at very high declinations) in which you
     ought to instead switch to a method free of spherical distortions.
 
     Args:
         ra_data (pd.Series or np.ndarray): data on ras.
+        middle_ras_raise_error (bool): whether or not a cluster having right ascensions in all ranges [0, 90), [90, 270]
+            and (270, 360] raises an error. The error here indicates that this cluster has extreme spherical
+            discontinuities (e.g. it's near a coordinate pole) and that the mean ra and mean dec will be inaccurate.
+            Default: True
 
     Returns:
         ra_data but corrected for distortions. If values are both <90 and >270, the new ra data will be in the range
@@ -52,7 +56,7 @@ def _handle_ra_discontinuity(ra_data):
     if np.any(low_ra) and np.any(high_ra):
 
         # Stop if we have middle too (would imply stars everywhere or an extreme dec value)
-        if np.any(middle_ra):
+        if np.any(middle_ra) and middle_ras_raise_error:
             raise ValueError("ra values are in all three ranges: [0, 90), [90, 270] and (270, 360). This cluster can't "
                              "be processed by this function! Spherical distortions must be removed first.")
 
@@ -282,6 +286,7 @@ def mean_radius(data_gaia: pd.DataFrame,
                 key_dec: str = "dec",
                 key_dec_error: str = "dec_error",
                 distance_to_use: str = "inverse_parallax",
+                middle_ras_raise_error: bool = True,
                 **kwargs):
     """Produces various radius statistics on a given cluster, finding its sky location and three radii: the core, tidal
     and 50% radius.
@@ -309,6 +314,10 @@ def mean_radius(data_gaia: pd.DataFrame,
         key_dec_error (str): Gaia parameter name.
         distance_to_use (str): which already inferred distance to use to convert angular radii to parsecs.
             Default: "inverse_parallax"
+        middle_ras_raise_error (bool): whether or not a cluster having right ascensions in all ranges [0, 90), [90, 270]
+            and (270, 360] raises an error. The error here indicates that this cluster has extreme spherical
+            discontinuities (e.g. it's near a coordinate pole) and that the mean ra and mean dec will be inaccurate.
+            Default: True
 
     Returns:
         a dict, formatted with:
@@ -345,7 +354,7 @@ def mean_radius(data_gaia: pd.DataFrame,
         already_inferred_parameters = mean_distance(data_gaia, membership_probabilities)
 
     # Estimate the ra, dec of the cluster as the weighted mean
-    ra_data = _handle_ra_discontinuity(data_gaia[key_ra])
+    ra_data = _handle_ra_discontinuity(data_gaia[key_ra], middle_ras_raise_error=middle_ras_raise_error)
 
     inferred_parameters['ra'] = np.average(ra_data, weights=membership_probabilities)
     inferred_parameters['ra_std'] = _weighted_standard_deviation(ra_data, membership_probabilities)
@@ -459,6 +468,7 @@ def all_statistics(data_gaia: pd.DataFrame,
                    membership_probabilities: Optional[np.ndarray] = None,
                    parameter_inference_mode: str = "mean",
                    override_membership_probabilities_being_off: bool = False,
+                   middle_ras_raise_error: bool = True,
                    **kwargs):
     """Wraps all subfunctions in ocelot.calculate and calculates all the stats you could possibly ever want.
 
@@ -469,6 +479,10 @@ def all_statistics(data_gaia: pd.DataFrame,
         parameter_inference_mode (str): mode to use when inferring parameters.
         override_membership_probabilities_being_off (bool): little check to stop membership probabilities from being
             used for now, as these actually mess up the
+        middle_ras_raise_error (bool): whether or not a cluster having right ascensions in all ranges [0, 90), [90, 270]
+            and (270, 360] raises an error. The error here indicates that this cluster has extreme spherical
+            discontinuities (e.g. it's near a coordinate pole) and that the mean ra and mean dec will be inaccurate.
+            Default: True
         **kwargs: keyword arguments to pass to the calculation functions this one calls.
 
 
@@ -500,7 +514,8 @@ def all_statistics(data_gaia: pd.DataFrame,
         inferred_parameters = {
             'n_stars': data_gaia.shape[0],
             **mean_radius(data_gaia, membership_probabilities=membership_probabilities,
-                          already_inferred_parameters=inferred_parameters, **kwargs),
+                          already_inferred_parameters=inferred_parameters,
+                          middle_ras_raise_error=middle_ras_raise_error, **kwargs),
             **inferred_parameters}
 
         inferred_parameters.update(
