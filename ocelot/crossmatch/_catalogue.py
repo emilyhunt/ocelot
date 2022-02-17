@@ -231,26 +231,28 @@ class Catalogue:
         # And also do some stuff with the tidal radii
         if self.match_tidal_radius:
 
+            radius_literature = self.tidal_radius_data[id_catalog]
+            radius_data = data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters]
+
             # Decide on which form to use
             if tidal_radius_mode == "literature":
-                tidal_radii = self.tidal_radius_data[id_catalog]
+                tidal_radii = radius_literature
             elif tidal_radius_mode == "data":
-                tidal_radii = data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters]
+                tidal_radii = radius_data
             elif tidal_radius_mode == "mean":
                 tidal_radii = np.mean(
-                    np.vstack([self.tidal_radius_data[id_catalog],
-                               data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters]]),
+                    np.vstack([radius_literature, radius_data]),
                     axis=0)
             elif tidal_radius_mode == "max":
-                tidal_radii = np.maximum(self.tidal_radius_data[id_catalog],
-                                         data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters])
+                tidal_radii = np.maximum(radius_literature, radius_data)
             elif tidal_radius_mode == "min":
-                tidal_radii = np.minimum(self.tidal_radius_data[id_catalog],
-                                         data_cluster[self.ocelot_key_names["ang_radius_t"]].to_numpy()[id_clusters])
+                tidal_radii = np.minimum(radius_literature, radius_data)
             else:
                 raise ValueError(f"specified tidal_radius_mode '{tidal_radius_mode}' not recognised/supported!")
 
             match_data["tidal_sep_ratio"] = match_data["angular_sep"] / tidal_radii
+            match_data["tidal_sep_ratio_literature"] = match_data["angular_sep"] / radius_literature
+            match_data["tidal_sep_ratio_data"] = match_data["angular_sep"] / radius_data
 
         # -------------------------------------
         # EXTENSION OF MATCH DATA FRAME TO THE EXTRA AXES
@@ -339,7 +341,8 @@ class Catalogue:
 
         # Cycle over clusters with matches, storing things about their best matches
         if self.match_tidal_radius:
-            columns_to_read = ["name_match", "angular_sep", "tidal_sep_ratio", "max_sigma", "mean_sigma"]
+            columns_to_read = ["name_match", "angular_sep", "tidal_sep_ratio", "tidal_sep_ratio_literature",
+                               "tidal_sep_ratio_data", "max_sigma", "mean_sigma"]
         else:
             columns_to_read = ["name_match", "angular_sep", "max_sigma", "mean_sigma"]
 
