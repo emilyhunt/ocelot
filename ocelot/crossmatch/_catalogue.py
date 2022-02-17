@@ -341,8 +341,7 @@ class Catalogue:
 
         # Cycle over clusters with matches, storing things about their best matches
         if self.match_tidal_radius:
-            columns_to_read = ["name_match", "angular_sep", "tidal_sep_ratio", "tidal_sep_ratio_literature",
-                               "tidal_sep_ratio_data", "max_sigma", "mean_sigma"]
+            columns_to_read = ["name_match", "angular_sep", "tidal_sep_ratio", "max_sigma", "mean_sigma"]
         else:
             columns_to_read = ["name_match", "angular_sep", "max_sigma", "mean_sigma"]
 
