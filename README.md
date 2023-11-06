@@ -1,5 +1,5 @@
 # ocelot
-The Open-Source Star Cluster Multi-Purpose Toolkit. (Its results are better than this acronym.)
+The Open Source Star Cluster Multi-Purpose Toolkit. (Its results are better than this acronym.)
 
 ## November 2023
 
