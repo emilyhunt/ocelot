@@ -1,3 +1,6 @@
+[![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://ocelot-docs.org)
+[![Build Docs](https://github.com/emilyhunt/ocelot/actions/workflows/build-docs.yml/badge.svg)](https://ocelot-docs.org)
+
 # ocelot
 
 A toolbox for working with observations of star clusters. 
