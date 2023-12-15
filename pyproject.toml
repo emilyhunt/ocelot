@@ -25,13 +25,19 @@ classifiers = [  # Optional
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-  # "psutil>=5.0,<6.0",  # todo
+  "numpy>1.21.0,<3.0",
+  "matplotlib>3.4.0,<4.0",
+  "scikit-learn>0.24.0,<2.0",
+  "scipy>1.0.0,<2.0",
+  "pandas>1.0.0,<3.0",
+  "astropy>4.0.0,<7.0",
+  "healpy>1.13.0,<2.0",
 ]
 
 
 [project.optional-dependencies]
-dev = ["check-manifest", "pytest", "mkdocs-material", "mkdocstrings[python]>=0.18"]
-docs = ["mkdocs-material", "mkdocstrings[python]>=0.18"]  # For building docs on GitHub
+dev = ["check-manifest", "pytest", "mkdocs-material[imaging]", "mkdocstrings[python]>=0.18"]
+docs = ["mkdocs-material[imaging]", "mkdocstrings[python]>=0.18"]  # For building docs on GitHub
 test = ["pytest"]
 
 [project.urls]  # Optional
