@@ -3,7 +3,12 @@ from typing import Union, Optional
 import numpy as np
 
 
-def king_surface_density(r_values: Union[float, np.ndarray], r_core: float, r_tidal: float, normalise: bool = False):
+def king_surface_density(
+    r_values: Union[float, np.ndarray],
+    r_core: float,
+    r_tidal: float,
+    normalise: bool = False,
+):
     """Computes the King surface density (King 1962, equation 14) given the three parameters. Can take vectorised input.
     Will return the surface density per square unit expected at a distance r_values from the core of the cluster.
 
@@ -28,16 +33,16 @@ def king_surface_density(r_values: Union[float, np.ndarray], r_core: float, r_ti
 
     # Constants
     rt_rc = r_tidal / r_core
-    a = (1 + rt_rc ** 2) ** -0.5
+    a = (1 + rt_rc**2) ** -0.5
 
     # Compute normalisation constant if desired
     if normalise:
         term_1 = r_core * np.arctan(rt_rc)
         term_2 = -2 * a * r_core * np.log(rt_rc + 1 / a)
-        term_3 = r_tidal * a ** 2
+        term_3 = r_tidal * a**2
         normalisation_constant = 1 / (term_1 + term_2 + term_3)
     else:
-        normalisation_constant = 1.
+        normalisation_constant = 1.0
 
     # Work out where  0 <= r < r_tidal
     r_valid = np.logical_and(r_values >= 0, r_values < r_tidal)
@@ -88,14 +93,20 @@ def king_surface_density_fast(r_values: np.ndarray, r_core: float, r_tidal: floa
     """
     # Constants
     rt_rc = r_tidal / r_core
-    a = (1 + rt_rc ** 2) ** -0.5
+    a = (1 + rt_rc**2) ** -0.5
 
     # Compute result
     return ((1 + (r_values / r_core) ** 2) ** (-0.5) - a) ** 2
 
 
-def sample_2d_king_profile(r_core: float, r_tidal: float, n_samples: int, seed=None, oversampling_factor: float = 10,
-                           return_generator: bool = False):
+def sample_2d_king_profile(
+    r_core: float,
+    r_tidal: float,
+    n_samples: int,
+    seed=None,
+    oversampling_factor: float = 10,
+    return_generator: bool = False,
+):
     """Samples a 2D King profile to return n_samples sample radii.
 
     Valid only for:
@@ -121,7 +132,9 @@ def sample_2d_king_profile(r_core: float, r_tidal: float, n_samples: int, seed=N
 
     while completed_samples < n_samples:
         remaining_samples = n_samples - completed_samples
-        samples_to_generate = int(np.clip(remaining_samples * oversampling_factor, 10, np.inf))
+        samples_to_generate = int(
+            np.clip(remaining_samples * oversampling_factor, 10, np.inf)
+        )
 
         # Generate some initial radius samples
         test_r_values = generator.uniform(high=r_tidal, size=samples_to_generate)
@@ -133,9 +146,13 @@ def sample_2d_king_profile(r_core: float, r_tidal: float, n_samples: int, seed=N
         n_valid_test_samples = np.count_nonzero(valid_test_samples)
 
         if n_valid_test_samples > remaining_samples:
-            r_samples[completed_samples:] = test_r_values[valid_test_samples][:remaining_samples]
+            r_samples[completed_samples:] = test_r_values[valid_test_samples][
+                :remaining_samples
+            ]
         else:
-            r_samples[completed_samples:completed_samples + n_valid_test_samples] = test_r_values[valid_test_samples]
+            r_samples[
+                completed_samples : completed_samples + n_valid_test_samples
+            ] = test_r_values[valid_test_samples]
 
     if return_generator:
         return r_samples, generator
@@ -143,8 +160,13 @@ def sample_2d_king_profile(r_core: float, r_tidal: float, n_samples: int, seed=N
         return r_samples
 
 
-def sample_1d_king_profile(r_core: float, r_tidal: float, n_samples: int, seed: Optional[int] = None,
-                           oversampling_factor: float = 10):
+def sample_1d_king_profile(
+    r_core: float,
+    r_tidal: float,
+    n_samples: int,
+    seed: Optional[int] = None,
+    oversampling_factor: float = 10,
+):
     """Samples a 1D King profile (e.g. useful to get line of sight distances from the center of a cluster.) Uses a
     little trick - assumes that we're looking at the cluster side-on and removes the not-line-of-sight axis as if we
     were looking at it from the front. (This is because I cba to work out a 1D profile and more to the point, I couldn't
@@ -166,8 +188,14 @@ def sample_1d_king_profile(r_core: float, r_tidal: float, n_samples: int, seed: 
     Returns:
         an array of sample radii of size n_samples
     """
-    r_samples, generator = sample_2d_king_profile(r_core, r_tidal, n_samples, seed=seed,
-                                                  oversampling_factor=oversampling_factor, return_generator=True)
+    r_samples, generator = sample_2d_king_profile(
+        r_core,
+        r_tidal,
+        n_samples,
+        seed=seed,
+        oversampling_factor=oversampling_factor,
+        return_generator=True,
+    )
 
     # Now, deproject this to 1D by giving every value an angle and then finding the 1D radius with the cosine
     random_angles = generator.uniform(high=2 * np.pi, size=n_samples)

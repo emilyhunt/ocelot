@@ -12,10 +12,15 @@ from .nearest_neighbor import precalculate_nn_distances
 from ..plot import nearest_neighbor_distances
 
 
-def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Union[int, List[int], Tuple[int]] = 10,
-          min_samples: Union[str, int] = 10, return_std_deviation: bool = False, 
-          return_last_random_distance: bool = False):
-    """A method for calculating an optimal epsilon value as in Alfredo Castro-Ginard's 2018 paper (hence the acronym
+def castro_ginard(
+    data_clustering: np.ndarray,
+    nn_distances: np.ndarray,
+    n_repeats: Union[int, List[int], Tuple[int]] = 10,
+    min_samples: Union[str, int] = 10,
+    return_std_deviation: bool = False,
+    return_last_random_distance: bool = False,
+):
+    """A method for calculating an optimal epsilon value as in Alfred Castro-Ginard's 2018 paper (hence the acronym
     acg18.)
 
     Args:
@@ -30,7 +35,7 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
             In this implementation, k = min_samples - 1 (k is the kth nearest neighbor to find.)
             Default: 10
         return_std_deviation (bool): whether or not to also return the standard deviation of epsilon estimates in the
-            acg_epsilon dataframe. 
+            acg_epsilon dataframe.
             Default: False
         return_last_random_distance (bool): whether or not to return the final random distance set made by the function.
             Useful for making plots & understanding what's going on internally.
@@ -52,22 +57,28 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
     max_neighbors_to_calculate = nn_distances.shape[1]
 
     # Grab the minimum epsilon in the unperturbed field & do some error checking of min_samples in the process.
-    if min_samples == 'all':
+    if min_samples == "all":
         epsilon_minimum = np.min(nn_distances, axis=0)
 
-    elif type(min_samples) is not int:
-        raise ValueError("Incompatible number or string of min_samples specified.\n"
-                         "Allowed values:\n"
-                         "- integer less than / equal to max_neighbors_to_calculate + 1 and greater than zero\n"
-                         "- 'all', which calculates all values upto max_neighbors_to_calculate\n")
+    elif isinstance(min_samples, int):
+        raise ValueError(
+            "Incompatible number or string of min_samples specified.\n"
+            "Allowed values:\n"
+            "- integer less than / equal to max_neighbors_to_calculate + 1 and greater than zero\n"
+            "- 'all', which calculates all values upto max_neighbors_to_calculate\n"
+        )
 
     elif min_samples > max_neighbors_to_calculate + 1 or min_samples < 2:
-        raise ValueError("min_samples may not be larger than max_neighbors_to_calculate (aka nn_distances.shape[1]) + 1"
-                         " and must be a positive integer > 2.")
+        raise ValueError(
+            "min_samples may not be larger than max_neighbors_to_calculate (aka nn_distances.shape[1]) + 1"
+            " and must be a positive integer > 2."
+        )
 
     else:
-        kth_neighbor = min_samples - 1 
-        epsilon_minimum = np.min(nn_distances[:, kth_neighbor - 1])  # -1 here because arrays are 0 indexed
+        kth_neighbor = min_samples - 1
+        epsilon_minimum = np.min(
+            nn_distances[:, kth_neighbor - 1]
+        )  # -1 here because arrays are 0 indexed
 
     # Semi-paranoid memory management (lol)
     del nn_distances
@@ -78,16 +89,21 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
     random_nn_distances = None  # Done solely to shut up my fucking linter
     i = 0
     while i < max_n_repeats:
-
         # Shuffle all values in the dataset column-wise, which is annoying to do but I guess I'll manage :L
         current_axis = 0
         while current_axis < data_clustering.shape[1]:
-            data_clustering[:, current_axis] = np.random.permutation(data_clustering[:, current_axis])
+            data_clustering[:, current_axis] = np.random.permutation(
+                data_clustering[:, current_axis]
+            )
             current_axis += 1
 
         # Get some nn distances
-        random_nn_distances = precalculate_nn_distances(data_clustering, n_neighbors=max_neighbors_to_calculate,
-                                                        return_sparse_matrix=False, return_knn_distance_array=True)
+        random_nn_distances = precalculate_nn_distances(
+            data_clustering,
+            n_neighbors=max_neighbors_to_calculate,
+            return_sparse_matrix=False,
+            return_knn_distance_array=True,
+        )
 
         random_epsilons[i, :] = np.min(random_nn_distances, axis=0)
 
@@ -99,23 +115,29 @@ def acg18(data_clustering: np.ndarray, nn_distances: np.ndarray, n_repeats: Unio
             gc.collect()
 
     # Ignore random epsilons we don't need if the user doesn't want them all
-    if min_samples != 'all':
+    if min_samples != "all":
         random_epsilons = random_epsilons[:, kth_neighbor - 1].reshape(-1, 1)
-        acg_epsilon = {'min_samples': np.atleast_1d(min_samples)}
+        acg_epsilon = {"min_samples": np.atleast_1d(min_samples)}
     else:
-        acg_epsilon = {'min_samples': np.arange(max_neighbors_to_calculate) + 2}
+        acg_epsilon = {"min_samples": np.arange(max_neighbors_to_calculate) + 2}
 
     # Cycle over all the numbers of repeats the user requested, finding the requested acg epsilon values
     for a_n_repeats in n_repeats:
         mean_random_epsilons = np.mean(random_epsilons[:a_n_repeats, :], axis=0)
-        acg_epsilon['acg_' + str(a_n_repeats)] = (mean_random_epsilons + epsilon_minimum) / 2
-        
+        acg_epsilon["acg_" + str(a_n_repeats)] = (
+            mean_random_epsilons + epsilon_minimum
+        ) / 2
+
         # Also add the standard deviation, if desired
         if return_std_deviation:
-            acg_epsilon['acg_' + str(a_n_repeats) + '_std'] = np.std(random_epsilons[:a_n_repeats, :], axis=0)
+            acg_epsilon["acg_" + str(a_n_repeats) + "_std"] = np.std(
+                random_epsilons[:a_n_repeats, :], axis=0
+            )
 
     # Finally, turn this into a DataFrame!
-    acg_epsilon_dataframe = pd.DataFrame(acg_epsilon, index=np.arange(len(acg_epsilon['min_samples'])))
+    acg_epsilon_dataframe = pd.DataFrame(
+        acg_epsilon, index=np.arange(len(acg_epsilon["min_samples"]))
+    )
 
     if return_last_random_distance:
         return acg_epsilon_dataframe, random_nn_distances
@@ -138,14 +160,23 @@ def kth_nn_distribution(r_range, a, dimension, k):
         np.ndarray of the distribution evaluated at r_range
 
     """
-    return r_range ** (dimension + k - 1) / a ** dimension * np.exp(-(r_range / a) ** dimension)
+    return (
+        r_range ** (dimension + k - 1)
+        / a**dimension
+        * np.exp(-((r_range / a) ** dimension))
+    )
 
 
-def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_range: np.ndarray,
-                                            y_range: np.ndarray = None, minimisation_mode: bool = False):
-    """Returns the summer kth nearest neighbor distribution, assuming the field contains at most one cluster.
+def _summed_kth_nn_distribution_one_cluster(
+    parameters: np.ndarray,
+    k: int,
+    r_range: np.ndarray,
+    y_range: np.ndarray = None,
+    minimisation_mode: bool = False,
+):
+    """Returns the summed kth nearest neighbor distribution, assuming the field contains at most one cluster.
 
-    Todo remove minimisation input_mode
+    Todo: remove minimisation input_mode
 
     Args:
         parameters (np.ndarray): parameters of the model of length 5, in the form:
@@ -164,8 +195,10 @@ def _summed_kth_nn_distribution_one_cluster(parameters: np.ndarray, k: int, r_ra
 
     """
     if minimisation_mode or y_range is not None:
-        raise NotImplementedError("This function no longer supports use with previous minimisation versions of the "
-                                  "field model for epsilon determination.")
+        raise NotImplementedError(
+            "This function no longer supports use with previous minimisation versions of the "
+            "field model for epsilon determination."
+        )
 
     # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
     y_field = np.cumsum(kth_nn_distribution(r_range, parameters[0], parameters[1], k))
@@ -195,7 +228,6 @@ def constrained_a(d, k, epsilon_max):
 
 
 class _SummedKNNOneClusterCurveFit:
-
     def __init__(self, k: int, epsilon_max: Union[float, np.float]):
         """Class to handle kth nearest neighbor curve fits. Unchanging parameters are kept stored by this class, and
         the __call__ method allows for access to the kth nn curve fitting.
@@ -219,7 +251,11 @@ class _SummedKNNOneClusterCurveFit:
         self.k = k
         self.epsilon_max = epsilon_max
 
-    def __call__(self, r_range: np.ndarray, *parameters,) -> np.ndarray:
+    def __call__(
+        self,
+        r_range: np.ndarray,
+        *parameters,
+    ) -> np.ndarray:
         """Accesses the kth nearest neighbor distribution curve fitting routine in a fast way.
 
         Args:
@@ -240,10 +276,14 @@ class _SummedKNNOneClusterCurveFit:
         a_cluster = constrained_a(parameters[2], self.k, parameters[1])
 
         # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
-        y_field = np.cumsum(kth_nn_distribution(r_range, a_field, parameters[0], self.k))
+        y_field = np.cumsum(
+            kth_nn_distribution(r_range, a_field, parameters[0], self.k)
+        )
         normalisation_field = np.trapz(y_field, x=r_range) / (1 - parameters[3])
 
-        y_cluster = np.cumsum(kth_nn_distribution(r_range, a_cluster, parameters[2], self.k))
+        y_cluster = np.cumsum(
+            kth_nn_distribution(r_range, a_cluster, parameters[2], self.k)
+        )
         normalisation_cluster = np.trapz(y_cluster, x=r_range) / parameters[3]
 
         y_field /= normalisation_field
@@ -264,37 +304,42 @@ def _get_epsilon_plotting_styles(epsilon_values):
 
     """
     return [
-            {'label': f'eps_c: {epsilon_values[0]:.4f}',
-             'style': 'r:',
-             'x': [epsilon_values[0]] * 2,
-             'y': [1e-300, 1e300],
-             'differentiate': False},
-
-            {'label': f'eps_n1: {epsilon_values[1]:.4f}',
-             'style': 'k:',
-             'x': [epsilon_values[1]] * 2,
-             'y': [1e-300, 1e300],
-             'differentiate': False},
-
-            {'label': f'eps_n2: {epsilon_values[2]:.4f}',
-             'style': 'k-.',
-             'x': [epsilon_values[2]] * 2,
-             'y': [1e-300, 1e300],
-             'differentiate': False},
-
-            {'label': f'eps_n3: {epsilon_values[3]:.4f}',
-             'style': 'k:',
-             'x': [epsilon_values[3]] * 2,
-             'y': [1e-300, 1e300],
-             'differentiate': False},
-
-            {'label': f'eps_f: {epsilon_values[4]:.4f}',
-             'style': 'r:',
-             'x': [epsilon_values[4]] * 2,
-             'y': [1e-300, 1e300],
-             'differentiate': False}
-
-            ]
+        {
+            "label": f"eps_c: {epsilon_values[0]:.4f}",
+            "style": "r:",
+            "x": [epsilon_values[0]] * 2,
+            "y": [1e-300, 1e300],
+            "differentiate": False,
+        },
+        {
+            "label": f"eps_n1: {epsilon_values[1]:.4f}",
+            "style": "k:",
+            "x": [epsilon_values[1]] * 2,
+            "y": [1e-300, 1e300],
+            "differentiate": False,
+        },
+        {
+            "label": f"eps_n2: {epsilon_values[2]:.4f}",
+            "style": "k-.",
+            "x": [epsilon_values[2]] * 2,
+            "y": [1e-300, 1e300],
+            "differentiate": False,
+        },
+        {
+            "label": f"eps_n3: {epsilon_values[3]:.4f}",
+            "style": "k:",
+            "x": [epsilon_values[3]] * 2,
+            "y": [1e-300, 1e300],
+            "differentiate": False,
+        },
+        {
+            "label": f"eps_f: {epsilon_values[4]:.4f}",
+            "style": "r:",
+            "x": [epsilon_values[4]] * 2,
+            "y": [1e-300, 1e300],
+            "differentiate": False,
+        },
+    ]
 
 
 def _get_model_plotting_styles(x_range, y_field, y_cluster, y_total):
@@ -308,27 +353,34 @@ def _get_model_plotting_styles(x_range, y_field, y_cluster, y_total):
 
     """
     return [
-            {'label': f'field model',
-             'style': 'm--',
-             'x': x_range,
-             'y': 10**y_field,
-             'differentiate': True},
+        {
+            "label": "field model",
+            "style": "m--",
+            "x": x_range,
+            "y": 10**y_field,
+            "differentiate": True,
+        },
+        {
+            "label": "cluster model",
+            "style": "c--",
+            "x": x_range,
+            "y": 10**y_cluster,
+            "differentiate": True,
+        },
+        {
+            "label": "total model",
+            "style": "r-",
+            "x": x_range,
+            "y": 10**y_total,
+            "differentiate": True,
+        },
+    ]
 
-            {'label': f'cluster model',
-             'style': 'c--',
-             'x': x_range,
-             'y': 10**y_cluster,
-             'differentiate': True},
 
-            {'label': f'total model',
-             'style': 'r-',
-             'x': x_range,
-             'y': 10**y_total,
-             'differentiate': True},
-            ]
-
-
-def _find_curve_absolute_maximum_epsilons(x_range: np.ndarray, y_range: np.ndarray,):
+def _find_curve_absolute_maximum_epsilons(
+    x_range: np.ndarray,
+    y_range: np.ndarray,
+):
     """Returns the epsilon value corresponding to the absolute maximum value of the second derivative of a curve.
     Useful for finding the characteristic epsilon value the cluster, e_c.
 
@@ -342,8 +394,8 @@ def _find_curve_absolute_maximum_epsilons(x_range: np.ndarray, y_range: np.ndarr
     """
     # Take the second derivative, albeit only on good stars
     good_stars = np.logical_and(
-        np.logical_and(np.isfinite(x_range), x_range > 0),
-        np.isfinite(y_range))
+        np.logical_and(np.isfinite(x_range), x_range > 0), np.isfinite(y_range)
+    )
 
     x_range = np.log10(x_range[good_stars])
     y_range = y_range[good_stars]
@@ -357,14 +409,16 @@ def _find_curve_absolute_maximum_epsilons(x_range: np.ndarray, y_range: np.ndarr
 
     d2_y_range_absolute = np.zeros(d2_y_range.shape)
     d2_y_range_absolute[good_stars] = np.abs(d2_y_range[good_stars])
-    d2_y_range_absolute[bad_stars] = -1.
+    d2_y_range_absolute[bad_stars] = -1.0
 
     # Find the maximum and return!
     d2_y_range_max_id = np.argmax(d2_y_range_absolute)
-    return 10**x_range[d2_y_range_max_id]
+    return 10 ** x_range[d2_y_range_max_id]
 
 
-def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_all_sign_changes: bool = False):
+def _find_sign_change_epsilons(
+    x_range: np.ndarray, y_range: np.ndarray, return_all_sign_changes: bool = False
+):
     """Takes derivatives of a numerical cluster model to find the beginning, middle and end of the area with the
     steepest change in gradient, which typically corresponds to the point at which field stars begin to dominate.
 
@@ -404,8 +458,8 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
     """
     # Take the second derivative, albeit only on good stars
     good_stars = np.logical_and(
-        np.logical_and(np.isfinite(x_range), x_range > 0),
-        np.isfinite(y_range))
+        np.logical_and(np.isfinite(x_range), x_range > 0), np.isfinite(y_range)
+    )
 
     x_range = np.log10(x_range[good_stars])
     y_range = y_range[good_stars]
@@ -415,7 +469,9 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
     # Find & output some cool values
     # Firstly, find all candidate 2nd derivative = 0 points (epsilon 0 or 2) by looking for sign changes, based on
     # https://stackoverflow.com/questions/2652368/how-to-detect-a-sign-change-for-elements-in-a-numpy-array
-    sign_change_ids = np.asarray(np.sign(d2_y_range[:-1]) != np.sign(d2_y_range[1:])).nonzero()[0] + 1
+    sign_change_ids = (
+        np.asarray(np.sign(d2_y_range[:-1]) != np.sign(d2_y_range[1:])).nonzero()[0] + 1
+    )
     sign_change_x_values = x_range[sign_change_ids]
 
     # We make a clipped d2_y_range so that anything under the curve is ignored
@@ -425,13 +481,13 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
     i = 0
     epsilon_0_and_2_ids = np.zeros(2, dtype=int)
     epsilon_0_and_2_x_values = np.zeros(2)
-    max_area = -1.
+    max_area = -1.0
 
     while i < sign_change_x_values.shape[0] - 1:
         id_0 = sign_change_ids[i]
         id_1 = sign_change_ids[i + 1]
 
-        area = np.trapz(clipped_d2_y_range[id_0:id_1 + 1], x=x_range[id_0:id_1 + 1])
+        area = np.trapz(clipped_d2_y_range[id_0 : id_1 + 1], x=x_range[id_0 : id_1 + 1])
 
         # Save this pair if it's the best
         if area > max_area:
@@ -446,8 +502,12 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
     if i == 0:
         epsilon_1_x_value = 0.0
     else:
-        epsilon_1_id = np.argmax(d2_y_range[epsilon_0_and_2_ids[0]:epsilon_0_and_2_ids[1] + 1])
-        epsilon_1_x_value = (x_range[epsilon_0_and_2_ids[0]:epsilon_0_and_2_ids[1] + 1])[epsilon_1_id]
+        epsilon_1_id = np.argmax(
+            d2_y_range[epsilon_0_and_2_ids[0] : epsilon_0_and_2_ids[1] + 1]
+        )
+        epsilon_1_x_value = (
+            x_range[epsilon_0_and_2_ids[0] : epsilon_0_and_2_ids[1] + 1]
+        )[epsilon_1_id]
 
     # Unlog the answers
     epsilon_1_x_value = 10**epsilon_1_x_value
@@ -456,16 +516,32 @@ def _find_sign_change_epsilons(x_range: np.ndarray, y_range: np.ndarray, return_
 
     # Happy return time =)
     if return_all_sign_changes:
-        return [epsilon_0_and_2_x_values[0], epsilon_1_x_value, epsilon_0_and_2_x_values[1]], sign_change_x_values
+        return [
+            epsilon_0_and_2_x_values[0],
+            epsilon_1_x_value,
+            epsilon_0_and_2_x_values[1],
+        ], sign_change_x_values
     else:
-        return [epsilon_0_and_2_x_values[0], epsilon_1_x_value, epsilon_0_and_2_x_values[1]]
+        return [
+            epsilon_0_and_2_x_values[0],
+            epsilon_1_x_value,
+            epsilon_0_and_2_x_values[1],
+        ]
 
 
-def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_size: int = 1,
-                resolution: int = 500, point_fraction_to_keep: float = 0.95, model_minimum_drop: float = 1.0,
-                optimiser: str ='trf', print_convergence_messages: bool = False,
-                make_diagnostic_plot: bool = False, return_all_sign_changes: bool = False,
-                **kwargs) -> list:
+def field_model(
+    nn_distances: np.ndarray,
+    min_samples: int = 10,
+    min_cluster_size: int = 1,
+    resolution: int = 500,
+    point_fraction_to_keep: float = 0.95,
+    model_minimum_drop: float = 1.0,
+    optimiser: str = "trf",
+    print_convergence_messages: bool = False,
+    make_diagnostic_plot: bool = False,
+    return_all_sign_changes: bool = False,
+    **kwargs,
+) -> list:
     """Attempts to find an optimum value for epsilon by modelling the field of the cluster and the cluster itself.
     Leverages scipy curve fitting to find optimum model values, and can even report on the approximate estimated size
     of a cluster in the given field.
@@ -517,7 +593,7 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     # -- Pre-processing
     # Grab the correct neighbor distances, sort them and drop stuff we don't want
     distances = np.sort(nn_distances[:, min_samples - 1])
-    distances = distances[:int(point_fraction_to_keep * distances.shape[0])]
+    distances = distances[: int(point_fraction_to_keep * distances.shape[0])]
 
     # Create a normalised log number of points array
     points = np.arange(1, distances.shape[0] + 1)
@@ -525,13 +601,15 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     points = np.log10(points)
 
     # Interpolate it to ensure the points are linearly sampled and reduce noise
-    interpolator = interp1d(distances, points, kind='linear')
-    distances_interpolated = np.linspace(distances.min(), distances.max(), num=resolution)
+    interpolator = interp1d(distances, points, kind="linear")
+    distances_interpolated = np.linspace(
+        distances.min(), distances.max(), num=resolution
+    )
     points_interpolated = interpolator(distances_interpolated)
 
     # -- Get maximum value of epsilon
     # Histogram all the distances
-    bin_values, bin_edges = np.histogram(distances, bins='auto')
+    bin_values, bin_edges = np.histogram(distances, bins="auto")
 
     # Grab the max bin
     max_bin = np.argmax(bin_values)
@@ -539,43 +617,67 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
 
     # -- Fitting
     # Define bounds       dim_f   max_cluster          dim_c   cluster_frac
-    bounds = (np.asarray([2.0,    distances.min(),     2.0,    0.0]),
-              np.asarray([np.inf, modal_epsilon_value, np.inf, 1.0]))
+    bounds = (
+        np.asarray([2.0, distances.min(), 2.0, 0.0]),
+        np.asarray([np.inf, modal_epsilon_value, np.inf, 1.0]),
+    )
 
     # Grab an initial guess
     field_dimension = 5
-    cluster_maximum = np.clip(modal_epsilon_value / 2, distances.min(), modal_epsilon_value)
+    cluster_maximum = np.clip(
+        modal_epsilon_value / 2, distances.min(), modal_epsilon_value
+    )
     cluster_dimension = 3
     cluster_fraction = 0.01
 
     # Minimisation time! Parameters is the stuff to minimise, arguments is the stuff we pass to the function to use it
-    parameters = np.asarray([field_dimension, cluster_maximum, cluster_dimension, cluster_fraction])
+    parameters = np.asarray(
+        [field_dimension, cluster_maximum, cluster_dimension, cluster_fraction]
+    )
 
     curve_to_fit = _SummedKNNOneClusterCurveFit(min_samples, modal_epsilon_value)
 
-    result_unprocessed, covariance = curve_fit(curve_to_fit,
-                                               distances_interpolated,
-                                               points_interpolated,
-                                               p0=parameters,
-                                               bounds=bounds,
-                                               method=optimiser,
-                                               verbose=print_convergence_messages)
+    result_unprocessed, covariance = curve_fit(
+        curve_to_fit,
+        distances_interpolated,
+        points_interpolated,
+        p0=parameters,
+        bounds=bounds,
+        method=optimiser,
+        verbose=print_convergence_messages,
+    )
 
     # Process the result array back into the array of parameters we like to see around these parts
     # Since result unprocessed is [field_dimension, cluster_maximum , cluster_dimension, cluster_fraction]
     # but we want [field_constant, field_dimension, cluster_constant, cluster_dimension, cluster_fraction]
-    field_constant = constrained_a(result_unprocessed[0], min_samples, modal_epsilon_value)
-    cluster_constant = constrained_a(result_unprocessed[2], min_samples, result_unprocessed[1])
+    field_constant = constrained_a(
+        result_unprocessed[0], min_samples, modal_epsilon_value
+    )
+    cluster_constant = constrained_a(
+        result_unprocessed[2], min_samples, result_unprocessed[1]
+    )
     result = np.asarray(
-        [field_constant, result_unprocessed[0], cluster_constant, result_unprocessed[2], result_unprocessed[3]])
+        [
+            field_constant,
+            result_unprocessed[0],
+            cluster_constant,
+            result_unprocessed[2],
+            result_unprocessed[3],
+        ]
+    )
 
     # -- Calculation and grabbing of epsilon values
     # We make sure that we oversample the function from near-zero, which helps to find all points where it crosses axis
     distances_sampled = np.linspace(1e-30, distances.max(), num=resolution)
 
     # We'll evaluate the function at the results that were grabbed, for plotting and epsilon purposes
-    points_field, points_cluster, points_total = _summed_kth_nn_distribution_one_cluster(
-        result, min_samples, distances_sampled, minimisation_mode=False)
+    (
+        points_field,
+        points_cluster,
+        points_total,
+    ) = _summed_kth_nn_distribution_one_cluster(
+        result, min_samples, distances_sampled, minimisation_mode=False
+    )
 
     # And we'll only keep valid points for which the total model does not have a point number value less than that
     # of model_minimum_drop * min(points)
@@ -591,12 +693,17 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     if n_cluster_members >= min_cluster_size:
         epsilon_values = np.zeros(5)
 
-        epsilon_values[0] = _find_curve_absolute_maximum_epsilons(distances_sampled, points_cluster)
+        epsilon_values[0] = _find_curve_absolute_maximum_epsilons(
+            distances_sampled, points_cluster
+        )
         epsilon_values[1:4], sign_changes = _find_sign_change_epsilons(
-            distances_sampled, points_total, return_all_sign_changes=True)
+            distances_sampled, points_total, return_all_sign_changes=True
+        )
         epsilon_values[4] = modal_epsilon_value
 
-        functions_to_overplot_epsilon_values = _get_epsilon_plotting_styles(epsilon_values)
+        functions_to_overplot_epsilon_values = _get_epsilon_plotting_styles(
+            epsilon_values
+        )
     else:
         epsilon_values = sign_changes = None
         functions_to_overplot_epsilon_values = []
@@ -605,25 +712,28 @@ def field_model(nn_distances: np.ndarray, min_samples: int = 10, min_cluster_siz
     # Diagnostic plot if we're asked nicely
     if make_diagnostic_plot:
         functions_to_overplot = _get_model_plotting_styles(
-            distances_sampled, points_field, points_cluster, points_total)
+            distances_sampled, points_field, points_cluster, points_total
+        )
         functions_to_overplot += functions_to_overplot_epsilon_values
 
         # We'll only want to normalise the raw data - everything else is already done
-        normalisation_constants = [1.] + [0] * len(functions_to_overplot)
+        normalisation_constants = [1.0] + [0] * len(functions_to_overplot)
 
         # Plot time! We make a cheeky distance array so that the stuff we pass to the plotting function is the right
         # shape.
         distances_to_pass = np.zeros((distances.shape[0], min_samples))
         distances_to_pass[:, min_samples - 1] = distances
-        nearest_neighbor_distances(distances_to_pass,
-                                   neighbor_to_plot=min_samples,
-                                   normalisation_constants=normalisation_constants,
-                                   functions_to_overplot=functions_to_overplot,
-                                   **kwargs)
+        nearest_neighbor_distances(
+            distances_to_pass,
+            neighbor_to_plot=min_samples,
+            normalisation_constants=normalisation_constants,
+            functions_to_overplot=functions_to_overplot,
+            **kwargs,
+        )
 
     # Return nada if no cluster was found
     if n_cluster_members < min_cluster_size:
-        to_return = [False, (0., 0., 0., 0., 0.), result, n_cluster_members]
+        to_return = [False, (0.0, 0.0, 0.0, 0.0, 0.0), result, n_cluster_members]
     else:
         to_return = [True, epsilon_values, result, n_cluster_members]
 

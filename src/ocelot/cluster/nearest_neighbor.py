@@ -7,8 +7,14 @@ import numpy as np
 from sklearn.neighbors import NearestNeighbors
 
 
-def precalculate_nn_distances(data: np.ndarray, n_neighbors: int = 10, n_jobs: int = -1,
-                              return_sparse_matrix: bool = True, return_knn_distance_array: bool = False, **kwargs):
+def precalculate_nn_distances(
+    data: np.ndarray,
+    n_neighbors: int = 10,
+    n_jobs: int = -1,
+    return_sparse_matrix: bool = True,
+    return_knn_distance_array: bool = False,
+    **kwargs,
+):
     """Pre-calculates nearest neighbor (nn) distances for direct plugging into a sklearn clustering algorithm with
     metric=pre-computed. Basically just a wrapper for sklearn.neighbors.NearestNeighbors.
 
@@ -35,7 +41,9 @@ def precalculate_nn_distances(data: np.ndarray, n_neighbors: int = 10, n_jobs: i
 
     """
     # Initialise & fit
-    neighbor_calculator = NearestNeighbors(n_neighbors=n_neighbors, n_jobs=n_jobs, **kwargs)
+    neighbor_calculator = NearestNeighbors(
+        n_neighbors=n_neighbors, n_jobs=n_jobs, **kwargs
+    )
     neighbor_calculator.fit(data)
 
     # Return as requested
@@ -43,14 +51,16 @@ def precalculate_nn_distances(data: np.ndarray, n_neighbors: int = 10, n_jobs: i
         distances, indices = neighbor_calculator.kneighbors()
 
         if return_sparse_matrix:
-            sparse_matrix = neighbor_calculator.kneighbors_graph(mode='distance')
+            sparse_matrix = neighbor_calculator.kneighbors_graph(mode="distance")
             return sparse_matrix, distances
         else:
             return distances
 
     elif return_sparse_matrix:
-        sparse_matrix = neighbor_calculator.kneighbors_graph(mode='distance')
+        sparse_matrix = neighbor_calculator.kneighbors_graph(mode="distance")
         return sparse_matrix
 
     else:
-        raise ValueError("Nothing was specified for return. That's probably not intentional!")
+        raise ValueError(
+            "Nothing was specified for return. That's probably not intentional!"
+        )

@@ -1,4 +1,4 @@
-"""A number of functions for pre-processing Gaia data before clustering can begin."""
+"""A number of functions for pre-processing data before clustering can begin."""
 
 from typing import Optional, Union, Tuple, List
 
@@ -12,9 +12,13 @@ from astropy import units as u
 from scipy.optimize import minimize
 
 
-def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, geometric_cuts: Optional[dict] = None,
-                return_cut_stars: bool = False, reset_index: bool = True) \
-        -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
+def cut_dataset(
+    data_gaia: pd.DataFrame,
+    parameter_cuts: Optional[dict] = None,
+    geometric_cuts: Optional[dict] = None,
+    return_cut_stars: bool = False,
+    reset_index: bool = True,
+) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
     """A function for cutting a dataset based on certain requirements: either on allowed parameter ranges or based on
     geometric cuts (such as selecting a circle from the data.)
 
@@ -65,15 +69,18 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
             # Check that the range is a list or np.ndarray
             type_to_check = type(a_parameter_cut)
             if type_to_check != list and type_to_check != np.ndarray:
-                raise ValueError("Incorrect type of range found in parameter_cuts! All ranges must be specified as "
-                                 "Python lists or np.ndarray arrays.")
+                raise ValueError(
+                    "Incorrect type of range found in parameter_cuts! All ranges must be specified as "
+                    "Python lists or np.ndarray arrays."
+                )
 
             # Find the matches to the parameter in data_gaia (fyi: it's a lot faster to convert to numpy first. lol)
             # We then only update the good_stars indexes that are already True, so that we don't overwrite existing
             # fails and also only do the minimum amount of calculation.
             column_to_test = data_gaia.loc[good_stars, a_parameter].to_numpy()
-            good_stars[good_stars] = np.logical_and(column_to_test > a_parameter_cut[0],
-                                                    column_to_test < a_parameter_cut[1])
+            good_stars[good_stars] = np.logical_and(
+                column_to_test > a_parameter_cut[0], column_to_test < a_parameter_cut[1]
+            )
 
         # Once we have all the cuts, only *now* do we make data_gaia smaller.
         data_gaia_cut = data_gaia.loc[good_stars, :]
@@ -93,7 +100,9 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
         raise ValueError("You must specify parameter_cuts!")
 
     if geometric_cuts is not None:
-        raise NotImplementedError("Sorry, geometric cutting isn't yet implemented here. Poke Emily to do something.")
+        raise NotImplementedError(
+            "Sorry, geometric cutting isn't yet implemented here. Poke Emily to do something."
+        )
 
     if return_cut_stars:
         return data_gaia_cut, data_gaia_dropped_stars
@@ -101,7 +110,9 @@ def cut_dataset(data_gaia: pd.DataFrame, parameter_cuts: Optional[dict] = None, 
         return data_gaia_cut
 
 
-def _rotation_function_lat(rotation: np.ndarray, coords: SkyCoord, center_coords: SkyCoord):
+def _rotation_function_lat(
+    rotation: np.ndarray, coords: SkyCoord, center_coords: SkyCoord
+):
     """Returns the least squares value of the 0th/1st and 2nd/3rd latitudes for a given rotation."""
     # The astropy bits
     center_frame = center_coords.skyoffset_frame(rotation=rotation[0] * u.deg)
@@ -113,9 +124,9 @@ def _rotation_function_lat(rotation: np.ndarray, coords: SkyCoord, center_coords
 
 
 default_healpy_kwargs = {
-    'nest': True,
-    'lonlat': True,
-    'nside': 32  # i.e. 2**5
+    "nest": True,
+    "lonlat": True,
+    "nside": 32,  # i.e. 2**5
 }
 
 
@@ -141,23 +152,30 @@ def _get_healpix_frame(pixel_id: int, rotate_frame: bool = True, **user_healpy_k
     healpy_kwargs.update(user_healpy_kwargs)
 
     # Get the center from the number of sides and the pixel id
-    center = healpy.pix2ang(healpy_kwargs['nside'], pixel_id, nest=True, lonlat=True)
-    center_coords = SkyCoord(center[0], center[1], frame='icrs', unit='deg')
+    center = healpy.pix2ang(healpy_kwargs["nside"], pixel_id, nest=True, lonlat=True)
+    center_coords = SkyCoord(center[0], center[1], frame="icrs", unit="deg")
 
     # Rotate the frame if requested
     if rotate_frame:
         # Get the four corners of the pixel
         corners_icrs = healpy.vec2ang(
-            healpy.boundaries(healpy_kwargs['nside'], pixel_id, step=1, nest=healpy_kwargs['nest']).T,
-            lonlat=healpy_kwargs['lonlat'])
+            healpy.boundaries(
+                healpy_kwargs["nside"], pixel_id, step=1, nest=healpy_kwargs["nest"]
+            ).T,
+            lonlat=healpy_kwargs["lonlat"],
+        )
 
         # Make some astropy SkyCoords to handle various bits and bobs and get the rotation angle
-        coords = SkyCoord(ra=corners_icrs[0], dec=corners_icrs[1], unit='deg')
-        result = minimize(_rotation_function_lat, np.asarray([0]), args=(coords, center_coords))
+        coords = SkyCoord(ra=corners_icrs[0], dec=corners_icrs[1], unit="deg")
+        result = minimize(
+            _rotation_function_lat, np.asarray([0]), args=(coords, center_coords)
+        )
 
         # Check the result and cast the rotation angle correctly
         if not result.success:
-            raise RuntimeError(f"failed to converge on an optimum rotation angle for pixel {pixel_id}!")
+            raise RuntimeError(
+                f"failed to converge on an optimum rotation angle for pixel {pixel_id}!"
+            )
         rotation_angle = result.x[0] * u.deg
 
     else:
@@ -166,14 +184,16 @@ def _get_healpix_frame(pixel_id: int, rotate_frame: bool = True, **user_healpy_k
     return center_coords.skyoffset_frame(rotation=rotation_angle)
 
 
-def recenter_dataset(*args,
-                     center: Optional[Union[tuple, list, np.ndarray]] = None,
-                     center_type: str = 'icrs',
-                     pixel_id: Optional[int] = None,
-                     rotate_frame: bool = True,
-                     proper_motion: bool = True,
-                     always_return_list: bool = False,
-                     **user_healpy_kwargs) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+def recenter_dataset(
+    *args,
+    center: Optional[Union[tuple, list, np.ndarray]] = None,
+    center_type: str = "icrs",
+    pixel_id: Optional[int] = None,
+    rotate_frame: bool = True,
+    proper_motion: bool = True,
+    always_return_list: bool = False,
+    **user_healpy_kwargs,
+) -> Union[pd.DataFrame, List[pd.DataFrame]]:
     """Creates new arbitrary co-ordinate axes centred on centre, allowing for clustering analysis that doesn't get
     affected by distortions. N.B.: currently only able to use ra, dec from data_gaia!
 
@@ -209,40 +229,51 @@ def recenter_dataset(*args,
     """
     # Deal with if we're using a healpix pixel and hence specify the center as a pixel number
     if center is None and pixel_id is not None:
-        center_frame = _get_healpix_frame(pixel_id, rotate_frame=rotate_frame, **user_healpy_kwargs)
+        center_frame = _get_healpix_frame(
+            pixel_id, rotate_frame=rotate_frame, **user_healpy_kwargs
+        )
 
     # Otherwise, deal with the frame being user-specified
     elif center is not None and pixel_id is None:
         center_frame = SkyCoord(
-            center[0], center[1], frame=center_type, unit=u.deg).skyoffset_frame()
+            center[0], center[1], frame=center_type, unit=u.deg
+        ).skyoffset_frame()
 
     else:
-        raise ValueError("you must specify one or the other of center and pixel_id. Not both or neither!")
+        raise ValueError(
+            "you must specify one or the other of center and pixel_id. Not both or neither!"
+        )
 
     to_return = []
 
     for data_gaia in args:
         if proper_motion:
-            coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
-                              dec=data_gaia['dec'].to_numpy() << u.deg,
-                              pm_ra_cosdec=data_gaia['pmra'].to_numpy() << u.mas / u.yr,
-                              pm_dec=data_gaia['pmdec'].to_numpy() << u.mas / u.yr)
+            coords = SkyCoord(
+                ra=data_gaia["ra"].to_numpy() << u.deg,
+                dec=data_gaia["dec"].to_numpy() << u.deg,
+                pm_ra_cosdec=data_gaia["pmra"].to_numpy() << u.mas / u.yr,
+                pm_dec=data_gaia["pmdec"].to_numpy() << u.mas / u.yr,
+            )
         else:
-            coords = SkyCoord(ra=data_gaia['ra'].to_numpy() << u.deg,
-                              dec=data_gaia['dec'].to_numpy() << u.deg)
+            coords = SkyCoord(
+                ra=data_gaia["ra"].to_numpy() << u.deg,
+                dec=data_gaia["dec"].to_numpy() << u.deg,
+            )
 
         # Apply the transform and save it
         coords = coords.transform_to(center_frame)
 
-        data_gaia['lon'] = coords.lon.value
-        data_gaia['lat'] = coords.lat.value
+        data_gaia["lon"] = coords.lon.value
+        data_gaia["lat"] = coords.lat.value
 
         if proper_motion:
-            data_gaia['pmlon'] = coords.pm_lon_coslat.value
-            data_gaia['pmlat'] = coords.pm_lat.value
+            data_gaia["pmlon"] = coords.pm_lon_coslat.value
+            data_gaia["pmlat"] = coords.pm_lat.value
 
         # Correct all values above 180 to simply be negative numbers
-        data_gaia['lon'] = np.where(data_gaia['lon'] > 180, data_gaia['lon'] - 360, data_gaia['lon'])
+        data_gaia["lon"] = np.where(
+            data_gaia["lon"] > 180, data_gaia["lon"] - 360, data_gaia["lon"]
+        )
 
         to_return.append(data_gaia)
 
@@ -252,14 +283,16 @@ def recenter_dataset(*args,
         return to_return
 
 
-def rescale_dataset(data_gaia: pd.DataFrame,
-                    *args,
-                    columns_to_rescale: Union[list, tuple] = ('ra', 'dec', 'pmra', 'pmdec', 'parallax'),
-                    column_weights: Union[list, tuple] = (1., 1., 1., 1., 1.),
-                    scaling_type: str = 'robust',
-                    concatenate: bool = True,
-                    return_scaler: bool = False,
-                    **kwargs_for_scaler):
+def rescale_dataset(
+    data_gaia: pd.DataFrame,
+    *args,
+    columns_to_rescale: Union[list, tuple] = ("ra", "dec", "pmra", "pmdec", "parallax"),
+    column_weights: Union[list, tuple] = (1.0, 1.0, 1.0, 1.0, 1.0),
+    scaling_type: str = "robust",
+    concatenate: bool = True,
+    return_scaler: bool = False,
+    **kwargs_for_scaler,
+):
     """A wrapper for sklearn's scaling methods that can automatically handle re-scaling data a number of different ways.
 
     Args:
@@ -289,29 +322,37 @@ def rescale_dataset(data_gaia: pd.DataFrame,
     column_weights = np.asarray(column_weights)
 
     # Select the scaler to use
-    if scaling_type == 'robust':
+    if scaling_type == "robust":
         scaler = RobustScaler(**kwargs_for_scaler)
-    elif scaling_type == 'standard':
+    elif scaling_type == "standard":
         scaler = StandardScaler(**kwargs_for_scaler)
     else:
         raise ValueError("Selected scaling_type not supported!")
 
     # Check that all values are finite
     if not np.isfinite(data_gaia[columns_to_rescale].to_numpy()).all():
-        raise ValueError("At least one value in data_gaia is not finite! Unable to rescale the data.")
+        raise ValueError(
+            "At least one value in data_gaia is not finite! Unable to rescale the data."
+        )
 
     # Apply the scaling & multiply by column weights
-    to_return = [scaler.fit_transform(data_gaia[columns_to_rescale].to_numpy()) * column_weights]
+    to_return = [
+        scaler.fit_transform(data_gaia[columns_to_rescale].to_numpy()) * column_weights
+    ]
 
     # Apply the same scaling scaling to any other data frames, if others have been specified
     for an_extra_cluster in args:
-
         # Check that all values are finite
         if not np.isfinite(an_extra_cluster[columns_to_rescale].to_numpy()).all():
-            raise ValueError("At least one value in args is not finite! Unable to rescale the data.")
+            raise ValueError(
+                "At least one value in args is not finite! Unable to rescale the data."
+            )
 
         # Re-scale!
-        to_return.append(scaler.transform(an_extra_cluster[columns_to_rescale].to_numpy()) * column_weights)
+        to_return.append(
+            scaler.transform(an_extra_cluster[columns_to_rescale].to_numpy())
+            * column_weights
+        )
 
     # Return a concatenated array
     if concatenate:
@@ -327,5 +368,3 @@ def rescale_dataset(data_gaia: pd.DataFrame,
         return to_return, scaler
     else:
         return to_return
-
-

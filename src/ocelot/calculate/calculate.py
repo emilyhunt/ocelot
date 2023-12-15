@@ -12,13 +12,6 @@ import pandas as pd
 from .constants import mas_per_yr_to_rad_per_s, pc_to_m, deg_to_rad
 
 
-def _change_none_into_one(membership_probabilities):
-    if membership_probabilities is None:
-        return 1.
-    else:
-        return membership_probabilities
-
-
 def _weighted_standard_deviation(x, weights):
     # See https://stackoverflow.com/a/52655244/12709989 for how the standard deviation is calculated in a weighted way
     # Todo: not sure that this deals with small numbers of points correctly!
@@ -45,7 +38,9 @@ def _handle_ra_discontinuity(ra_data, middle_ras_raise_error=True):
     """
     # Firstly, check that the ras are valid ras
     if np.any(ra_data >= 360) or np.any(ra_data < 0):
-        raise ValueError("at least one input ra value was invalid! Ras must be in the range [0, 360).")
+        raise ValueError(
+            "at least one input ra value was invalid! Ras must be in the range [0, 360)."
+        )
 
     # Next, grab all the locations of dodgy friends and check that all three aren't ever in use at the same time
     low_ra = ra_data < 90
@@ -54,11 +49,12 @@ def _handle_ra_discontinuity(ra_data, middle_ras_raise_error=True):
 
     # Proceed if we have both low and high ras
     if np.any(low_ra) and np.any(high_ra):
-
         # Stop if we have middle too (would imply stars everywhere or an extreme dec value)
         if np.any(middle_ra) and middle_ras_raise_error:
-            raise ValueError("ra values are in all three ranges: [0, 90), [90, 270] and (270, 360). This cluster can't "
-                             "be processed by this function! Spherical distortions must be removed first.")
+            raise ValueError(
+                "ra values are in all three ranges: [0, 90), [90, 270] and (270, 360). This cluster can't "
+                "be processed by this function! Spherical distortions must be removed first."
+            )
 
         # Otherwise, apply the discontinuity removal
         else:
@@ -71,16 +67,18 @@ def _handle_ra_discontinuity(ra_data, middle_ras_raise_error=True):
     return ra_data
 
 
-def mean_distance(data_gaia: pd.DataFrame,
-                  membership_probabilities: Optional[np.ndarray] = None,
-                  key_parallax: str = "parallax",
-                  key_parallax_error: str = "parallax_error",
-                  key_r_est: str = "r_est",
-                  key_r_low: str = "r_lo",
-                  key_r_high: str = "r_hi",
-                  key_result_flag: str = "result_flag",
-                  calculate_cbj_mean_distance: bool = False,
-                  **kwargs):
+def mean_distance(
+    data_gaia: pd.DataFrame,
+    membership_probabilities: Optional[np.ndarray] = None,
+    key_parallax: str = "parallax",
+    key_parallax_error: str = "parallax_error",
+    key_r_est: str = "r_est",
+    key_r_low: str = "r_lo",
+    key_r_high: str = "r_hi",
+    key_result_flag: str = "result_flag",
+    calculate_cbj_mean_distance: bool = False,
+    **kwargs,
+):
     """Produces mean parallax and distance statistics, including a basic handling of error.
 
     Done in a very basic, frequentist way, whereby means are weighted based on the magnitude of the inverse errors on
@@ -114,17 +112,24 @@ def mean_distance(data_gaia: pd.DataFrame,
     sqrt_n_stars = np.sqrt(data_gaia.shape[0])
 
     # Mean parallax
-    inferred_parameters["parallax"] = np.average(data_gaia[key_parallax], weights=membership_probabilities)
-    inferred_parameters["parallax_std"] = _weighted_standard_deviation(data_gaia[key_parallax],
-                                                                       membership_probabilities)
-    inferred_parameters["parallax_error"] = inferred_parameters["parallax_std"] / sqrt_n_stars
+    inferred_parameters["parallax"] = np.average(
+        data_gaia[key_parallax], weights=membership_probabilities
+    )
+    inferred_parameters["parallax_std"] = _weighted_standard_deviation(
+        data_gaia[key_parallax], membership_probabilities
+    )
+    inferred_parameters["parallax_error"] = (
+        inferred_parameters["parallax_std"] / sqrt_n_stars
+    )
 
     # The inverse too (which is a shitty proxy for distance when you're feeling too lazy to be a Bayesian)
     inferred_parameters["inverse_parallax"] = 1000 / inferred_parameters["parallax"]
-    inferred_parameters["inverse_parallax_l68"] = (
-        1000 / (inferred_parameters["parallax"] + inferred_parameters["parallax_error"]))
-    inferred_parameters["inverse_parallax_u68"] = (
-        1000 / (inferred_parameters["parallax"] - inferred_parameters["parallax_error"]))
+    inferred_parameters["inverse_parallax_l68"] = 1000 / (
+        inferred_parameters["parallax"] + inferred_parameters["parallax_error"]
+    )
+    inferred_parameters["inverse_parallax_u68"] = 1000 / (
+        inferred_parameters["parallax"] - inferred_parameters["parallax_error"]
+    )
 
     # Mean distance, but a bit shit for now lol
     if calculate_cbj_mean_distance:
@@ -135,23 +140,34 @@ def mean_distance(data_gaia: pd.DataFrame,
 
         # Deal with the fact that dropping stars without an inferred distance means membership_probabilities might not
         # have the same length as our r_est
-        if type(membership_probabilities) is not float and membership_probabilities is not None:
+        if (
+            type(membership_probabilities) is not float
+            and membership_probabilities is not None
+        ):
             membership_probabilities = membership_probabilities[good_stars]
 
-        inferred_parameters["distance"] = np.average(r_est, weights=membership_probabilities)
-        inferred_parameters["distance_std"] = _weighted_standard_deviation(r_est, membership_probabilities)
-        inferred_parameters["distance_error"] = inferred_parameters["distance_std"] / sqrt_n_stars
+        inferred_parameters["distance"] = np.average(
+            r_est, weights=membership_probabilities
+        )
+        inferred_parameters["distance_std"] = _weighted_standard_deviation(
+            r_est, membership_probabilities
+        )
+        inferred_parameters["distance_error"] = (
+            inferred_parameters["distance_std"] / sqrt_n_stars
+        )
 
     return inferred_parameters
 
 
-def mean_proper_motion(data_gaia: pd.DataFrame,
-                       membership_probabilities: Optional[np.ndarray] = None,
-                       key_pmra: str = "pmra",
-                       key_pmra_error: str = "pmra_error",
-                       key_pmdec: str = "pmdec",
-                       key_pmdec_error: str = "pmdec_error",
-                       **kwargs):
+def mean_proper_motion(
+    data_gaia: pd.DataFrame,
+    membership_probabilities: Optional[np.ndarray] = None,
+    key_pmra: str = "pmra",
+    key_pmra_error: str = "pmra_error",
+    key_pmdec: str = "pmdec",
+    key_pmdec_error: str = "pmdec_error",
+    **kwargs,
+):
     """Calculates the weighted mean proper motion of a cluster, including error.
 
     Done in a very basic, frequentist way, whereby means are weighted based on the magnitude of the inverse errors on
@@ -180,30 +196,41 @@ def mean_proper_motion(data_gaia: pd.DataFrame,
     sqrt_n_stars = np.sqrt(data_gaia.shape[0])
 
     # Mean proper motion time!
-    inferred_parameters["pmra"] = np.average(data_gaia[key_pmra], weights=membership_probabilities)
-    inferred_parameters["pmra_std"] = _weighted_standard_deviation(data_gaia[key_pmra], membership_probabilities)
+    inferred_parameters["pmra"] = np.average(
+        data_gaia[key_pmra], weights=membership_probabilities
+    )
+    inferred_parameters["pmra_std"] = _weighted_standard_deviation(
+        data_gaia[key_pmra], membership_probabilities
+    )
     inferred_parameters["pmra_error"] = inferred_parameters["pmra_std"] / sqrt_n_stars
 
-    inferred_parameters["pmdec"] = np.average(data_gaia[key_pmdec], weights=membership_probabilities)
-    inferred_parameters["pmdec_std"] = _weighted_standard_deviation(data_gaia[key_pmdec], membership_probabilities)
+    inferred_parameters["pmdec"] = np.average(
+        data_gaia[key_pmdec], weights=membership_probabilities
+    )
+    inferred_parameters["pmdec_std"] = _weighted_standard_deviation(
+        data_gaia[key_pmdec], membership_probabilities
+    )
     inferred_parameters["pmdec_error"] = inferred_parameters["pmdec_std"] / sqrt_n_stars
 
     inferred_parameters["pm_dispersion"] = np.sqrt(
-        inferred_parameters["pmra_std"]**2 + inferred_parameters["pmdec_std"]**2)
+        inferred_parameters["pmra_std"] ** 2 + inferred_parameters["pmdec_std"] ** 2
+    )
 
     return inferred_parameters
 
 
-def mean_radius(data_gaia: pd.DataFrame,
-                membership_probabilities: Optional[np.ndarray] = None,
-                already_inferred_parameters: Optional[dict] = None,
-                key_ra: str = "ra",
-                key_ra_error: str = "ra_error",
-                key_dec: str = "dec",
-                key_dec_error: str = "dec_error",
-                distance_to_use: str = "inverse_parallax",
-                middle_ras_raise_error: bool = True,
-                **kwargs):
+def mean_radius(
+    data_gaia: pd.DataFrame,
+    membership_probabilities: Optional[np.ndarray] = None,
+    already_inferred_parameters: Optional[dict] = None,
+    key_ra: str = "ra",
+    key_ra_error: str = "ra_error",
+    key_dec: str = "dec",
+    key_dec_error: str = "dec_error",
+    distance_to_use: str = "inverse_parallax",
+    middle_ras_raise_error: bool = True,
+    **kwargs,
+):
     """Produces various radius statistics on a given cluster, finding its sky location and three radii: the core, tidal
     and 50% radius.
 
@@ -216,7 +243,7 @@ def mean_radius(data_gaia: pd.DataFrame,
 
     Todo: add error estimation to this function (hard)
 
-    Todo: add galactic l, b to the output of this function  
+    Todo: add galactic l, b to the output of this function
 
     Args:
         data_gaia (pd.DataFrame): Gaia data for the cluster in the standard format (e.g. as in DR2.)
@@ -270,60 +297,79 @@ def mean_radius(data_gaia: pd.DataFrame,
         already_inferred_parameters = mean_distance(data_gaia, membership_probabilities)
 
     # Estimate the ra, dec of the cluster as the weighted mean
-    ra_data = _handle_ra_discontinuity(data_gaia[key_ra], middle_ras_raise_error=middle_ras_raise_error)
+    ra_data = _handle_ra_discontinuity(
+        data_gaia[key_ra], middle_ras_raise_error=middle_ras_raise_error
+    )
 
-    inferred_parameters['ra'] = np.average(ra_data, weights=membership_probabilities)
-    inferred_parameters['ra_std'] = _weighted_standard_deviation(ra_data, membership_probabilities)
-    inferred_parameters['ra_error'] = inferred_parameters['ra_std'] / sqrt_n_stars
+    inferred_parameters["ra"] = np.average(ra_data, weights=membership_probabilities)
+    inferred_parameters["ra_std"] = _weighted_standard_deviation(
+        ra_data, membership_probabilities
+    )
+    inferred_parameters["ra_error"] = inferred_parameters["ra_std"] / sqrt_n_stars
 
-    if inferred_parameters['ra'] < 0:
-        inferred_parameters['ra'] += 360
+    if inferred_parameters["ra"] < 0:
+        inferred_parameters["ra"] += 360
 
-    inferred_parameters['dec'] = np.average(data_gaia[key_dec], weights=membership_probabilities)
-    inferred_parameters['dec_std'] = _weighted_standard_deviation(data_gaia[key_dec], membership_probabilities)
-    inferred_parameters['dec_error'] = inferred_parameters['dec_std'] / sqrt_n_stars
+    inferred_parameters["dec"] = np.average(
+        data_gaia[key_dec], weights=membership_probabilities
+    )
+    inferred_parameters["dec_std"] = _weighted_standard_deviation(
+        data_gaia[key_dec], membership_probabilities
+    )
+    inferred_parameters["dec_error"] = inferred_parameters["dec_std"] / sqrt_n_stars
 
-    inferred_parameters['ang_dispersion'] = np.sqrt(inferred_parameters['ra_std']**2
-                                                    + inferred_parameters['dec_std']**2)
+    inferred_parameters["ang_dispersion"] = np.sqrt(
+        inferred_parameters["ra_std"] ** 2 + inferred_parameters["dec_std"] ** 2
+    )
 
     # Calculate how far every star in the cluster is from the central point
-    center_skycoord = SkyCoord(ra=inferred_parameters['ra'], dec=inferred_parameters['dec'], unit="deg")
-    star_skycoords = SkyCoord(ra=data_gaia[key_ra].to_numpy(), dec=data_gaia[key_dec].to_numpy(), unit="deg")
+    center_skycoord = SkyCoord(
+        ra=inferred_parameters["ra"], dec=inferred_parameters["dec"], unit="deg"
+    )
+    star_skycoords = SkyCoord(
+        ra=data_gaia[key_ra].to_numpy(), dec=data_gaia[key_dec].to_numpy(), unit="deg"
+    )
 
     distances_from_center = center_skycoord.separation(star_skycoords).degree
 
     # And say something about the radii in this case
-    inferred_parameters['ang_radius_50'] = np.median(distances_from_center)
-    inferred_parameters['ang_radius_50_error'] = np.nan
+    inferred_parameters["ang_radius_50"] = np.median(distances_from_center)
+    inferred_parameters["ang_radius_50_error"] = np.nan
 
-    inferred_parameters['ang_radius_c'] = np.nan
-    inferred_parameters['ang_radius_c_error'] = np.nan
+    inferred_parameters["ang_radius_c"] = np.nan
+    inferred_parameters["ang_radius_c_error"] = np.nan
 
-    inferred_parameters['ang_radius_t'] = np.max(distances_from_center)
-    inferred_parameters['ang_radius_t_error'] = np.nan
+    inferred_parameters["ang_radius_t"] = np.max(distances_from_center)
+    inferred_parameters["ang_radius_t_error"] = np.nan
 
     # Convert the angular distances into parsecs
-    inferred_parameters['radius_50'] = (
-        np.tan(inferred_parameters['ang_radius_50'] * deg_to_rad) * already_inferred_parameters[distance_to_use])
-    inferred_parameters['radius_50_error'] = np.nan
-    inferred_parameters['radius_c'] = np.nan
-    inferred_parameters['radius_c_error'] = np.nan
-    inferred_parameters['radius_t'] = (
-        np.tan(inferred_parameters['ang_radius_t'] * deg_to_rad) * already_inferred_parameters[distance_to_use])
-    inferred_parameters['radius_t_error'] = np.nan
+    inferred_parameters["radius_50"] = (
+        np.tan(inferred_parameters["ang_radius_50"] * deg_to_rad)
+        * already_inferred_parameters[distance_to_use]
+    )
+    inferred_parameters["radius_50_error"] = np.nan
+    inferred_parameters["radius_c"] = np.nan
+    inferred_parameters["radius_c_error"] = np.nan
+    inferred_parameters["radius_t"] = (
+        np.tan(inferred_parameters["ang_radius_t"] * deg_to_rad)
+        * already_inferred_parameters[distance_to_use]
+    )
+    inferred_parameters["radius_t_error"] = np.nan
 
     return inferred_parameters
 
 
-def mean_internal_velocity_dispersion(data_gaia: pd.DataFrame,
-                                      membership_probabilities: Optional[np.ndarray] = None,
-                                      already_inferred_parameters: Optional[dict] = None,
-                                      key_pmra: str = "pmra",
-                                      key_pmra_error: str = "pmra_error",
-                                      key_pmdec: str = "pmdec",
-                                      key_pmdec_error: str = "pmdec_error",
-                                      distance_to_use: str = "inverse_parallax",
-                                      **kwargs):
+def mean_internal_velocity_dispersion(
+    data_gaia: pd.DataFrame,
+    membership_probabilities: Optional[np.ndarray] = None,
+    already_inferred_parameters: Optional[dict] = None,
+    key_pmra: str = "pmra",
+    key_pmra_error: str = "pmra_error",
+    key_pmdec: str = "pmdec",
+    key_pmdec_error: str = "pmdec_error",
+    distance_to_use: str = "inverse_parallax",
+    **kwargs,
+):
     """Estimates the internal velocity dispersion of a cluster.
 
     Done in a very basic, frequentist way, whereby means are weighted based on the membership probabilities (if
@@ -360,32 +406,40 @@ def mean_internal_velocity_dispersion(data_gaia: pd.DataFrame,
 
     # Grab the distances and proper motions if they aren't specified - we'll need them in a moment!
     if already_inferred_parameters is None:
-        already_inferred_parameters = {**mean_distance(data_gaia, membership_probabilities),
-                                       **mean_proper_motion(data_gaia, membership_probabilities)}
+        already_inferred_parameters = {
+            **mean_distance(data_gaia, membership_probabilities),
+            **mean_proper_motion(data_gaia, membership_probabilities),
+        }
 
     # Center the proper motions on the cluster
     pmra = data_gaia[key_pmra] - already_inferred_parameters["pmra"]
     pmdec = data_gaia[key_pmdec] - already_inferred_parameters["pmdec"]
 
     # Velocity dispersion time
-    pm_magnitude = np.sqrt(pmra ** 2 + pmdec ** 2)
-    velocity_dispersion = (np.tan(pm_magnitude * mas_per_yr_to_rad_per_s)
-                           * already_inferred_parameters[distance_to_use] * pc_to_m)
+    pm_magnitude = np.sqrt(pmra**2 + pmdec**2)
+    velocity_dispersion = (
+        np.tan(pm_magnitude * mas_per_yr_to_rad_per_s)
+        * already_inferred_parameters[distance_to_use]
+        * pc_to_m
+    )
 
     # Save the standard deviations of the sum of the squares of parameters as our velocity dispersions
-    inferred_parameters["v_internal_tangential"] = _weighted_standard_deviation(velocity_dispersion,
-                                                                                membership_probabilities)
+    inferred_parameters["v_internal_tangential"] = _weighted_standard_deviation(
+        velocity_dispersion, membership_probabilities
+    )
     inferred_parameters["v_internal_tangential_error"] = np.nan
 
     return inferred_parameters
 
 
-def all_statistics(data_gaia: pd.DataFrame,
-                   membership_probabilities: Optional[np.ndarray] = None,
-                   parameter_inference_mode: str = "mean",
-                   override_membership_probabilities_being_off: bool = False,
-                   middle_ras_raise_error: bool = True,
-                   **kwargs):
+def all_statistics(
+    data_gaia: pd.DataFrame,
+    membership_probabilities: Optional[np.ndarray] = None,
+    parameter_inference_mode: str = "mean",
+    override_membership_probabilities_being_off: bool = False,
+    middle_ras_raise_error: bool = True,
+    **kwargs,
+):
     """Wraps all subfunctions in ocelot.calculate and calculates all the stats you could possibly ever want.
 
     Args:
@@ -423,28 +477,46 @@ def all_statistics(data_gaia: pd.DataFrame,
         inferred_parameters = {}
 
         inferred_parameters.update(
-            mean_distance(data_gaia, membership_probabilities=membership_probabilities, **kwargs))
+            mean_distance(
+                data_gaia, membership_probabilities=membership_probabilities, **kwargs
+            )
+        )
 
         # Todo: could also add the number of 1sigma+ member stars.
 
         inferred_parameters = {
-            'n_stars': data_gaia.shape[0],
-            **mean_radius(data_gaia, membership_probabilities=membership_probabilities,
-                          already_inferred_parameters=inferred_parameters,
-                          middle_ras_raise_error=middle_ras_raise_error, **kwargs),
-            **inferred_parameters}
+            "n_stars": data_gaia.shape[0],
+            **mean_radius(
+                data_gaia,
+                membership_probabilities=membership_probabilities,
+                already_inferred_parameters=inferred_parameters,
+                middle_ras_raise_error=middle_ras_raise_error,
+                **kwargs,
+            ),
+            **inferred_parameters,
+        }
 
         inferred_parameters.update(
-            mean_proper_motion(data_gaia, membership_probabilities=membership_probabilities, **kwargs))
+            mean_proper_motion(
+                data_gaia, membership_probabilities=membership_probabilities, **kwargs
+            )
+        )
 
         inferred_parameters.update(
-            mean_internal_velocity_dispersion(data_gaia, membership_probabilities=membership_probabilities,
-                                              already_inferred_parameters=inferred_parameters, **kwargs))
+            mean_internal_velocity_dispersion(
+                data_gaia,
+                membership_probabilities=membership_probabilities,
+                already_inferred_parameters=inferred_parameters,
+                **kwargs,
+            )
+        )
 
         inferred_parameters.update({"parameter_inference_mode": "mean"})
 
     else:
-        raise ValueError("the only currently implemented parameter_inference_mode for this function is 'mean'")
+        raise ValueError(
+            "the only currently implemented parameter_inference_mode for this function is 'mean'"
+        )
 
     # Return it all as one big dict
     return inferred_parameters
