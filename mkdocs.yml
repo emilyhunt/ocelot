@@ -14,7 +14,7 @@ repo_name: ocelot
 theme:
     name: material
     features:
-        # - navigation.sections  # Sections are included in the navigation on the left.
+        - navigation.sections  # Sections are included in the navigation on the left.
         # - toc.integrate  # Table of contents is integrated on the left; does not appear separately on the right.
         # - header.autohide  # header disappears as you scroll
         - search.suggest  # Suggested search
@@ -33,8 +33,8 @@ theme:
             icon: material/weather-night
             name: Switch to dark mode
         - scheme: slate
-          primary: deep orange
-          accent: amber
+          primary: blue grey
+          accent: deep orange
           toggle:
             icon: material/weather-sunny
             name: Switch to light mode
@@ -78,8 +78,28 @@ plugins:
 
 
 nav:
-    - Getting Started: 'index.md'
-    - Examples: 'tutorials/tutorials.md'
+    - Getting Started: 
+        - Overview: 'index.md'
+        - Installation: 'wip.md'
+        - Quick guide: 'wip.md'
+        - Configuration: 'wip.md'
+        - Citing ocelot: 'wip.md'
+        - Further reading: 'wip.md'
+        - Technical Stuff:
+            - Changelog: 'wip.md'
+            - Reporting an issue: 'wip.md'
+
+    - Examples:
+        - Star clusters in Gaia data:
+            - Detect a star cluster in Gaia data: 'wip.md'
+            - Crossmatching catalogues: 'wip.md'
+        - Color-magnitude diagrams:
+            - Work with PARSEC isochrones: 'wip.md'
+            - Work with MIST isochrones: 'wip.md'
+            - Fit an isochrone: 'wip.md'
+        - Simulating clusters:
+            - Simulate a star cluster from scratch: 'wip.md'
     - API Reference:
         - Calculate: 'api/calculate.md'
-    - Contibute to ocelot!: 'developing.md'
+    - Contibute to ocelot!: 
+        - Why ocelot?: 'developing.md'
