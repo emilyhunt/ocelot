@@ -1,7 +1,10 @@
 # ocelot
-The Open Source Star Cluster Multi-Purpose Toolkit. (Its results are better than this acronym.)
 
-## November 2023
+A toolbox for working with observations of star clusters. 
+
+It's _`ocelot`_ for short - the **O**pen-source star **C**lust**E**r mu**L**ti-purp**O**se **T**oolkit! (Its results are better than this acronym.)
+
+## November 2023 update
 
 Previously, this was a private repo containing code I used in my PhD: it's now public!
 
