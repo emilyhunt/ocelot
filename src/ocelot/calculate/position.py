@@ -7,52 +7,6 @@ from numpy.typing import ArrayLike
 from ocelot.calculate.generic import spherical_mean
 
 
-# def shift_longitudinal_coordinates(longitudes: ArrayLike, middle_ras_raise_error=True):
-#     """Helper function that tries to move longitudinal coordinates
-
-#     Args:
-#         ra_data (pd.Series or np.ndarray): data on ras.
-#         middle_ras_raise_error (bool): whether or not a cluster having right ascensions in all ranges [0, 90), [90, 270]
-#             and (270, 360] raises an error. The error here indicates that this cluster has extreme spherical
-#             discontinuities (e.g. it's near a coordinate pole) and that the mean ra and mean dec will be inaccurate.
-#             Default: True
-
-#     Returns:
-#         ra_data but corrected for distortions. If values are both <90 and >270, the new ra data will be in the range
-#             (-90, 90).
-
-#     """
-#     # Firstly, check that the ras are valid ras
-#     if np.any(longitudes >= 360) or np.any(longitudes < 0):
-#         raise ValueError(
-#             "at least one input ra value was invalid! Ras must be in the range [0, 360)."
-#         )
-
-#     # Next, grab all the locations of dodgy friends and check that all three aren't ever in use at the same time
-#     low_ra = longitudes < 90
-#     high_ra = longitudes > 270
-#     middle_ra = np.logical_not(np.logical_or(low_ra, high_ra))
-
-#     # Proceed if we have both low and high ras
-#     if np.any(low_ra) and np.any(high_ra):
-#         # Stop if we have middle too (would imply stars everywhere or an extreme dec value)
-#         if np.any(middle_ra) and middle_ras_raise_error:
-#             raise ValueError(
-#                 "ra values are in all three ranges: [0, 90), [90, 270] and (270, 360). This cluster can't "
-#                 "be processed by this function! Spherical distortions must be removed first."
-#             )
-
-#         # Otherwise, apply the discontinuity removal
-#         else:
-#             # Make a copy so nothing weird happens
-#             longitudes = longitudes.copy()
-
-#             # And remove the distortion for all high numbers
-#             longitudes[high_ra] = longitudes[high_ra] - 360
-
-#     return longitudes
-
-
 def mean_position(
     longitudes: ArrayLike, latitudes: ArrayLike, degrees=True
 ) -> tuple[float]:
