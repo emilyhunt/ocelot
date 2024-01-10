@@ -1,3 +1,5 @@
+# Todo: refactor to new structure (e.g. class-based, mirroring scipy.stats maybe?)
+
 from typing import Union, Optional
 
 import numpy as np

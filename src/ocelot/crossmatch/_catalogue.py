@@ -11,6 +11,7 @@ from typing import Optional, Union, List, Tuple
 
 
 class Catalogue:
+    # Todo this class needs refactoring and overhauling. It's... messy...
     def __init__(
         self,
         data: pd.DataFrame,

@@ -9,50 +9,60 @@ from astropy.io import ascii
 
 
 def read_parsec(
-    file_location: Union[Path, List[Path]],
-    max_label: int = 7,
+    file_location: Union[Path, List[Path], str, List[str]],
+    max_label: int = 9,
     column_names: Optional[str] = None,
 ) -> pd.DataFrame:
-    """Reads input CMD 3.3 isochrone(s). In the plural case, they're combined into one DataFrame.
+    """Reads input CMD 3.3 isochrone(s). In the plural case, they're combined into one 
+    DataFrame.
 
-    Notes:
-        - Only verified for use when reading in isochrones from the CMD v3.3 & PARSEC v1.2S web interface at
-            http://stev.oapd.inaf.it/cgi-bin/cmd
-        - This function uses the pathlib module so that it's os-independent. If you've never used it before, then you
-            can find docs at: https://docs.python.org/3.6/library/pathlib.html
-        - You can make a new path with pathlib with something like:
-            from pathlib import Path
-            path_to_isochrones = Path('<location_of_the_isochrones>')
+    Only verified for use when reading in isochrones from the CMD v3.3 & PARSEC v1.2S 
+    web interface at http://stev.oapd.inaf.it/cgi-bin/cmd.
 
-    Args:
-        file_location (pathlib.Path or list of pathlib.Path): you have three options:
-            - Location of a file containing CMD 3.3 / PARSEC v1.2s isochrones.
-            - A list of files as the above - they will all be joined.
-            - A directory of .dat files containing isochrones
-        max_label (int): maximum label to read in. This corresponds to:
-            0 = PMS, pre main sequence
-            1 = MS, main sequence
-            2 = SGB, subgiant branch, or Hertzsprung gap for more intermediate+massive stars
-            3 = RGB, red giant branch, or the quick stage of red giant for intermediate+massive stars
-            4 = CHEB, core He-burning for low mass stars, or the initial stage of CHeB for intermediate+massive stars
-            5 = still CHEB, the blueward part of the Cepheid loop of intermediate+massive stars
-            6 = still CHEB, the redward part of the Cepheid loop of intermediate+massive stars
-            7 = EAGB, the early asymptotic giant branch, or a quick stage of red giant for massive stars
-            8 = TPAGB, the thermally pulsing asymptotic giant branch
-            9 = post-AGB (in preparation!)
-            default: 7
-        column_names (str, optional): alternative column names to use.
-            Default: None, which uses column names:
-                ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe', 'logg', 'label',
-                 'mbolmag', 'Gmag', 'G_BPmag', 'G_RPmag']
-            as from the CMD 3.3 output in the Gaia DR2 Evans+2018 photometric system.
+    Parameters
+    ----------
+    file_location : pathlib.Path or list of pathlib.Path or str
+        You can specify three things:
+        - Location of a file containing CMD 3.3 / PARSEC v1.2s isochrones.
+        - A list of files as the above - they will all be joined.
+        - A directory of .dat files containing isochrones
+    max_label : int
+        Maximum label to read in, which defaults to 9. The upper end of PARSEC tracks 
+        can be a little bit experimental, so you may not want all labels (7 is a good 
+        choice.) Default is 9 (the highest). See notes for more details.  
+    column_names : ArrayLike, optional
+        Alternative column names to use. Default: None, which uses column names:
+        ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe', 'logg', 
+        'label', 'mbolmag', 'Gmag', 'G_BPmag', 'G_RPmag'] as from the CMD 3.3 output in 
+        the Gaia DR2 Evans+2018 photometric system.
 
-    Returns:
-        a pd.DataFrame of the read-in isochrone. It's worth checking manually that this worked, as the tables are in
-            a format that requires some cleaning (that should hopefully be done automatically.) It will also have had
-            the colour calculated, which will be labelled 'G_BP-RP'.
+    Returns
+    -------
+    isochrone : pd.Dataframe
+        a pd.DataFrame of the read-in isochrone. It's worth checking manually that this 
+        worked, as the tables are in a format that requires some cleaning (that should 
+        hopefully be done automatically.) It will also have had the colour calculated, 
+        which will be labelled 'G_BP-RP'.
 
+    Notes
+    -----
+    PARSEC v1.2s labels correspond to...
+    - 0 = PMS, pre main sequence
+    - 1 = MS, main sequence
+    - 2 = SGB, subgiant branch, or Hertzsprung gap for more intermediate+massive stars
+    - 3 = RGB, red giant branch, or the quick stage of red giant for 
+        intermediate+massive stars
+    - 4 = CHEB, core He-burning for low mass stars, or the initial stage of CHeB for 
+        intermediate+massive stars
+    - 5 = still CHEB, the blueward part of the Cepheid loop of intermediate+massive 
+        stars
+    - 6 = still CHEB, the redward part of the Cepheid loop of intermediate+massive stars
+    - 7 = EAGB, the early asymptotic giant branch, or a quick stage of red giant for 
+        massive stars
+    - 8 = TPAGB, the thermally pulsing asymptotic giant branch
+    - 9 = post-AGB (in preparation!)
     """
+    # Todo refactor to be more cross-compatible with other PARSEC versions (and be generally better)
     # Use default column names if none are specified
     if column_names is None:
         column_names = [
@@ -72,6 +82,9 @@ def read_parsec(
             "G_RPmag",
         ]
 
+    if isinstance(file_location, str):
+        file_location = Path(file_location)
+
     # See if file_location is a directory - only works if one path is specified
     try:
         file_location_is_a_directory = file_location.is_dir()
@@ -79,7 +92,7 @@ def read_parsec(
         file_location_is_a_directory = False
 
     # Iterate over all files if a list of files or a directory has been specified
-    if type(file_location) is list or file_location_is_a_directory:
+    if isinstance(file_location, list) or file_location_is_a_directory:
         # If a directory was specified, we want to first make a list of all its .dat files.
         if file_location_is_a_directory:
             file_location = list(file_location.glob("*.dat"))
@@ -129,3 +142,7 @@ def read_parsec(
 
     return isochrones
 
+
+def read_mist():
+    # Todo
+    pass

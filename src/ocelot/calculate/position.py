@@ -52,3 +52,13 @@ def mean_position(
     if degrees:
         return np.degrees(mean_lon), np.degrees(mean_lat)
     return mean_lon, mean_lat
+
+
+def mode_position():
+    """Attempts to find the mode of a star cluster's 2D on-sky distribution. This is a 
+    better estimator than the mean position for clusters that are assymmetric, which is
+    often the case for clusters with assymetric tidal tails (e.g. due to one side being
+    more easily detected than the other.)
+    """
+    # Todo
+    pass
