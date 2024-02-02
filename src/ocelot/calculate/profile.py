@@ -132,6 +132,8 @@ def sample_2d_king_profile(
     generator = np.random.default_rng(seed=seed)
     completed_samples = 0
 
+    max_value = king_surface_density_fast(np.zeros(1), r_core, r_tidal)[0]
+
     while completed_samples < n_samples:
         remaining_samples = n_samples - completed_samples
         samples_to_generate = int(
@@ -141,7 +143,7 @@ def sample_2d_king_profile(
         # Generate some initial radius samples
         test_r_values = generator.uniform(high=r_tidal, size=samples_to_generate)
         test_king_values = king_surface_density_fast(test_r_values, r_core, r_tidal)
-        test_mcmc_values = generator.uniform(size=samples_to_generate)
+        test_mcmc_values = generator.uniform(size=samples_to_generate, high=max_value)
 
         # See which & how many are valid and save them!
         valid_test_samples = test_king_values < test_mcmc_values
@@ -151,10 +153,12 @@ def sample_2d_king_profile(
             r_samples[completed_samples:] = test_r_values[valid_test_samples][
                 :remaining_samples
             ]
-        else:
-            r_samples[
-                completed_samples : completed_samples + n_valid_test_samples
-            ] = test_r_values[valid_test_samples]
+            break
+
+        r_samples[
+            completed_samples : completed_samples + n_valid_test_samples
+        ] = test_r_values[valid_test_samples]
+        completed_samples += n_valid_test_samples
 
     if return_generator:
         return r_samples, generator
