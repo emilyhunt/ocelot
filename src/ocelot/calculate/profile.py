@@ -203,3 +203,19 @@ def sample_1d_king_profile(
     random_angles = generator.uniform(high=2 * np.pi, size=n_samples)
 
     return r_samples * np.cos(random_angles)
+
+
+def king_number_density(r, r_core, r_tidal, k=1):
+    """Calculates the King1962 number density (eqn 18 in the paper.)
+    
+    Unnormalised by default (i.e. k=1.)
+    """
+    x = (r / r_core)**2
+    x_t = (r_tidal / r_core)**2
+
+    term_1 = np.log(1 + x)
+    term_2 = - 4 * ((1 + x)**(0.5) - 1) / (1 + x_t)**(0.5)
+    term_3 = x / (1 + x_t)
+    
+    return np.pi * r_core**2 * k * (term_1 + term_2 + term_3)
+
