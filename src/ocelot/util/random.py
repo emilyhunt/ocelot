@@ -5,7 +5,7 @@ from typing import Tuple
 
 
 def points_on_sphere(
-    shape: int, radians: bool = True, phi_symmetric=True
+    shape: int, radians: bool = True, phi_symmetric=True, seed=None
 ) -> Tuple[np.ndarray, np.ndarray]:
     """To draw random points on a sphere, one cannot simply use uniform deviates based on theta and phi! For a good
     explanation, see: http://mathworld.wolfram.com/SpherePointPicking.html
@@ -24,8 +24,9 @@ def points_on_sphere(
             radians=False)
 
     """
-    theta = 2 * np.pi * np.random.rand(shape)
-    phi = np.arccos(2 * np.random.rand(shape) - 1)
+    rng = np.random.default_rng(seed=seed)
+    theta = 2 * np.pi * rng.rand(shape)
+    phi = np.arccos(2 * rng.rand(shape) - 1)
 
     if phi_symmetric:
         phi -= np.pi / 2
