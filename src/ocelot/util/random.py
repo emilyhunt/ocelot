@@ -25,8 +25,8 @@ def points_on_sphere(
 
     """
     rng = np.random.default_rng(seed=seed)
-    theta = 2 * np.pi * rng.rand(shape)
-    phi = np.arccos(2 * rng.rand(shape) - 1)
+    theta = 2 * np.pi * rng.uniform(size=shape)
+    phi = np.arccos(2 * rng.uniform(size=shape) - 1)
 
     if phi_symmetric:
         phi -= np.pi / 2
