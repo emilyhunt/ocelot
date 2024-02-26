@@ -227,7 +227,7 @@ def constrained_a(d, k, epsilon_max):
 
 
 class _SummedKNNOneClusterCurveFit:
-    def __init__(self, k: int, epsilon_max: Union[float, np.float]):
+    def __init__(self, k: int, epsilon_max: float):
         """Class to handle kth nearest neighbor curve fits. Unchanging parameters are kept stored by this class, and
         the __call__ method allows for access to the kth nn curve fitting.
 
