@@ -9,7 +9,6 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from .nearest_neighbor import precalculate_nn_distances
-from ..plot import nearest_neighbor_distances
 
 
 def castro_ginard(
@@ -711,24 +710,8 @@ def field_model(
     # -- Diagnostic plotting
     # Diagnostic plot if we're asked nicely
     if make_diagnostic_plot:
-        functions_to_overplot = _get_model_plotting_styles(
-            distances_sampled, points_field, points_cluster, points_total
-        )
-        functions_to_overplot += functions_to_overplot_epsilon_values
-
-        # We'll only want to normalise the raw data - everything else is already done
-        normalisation_constants = [1.0] + [0] * len(functions_to_overplot)
-
-        # Plot time! We make a cheeky distance array so that the stuff we pass to the plotting function is the right
-        # shape.
-        distances_to_pass = np.zeros((distances.shape[0], min_samples))
-        distances_to_pass[:, min_samples - 1] = distances
-        nearest_neighbor_distances(
-            distances_to_pass,
-            neighbor_to_plot=min_samples,
-            normalisation_constants=normalisation_constants,
-            functions_to_overplot=functions_to_overplot,
-            **kwargs,
+        raise NotImplementedError(
+            "Diagnostic plotting was removed in a previous version."
         )
 
     # Return nada if no cluster was found
