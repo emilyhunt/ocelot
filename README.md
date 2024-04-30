@@ -7,6 +7,14 @@ A toolbox for working with observations of star clusters.
 
 It's _`ocelot`_ for short - the **O**pen-source star **C**lust**E**r mu**L**ti-purp**O**se **T**oolkit! (Its results are better than this acronym.)
 
+## Installation
+
+For now, the repo should just be installed from GitHub source like this:
+
+```
+pip install git+https://github.com/emilyhunt/ocelot
+```
+
 ## November 2023 update
 
 Previously, this was a private repo containing code I used in my PhD: it's now public!
