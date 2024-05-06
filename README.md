@@ -15,7 +15,7 @@ For the time being, `ocelot` is a collection of code that [emilyhunt](https://gi
 
 ## Installation
 
-Install from PyPi with:
+Install from PyPI with:
 
 ```
 pip install ocelot
