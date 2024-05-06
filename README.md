@@ -5,20 +5,28 @@
 
 A toolbox for working with observations of star clusters. 
 
-It's _`ocelot`_ for short - the **O**pen-source star **C**lust**E**r mu**L**ti-purp**O**se **T**oolkit! (Its results are better than this acronym.)
+In the [long-running tradition](https://arxiv.org/abs/1903.12180) of astronomy software, `ocelot` is _not_ a good acronym for this project. It's the **O**pen-source star **C**lust**E**r mu**L**ti-purp**O**se **T**oolkit. (We hope the results you get from this package are better than this acronym)
+
+## Current package status
+
+⚠️ ocelot is currently in **alpha** and is in active development. **Expect breaking API changes** ⚠️
+
+For the time being, `ocelot` is a collection of code that [emilyhunt](https://github.com/emilyhunt) wrote during her PhD, but the eventual goal will be to make a package usable by the entire star cluster community. If you'd like to see a feature added, then please consider opening an issue and proposing it!
 
 ## Installation
 
-For now, the repo should just be installed from GitHub source like this:
+Install from PyPi with:
 
 ```
-pip install git+https://github.com/emilyhunt/ocelot
+pip install ocelot
 ```
 
-## November 2023 update
+## Development
 
-Previously, this was a private repo containing code I used in my PhD: it's now public!
+If you'd like to contribute to the package, we recommend setting up a new virtual environment of your choice. Then, you can install the latest commit on the main branch in edit mode (`-e`) with all development dependencies (`[dev]`) with:
 
-Over time, I'd like to develop this codebase further. I'd especially really like to involve members of the community and make this a useful toolbox of reliable, fast code for working with star cluster data in the era of Gaia. Message me if there's anything you'd like to add!
+```
+pip install -e git+https://github.com/emilyhunt/ocelot[dev]
+```
 
-I currently expect to get time to start working on properly documenting and publishing this code in 2024; before then, feel free to use whatever you can find =)
+After installing development dependencies, you can also make and view edits to the package's documentation. To view a local copy of the documentation, do `mkdocs serve`. You can do a test build with `mkdocs build`.
