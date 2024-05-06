@@ -24,7 +24,7 @@ pip install ocelot
 
 ## Development
 
-If you'd like to contribute to the package, we recommend setting up a new virtual environment of your choice. Then, you can install the latest commit on the main branch in edit mode (`-e`) with all development dependencies (`[dev]`) with:
+If you'd like to contribute to the package, we recommend setting up a new virtual environment with a tool of your choice. Then, you can install the latest commit on the main branch in edit mode (`-e`) with all development dependencies (`[dev]`) with:
 
 ```
 pip install -e git+https://github.com/emilyhunt/ocelot[dev]
