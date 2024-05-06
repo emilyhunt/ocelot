@@ -1,6 +1,6 @@
 [project]
 name = "ocelot"  # Required
-version = "0.0.4"  # Required
+version = "0.3.1-alpha"  # Required
 description = "A toolbox for working with observations of star clusters."  # Optional
 readme = "README.md" # Optional
 requires-python = ">=3.8"
