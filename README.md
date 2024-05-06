@@ -1,4 +1,5 @@
-[![docs](https://img.shields.io/badge/docs-latest-blue.svg)](https://ocelot-docs.org)
+[![docs](https://img.shields.io/badge/docs-latest-orange.svg)](https://ocelot-docs.org)
+[![PyPI](https://img.shields.io/badge/PyPI-package-blue.svg)](https://pypi.org/project/ocelot/)
 [![Build Docs](https://github.com/emilyhunt/ocelot/actions/workflows/build-docs.yml/badge.svg)](https://ocelot-docs.org)
 
 # ocelot
