@@ -16,8 +16,8 @@ def _weighted_standard_deviation(x: ArrayLike, weights: Optional[ArrayLike] = No
 
 
 def standard_error(
-    standard_deviation: Union[ArrayLike[Union[float, int]], float, int],
-    number_of_measurements: Union[ArrayLike[int], int],
+    standard_deviation: Union[ArrayLike, float, int],
+    number_of_measurements: Union[ArrayLike, int],
 ) -> float:
     """Calculates the standard error on the mean of some parameter given the standard
     deviation.
@@ -64,7 +64,7 @@ def mean_and_deviation(
     )
 
 
-def lonlat_to_unitvec(longitudes: NDArray, latitudes: NDArray):
+def lonlat_to_unitvec(longitudes: ArrayLike, latitudes: ArrayLike):
     """Converts longitudes and latitudes to unit vectors on a unit sphere. Uses method 
     at https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates.
     Assumes that latitudes is in the range [-pi / 2, pi / 2] as is common in 
@@ -76,7 +76,7 @@ def lonlat_to_unitvec(longitudes: NDArray, latitudes: NDArray):
     return np.column_stack((x, y, z))
 
 
-def unitvec_to_lonlat(unit_vectors: NDArray):
+def unitvec_to_lonlat(unit_vectors: ArrayLike):
     """Converts unit vectors on a unit sphere to longitudes and latitudes. See 
     `lonlat_to_unitvec` for more details.
     """

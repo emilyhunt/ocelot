@@ -49,6 +49,10 @@ def mean_position(
     if degrees:
         longitudes, latitudes = np.radians(longitudes), np.radians(latitudes)
     mean_lon, mean_lat = spherical_mean(longitudes, latitudes)
+
+    # Convert back to correct interval
+    mean_lon = np.where(mean_lon < 0, mean_lon + 2 * np.pi, mean_lon)
+
     if degrees:
         return np.degrees(mean_lon), np.degrees(mean_lat)
     return mean_lon, mean_lat
