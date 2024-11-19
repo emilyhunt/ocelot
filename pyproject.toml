@@ -1,18 +1,18 @@
 [project]
-name = "ocelot"  # Required
-version = "0.3.1-alpha"  # Required
-description = "A toolbox for working with observations of star clusters."  # Optional
+name = "ocelot" # Required
+version = "0.3.1-alpha" # Required
+description = "A toolbox for working with observations of star clusters." # Optional
 readme = "README.md" # Optional
 requires-python = ">=3.8"
-license = {file = "LICENSE"}
-keywords = ["astronomy", "star cluster", "threading", "development"]  # Optional
+license = { file = "LICENSE" }
+keywords = ["astronomy", "star cluster", "threading", "development"] # Optional
 authors = [
-  {name = "Emily Hunt", email = "emily.hunt.physics@gmail.com" } # Optional
+  { name = "Emily Hunt", email = "emily.hunt.physics@gmail.com" }, # Optional
 ]
 maintainers = [
-  {name = "Emily Hunt", email = "emily.hunt.physics@gmail.com" } # Optional
+  { name = "Emily Hunt", email = "emily.hunt.physics@gmail.com" }, # Optional
 ]
-classifiers = [  # Optional
+classifiers = [ # Optional
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
@@ -26,21 +26,36 @@ classifiers = [  # Optional
 ]
 dependencies = [
   "numpy>1.21.0,<3.0",
+  "numba<1.0",
   "matplotlib>3.4.0,<4.0",
   "scikit-learn>0.24.0,<2.0",
   "scipy>1.0.0,<2.0",
   "pandas>1.0.0,<3.0",
+  "pyarrow",
   "astropy>4.0.0,<7.0",
   "healpy>1.13.0,<2.0",
+  "galpy>1.9,<2.0",
+  "imf @ git+https://github.com/keflavich/imf",
+  "dustmaps",
 ]
 
 
 [project.optional-dependencies]
-dev = ["check-manifest", "pytest", "mkdocs-material[imaging]", "mkdocstrings[python]>=0.18"]
-docs = ["mkdocs-material[imaging]", "mkdocstrings[python]>=0.18"]  # For building docs on GitHub
+dev = [
+  "check-manifest",
+  "pytest",
+  "mkdocs-material[imaging]",
+  "mkdocstrings[python]>=0.18",
+  "ruff",
+  "ezpadova @ git+https://github.com/mfouesneau/ezpadova",
+]
+docs = [
+  "mkdocs-material[imaging]",
+  "mkdocstrings[python]>=0.18",
+] # For building docs on GitHub
 test = ["pytest"]
 
-[project.urls]  # Optional
+[project.urls] # Optional
 "Homepage" = "https://ocelot-docs.org"
 "Bug Reports" = "https://github.com/emilyhunt/ocelot/issues"
 "Source" = "https://github.com/emilyhunt/ocelot"
@@ -50,9 +65,7 @@ test = ["pytest"]
 
 [tool.pytest.ini_options]
 pythonpath = "src"
-addopts = [
-    "--import-mode=importlib",
-]
+addopts = ["--import-mode=importlib"]
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]
