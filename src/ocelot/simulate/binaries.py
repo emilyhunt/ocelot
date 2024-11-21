@@ -6,7 +6,7 @@ import pickle
 import ocelot.simulate.cluster
 from scipy.interpolate import interp1d
 from numba import jit
-from ocelot import _data_path
+from ocelot import DATA_PATH
 
 
 # The below values are hard-coded directly from the tables of the following papers.
@@ -32,7 +32,7 @@ CSF_INTERPOLATOR = interp1d(
 
 
 location_random_q_interpolator = (
-    _data_path / "binaries/Moe_DiStefano17_interpolated_random_q_relation.pickle"
+    DATA_PATH / "binaries/Moe_DiStefano17_interpolated_random_q_relation.pickle"
 )
 with open(location_random_q_interpolator, "rb") as handle:
     MOE_DI_STEFANO_RANDOM_Q_INTERPOLATOR = pickle.load(handle)

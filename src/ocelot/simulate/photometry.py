@@ -13,10 +13,11 @@ from ocelot.simulate import photutils
 from ocelot.simulate.uncertainties import apply_gaia_photometric_uncertainties
 from scipy.interpolate import interp1d
 import imf
+from ocelot import DATA_PATH
 
 
 IMF = imf.Kroupa
-ISOCHRONES_DIRECTORY = DATA_DIRECTORY / "PARSEC"
+ISOCHRONES_DIRECTORY = DATA_PATH / "isochrones/PARSEC_v1.2S"
 if not ISOCHRONES_DIRECTORY.exists():
     warnings.warn(
         f"Unable to find directory of isochrones at {str(ISOCHRONES_DIRECTORY)}. "
@@ -24,22 +25,48 @@ if not ISOCHRONES_DIRECTORY.exists():
     )
 
 
+AVAILABLE_METALLICITIES = np.asarray(
+    [float(name.stem.split("=")[1]) for name in ISOCHRONES_DIRECTORY]
+)
+MINIMUM_METALLICITY = AVAILABLE_METALLICITIES.min()
+MAXIMUM_METALLICITY = AVAILABLE_METALLICITIES.max()
+
+
 def load_isochrone(cluster: ocelot.simulate.cluster.Cluster):
     """Loads a simulated stellar population at a given age."""
-    # Check that we have isochrones at that metallicity
-    isochrones_folder = (
-        ISOCHRONES_DIRECTORY / f"FeH_{cluster.parameters.metallicity:.1f}"
-    )
-    if not isochrones_folder.exists():
-        raise ValueError("Isochrones at selected metallicity not found.")
+    # Check that the requested metallicity is valid
+    metallicity = cluster.parameters.metallicity
 
-    # Pick best isochrone to read in
-    all_isochrones = list(isochrones_folder.glob("*.csv"))
-    ages = np.asarray([float(x.stem) for x in isochrones_folder.glob("*.csv")])
-    id_nearest_age = (np.abs(ages - cluster.parameters.log_age)).argmin()
+    if metallicity < MINIMUM_METALLICITY:
+        warnings.warn(
+            f"Desired metallicity of [M/H]={metallicity:.5f} is less than the minimum "
+            "available of {MINIMUM_METALLICITY}!"
+        )
+    elif metallicity > MAXIMUM_METALLICITY:
+        warnings.warn(
+            f"Desired metallicity of [M/H]={metallicity:.5f} is greater than the "
+            "maximum available of {MAXIMUM_METALLICITY}!"
+        )
+
+    # Get the closest available metallicity & read in
+    metallicity_to_use = AVAILABLE_METALLICITIES[
+        np.abs(AVAILABLE_METALLICITIES - metallicity).argmin()
+    ]
+    isochrones = pd.read_parquet(
+        ISOCHRONES_DIRECTORY / f"mh={metallicity_to_use:.3f}.parquet"
+    )
+
+    # Filter by age
+    ages = np.unique(isochrones["logAge"].to_numpy())
+    best_age = ages[(np.abs(ages - cluster.parameters.log_age)).argmin()]
+    isochrone = (
+        isochrones.loc[isochrones["logAge"] == best_age]
+        .sort_values("Mass")
+        .reset_index(drop=True)
+    )
 
     # Read in & return best one
-    return pd.read_csv(all_isochrones[id_nearest_age])
+    return isochrone
 
 
 def _interpolated_parameter(parameter, isochrone, masses):
@@ -54,7 +81,9 @@ def create_population(cluster: ocelot.simulate.cluster.Cluster, minimum_mass=0.0
 
     # Make initial stars
     selected_imf = IMF(mmin=minimum_mass, mmax=isochrone["Mini"].max())
-    masses = imf.make_cluster(cluster.parameters.mass, massfunc=selected_imf, silent=True)
+    masses = imf.make_cluster(
+        cluster.parameters.mass, massfunc=selected_imf, silent=True
+    )
     ids = np.arange(len(masses))
     cluster.cluster = pd.DataFrame.from_dict(
         {
@@ -73,17 +102,15 @@ def create_population(cluster: ocelot.simulate.cluster.Cluster, minimum_mass=0.0
     cluster.cluster["t_eff"] = 10 ** (
         _interpolated_parameter("logTe", isochrone, masses)
     )
-    cluster.cluster["log_g"] = (
-        _interpolated_parameter("logTe", isochrone, masses)
-    )
+    cluster.cluster["log_g"] = _interpolated_parameter("logg", isochrone, masses)
     cluster.cluster["g_true"] = (
-        _interpolated_parameter("G", isochrone, masses) + distance_modulus
+        _interpolated_parameter("Gmag", isochrone, masses) + distance_modulus
     )
     cluster.cluster["bp_true"] = (
-        _interpolated_parameter("BP", isochrone, masses) + distance_modulus
+        _interpolated_parameter("G_BPmag", isochrone, masses) + distance_modulus
     )
     cluster.cluster["rp_true"] = (
-        _interpolated_parameter("RP", isochrone, masses) + distance_modulus
+        _interpolated_parameter("G_RPmag", isochrone, masses) + distance_modulus
     )
 
     # Make sure brown dwarfs still have a mass (we just assume no mass loss)
