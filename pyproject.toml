@@ -47,6 +47,7 @@ dev = [
   "mkdocstrings[python]>=0.18",
   "ruff",
   "ezpadova @ git+https://github.com/mfouesneau/ezpadova",
+  "jupyter",  # for working on notebooks
 ]
 docs = [
   "mkdocs-material[imaging]",
