@@ -24,10 +24,20 @@ pip install ocelot
 
 ## Development
 
-If you'd like to contribute to the package, we recommend setting up a new virtual environment with a tool of your choice. Then, you can install the latest commit on the main branch in edit mode (`-e`) with all development dependencies (`[dev]`) with:
+We recommend using [uv](https://docs.astral.sh/uv/) to manage Python dependencies when developing a local copy of the project. Here's everything you need to do:
+
+1. Clone the repo:
 
 ```
-pip install -e git+https://github.com/emilyhunt/ocelot[dev]
+git clone https://github.com/emilyhunt/ocelot
+```
+
+2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/), if you haven't already. (This won't mess with any of your other Python installations.)
+
+3. Navigate to the new ocelot directory, and sync the project dependences _including dev and docs ones_ with:
+
+```
+uv sync --all-extras
 ```
 
 After installing development dependencies, you can also make and view edits to the package's documentation. To view a local copy of the documentation, do `mkdocs serve`. You can do a test build with `mkdocs build`.
@@ -42,7 +52,7 @@ There is currently no paper associated with `ocelot`. For now, please at least m
 ```
 
 
-For now, you can also cite [Hunt & Reffert 2021](https://ui.adsabs.harvard.edu/abs/2021A%26A...646A.104H/abstract), which was the paper for which development of this module began:
+You can also cite [Hunt & Reffert 2021](https://ui.adsabs.harvard.edu/abs/2021A%26A...646A.104H/abstract), which was the paper for which development of this module began:
 
 ```
 @ARTICLE{2021A&A...646A.104H,
