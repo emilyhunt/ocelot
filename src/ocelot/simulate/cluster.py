@@ -6,8 +6,6 @@ import numpy as np
 from astropy import units as u
 from astropy import constants
 from astropy.coordinates import SkyCoord
-import warnings
-from galpy.potential import MWPotential2014, omegac, epifreq
 from ocelot.calculate.profile import king_number_density
 import pandas as pd
 from scipy.optimize import minimize
@@ -16,69 +14,14 @@ from ocelot.simulate.photometry import generate_cluster_photometry
 from ocelot.simulate.astrometry import generate_cluster_astrometry
 from ocelot.simulate.binaries import MoeDiStefanoMultiplicityRelation
 from dataclasses import dataclass, asdict, field
-from typing import Callable
 import dustmaps.map_base
 
 
-REQUIRED_PARAMETERS = [
-    "l",
-    "b",
-    "distance",
-    "r_core",
-    "log_age",
-    "mass",
-    "extinction",
-]
-
-VALID_L_RANGE = [140, 220]
-VALID_B_RANGE = [-10, 10]
-VALID_AGE_RANGE = [6.4, 10.0]
-VALID_METALLICITY_RANGE = [-0.2, -0.2]
-
-
-# N.B.: the galpy config file MUST specify that natural units are in use.
-# Todo: emily fix this
-warnings.warn(
-    "Your galpy config file (/home/$USER/.galpyrc) MUST have astropy_units=True, else "
-    "frequencies returned by get_frequencies will NOT be correct!"
-)
-for a_pot in MWPotential2014:
-    a_pot.turn_physical_on()
-
-
-def _galactocentric_radius(position):
-    """Computes the galactocentric radius of a cluster."""
-    position_galcen = position.galactocentric
-    return np.sqrt(position_galcen.x**2 + position_galcen.y**2 + position_galcen.z**2)
-
-
-def _get_frequencies(position, milky_way_potential_model):
-    galactocentric_radius = _galactocentric_radius(position)
-    circular_frequency = omegac(
-        milky_way_potential_model, galactocentric_radius, t=0 * u.s
-    )
-    epicyclic_frequency = epifreq(
-        milky_way_potential_model, galactocentric_radius, t=0 * u.s
-    )
-
-    # Return 4 Omega^2 - k^2 (in practice, this is all we ever need)
-    return 4 * circular_frequency**2 - epicyclic_frequency**2
-
-
-def jacobi_radius(mass, frequencies):
-    """Calculates Jacobi radius in parsecs."""
-    jacobi_radius_si = (constants.G * mass * u.M_sun / frequencies) ** (1 / 3)
-    return jacobi_radius_si.to(u.pc).value
-
-
-def calculate_r_tidal(position, mass, milky_way_potential_model):
-    """Calculates the tidal radius of a cluster of a given mass and position."""
-    frequencies = _get_frequencies(position, milky_way_potential_model)
-    return jacobi_radius(mass, frequencies)
-
-
 def calculate_r_50(r_core: int | float, r_tidal: int | float):
-    """Calculates r_50 for a given King+62 model."""
+    """Calculates r_50 for a given King+62 model.
+    
+    # Todo: move this
+    """
     if r_core >= r_tidal:
         raise CoreRadiusTooLargeError("r_core may not be greater than r_tidal!")
     if r_core < 0:
@@ -111,6 +54,8 @@ def calculate_velocity_dispersion_1d(r_50, mass, virial_ratio, eta=10.0):
     state. See Portegies-Zwart+10 / Emily's thesis for equation derivation
 
     sigma_1d = [ ( 2 * Q * G * M) / (eta * r_50) ]^0.5
+
+    # Todo: move this
     """
     mass_kg = (mass * u.M_sun).to(u.kg).value
     r_50_m = (r_50 * u.pc).to(u.m).value
@@ -121,27 +66,22 @@ DEFAULT_BAYESTAR_WEB_QUERY = dustmaps.bayestar.BayestarWebQuery()
 
 
 @dataclass
-class ClusterParameters:
+class SimulatedClusterParameters:
     """Class for keeping track of parameters specified for a cluster to simulate."""
-
-    l: float | int  # noqa: E741
-    b: float
-    distance: float
-    r_core: float | Callable
+    # Todo: all of these should really be astropy quantity objects. Units!!!
+    position: SkyCoord
     mass: float
     log_age: float
-    extinction: (
-        float | int | dustmaps.map_base.DustMap | dustmaps.map_base.WebDustMap
-    ) = DEFAULT_BAYESTAR_WEB_QUERY  # Todo: type hinted as object for binary_star_relation but this one is pre-initialised
-    extinction_r_v: int | float = 3.1
+    metallicity: float
+    extinction: float
+    r_core: float
+    r_tidal: float
+    # profile: object = ...  # Todo: support multiple distribution profiles
     minimum_stars: int = 1
-    pmra: int | float = 0.0
-    pmdec: int | float = 0.0
     virial_ratio: float | int = 0.5
+    velocity_dispersion_1d: float | None = None
     eta_virial_ratio: float | int = 10.0
-    metallicity: float | int = -0.2
     radial_velocity: float | int = 0.0
-    milky_way_potential_model = MWPotential2014
     photometric_errors: bool = False
     astrometric_errors: bool = True
     astrometric_errors_scale_factor: float | int = 1.0
@@ -153,23 +93,20 @@ class ClusterParameters:
 
     # The following fields are calculated in __post_init__, as they depend on initial
     # values:
-    r_tidal: float = field(init=False)
     r_50: float = field(init=False)
-    velocity_dispersion_1d: float = field(init=False)
-    dust_map: str = field(init=False, default="")
     n_stars: int = field(init=False, default=0)
+    dust_map: str = field(init=False, default="")
+    ra: float = field(init=False)
+    dec: float = field(init=False)
+    l: float = field(init=False)  # noqa: E741
+    b: float = field(init=False)
+    distance: float = field(init=False)
+    pmra: float = field(init=False)
+    pmdec: float = field(init=False)
+    radial_velocity: float = field(init=False)
 
     def __post_init__(self):
         """Automatically calculates any additional things and does all checks."""
-        # Radius-related calculations
-        position = self.get_position_as_skycoord(with_zeroed_proper_motions=True)
-        self.r_tidal = calculate_r_tidal(
-            position, self.mass, self.milky_way_potential_model
-        )
-
-        if callable(self.r_core):
-            self.r_core = self.r_core(self.r_tidal)
-
         self.r_50 = calculate_r_50(self.r_core, self.r_tidal)
 
         # Velocity-related things
@@ -177,41 +114,23 @@ class ClusterParameters:
             self.r_50, self.mass, self.virial_ratio, self.eta_virial_ratio
         )
 
-        if isinstance(self.extinction, dustmaps.map_base.DustMap) or isinstance(
-            self.extinction, dustmaps.map_base.WebDustMap
-        ):
-            self.dust_map = str(self.extinction.__class__)
-            self.extinction = (
-                self.extinction.query(position, mode="median") * self.extinction_r_v
-            )
+        # Ensure that we set positions etc. to this class. This makes them more
+        # easily convertible to a dict at a later date.
+        position_icrs = self.position.transform_to("icrs")
+        position_galactic = self.position.transform_to("galactic")
+        self.ra = position_icrs.ra.to(u.deg).value 
+        self.dec = position_icrs.dec.to(u.deg).value
+        self.distance = position_icrs.distance.to(u.pc).value 
+        self.pmra = position_icrs.pm_ra_cosdec.to(u.mas / u.yr).value 
+        self.pmdec = position_icrs.pm_dec.to(u.mas / u.yr).value
+        self.radial_velocity = position_icrs.radial_velocity.to(u.m / u.s).value
+        self.l = position_galactic.l.to(u.deg).value
+        self.b = position_galactic.b.to(u.deg).value 
 
         self.check()
 
     def check(self):
         """Checks that the cluster has parameters that are correctly specified."""
-        # Todo: replace with check that field is loadable
-        # if self.l < VALID_L_RANGE[0] or self.l > VALID_L_RANGE[1]:
-        #     raise ValueError(
-        #         "Specified cluster to simulate outside of valid galactic longitude "
-        #         "range."
-        #     )
-        # if self.b < VALID_B_RANGE[0] or self.b > VALID_B_RANGE[1]:
-        #     raise ValueError(
-        #         "Specified cluster to simulate outside of valid galactic latitude "
-        #         "range."
-        #     )
-        if self.log_age < VALID_AGE_RANGE[0] or self.log_age > VALID_AGE_RANGE[1]:
-            raise ValueError(
-                "Specified cluster to simulate outside of valid isochrone age " "range."
-            )
-        if (
-            self.metallicity < VALID_METALLICITY_RANGE[0]
-            or self.metallicity > VALID_METALLICITY_RANGE[1]
-        ):
-            raise ValueError(
-                "Specified cluster to simulate outside of valid isochrone metallicity "
-                "range."
-            )
         if self.r_core >= self.r_tidal:
             raise CoreRadiusTooLargeError(
                 "specified core radius larger than calculated tidal radius!"
@@ -237,16 +156,19 @@ class ClusterParameters:
         return asdict(self)
 
 
-class Cluster:
+class SimulatedCluster:
     def __init__(
         self,
-        parameters: ClusterParameters,
         random_seed: int,
+        parameters: SimulatedClusterParameters | None,
+        **kwargs
     ):
         """This is a helper class used to specify the parameters of a cluster to
         simulate.
         """
-        self.parameters = parameters
+        if parameters is None:
+            parameters = SimulatedClusterParameters(**kwargs)
+        self.parameters: SimulatedClusterParameters = parameters
 
         # Stuff for handling randomness
         # Todo: IMF package isn't using these and there's seemingly no way to fix it
@@ -305,15 +227,6 @@ class Cluster:
         """Generates photometry and astrometry for the cluster."""
         self.make_photometry(field)
         self.make_astrometry()
-
-    def set_proper_motion(self, pmra, pmdec):
-        """Changes the velocity of the cluster to a new value. This can be done
-        independently of all parameters as proper motion doesn't affect anything else.
-        """
-        self.cluster["pmra"] = self.cluster["pmra_plus_anomaly"] + pmra
-        self.cluster["pmdec"] = self.cluster["pmdec_plus_anomaly"] + pmdec
-        self.parameters.pmra = pmra
-        self.parameters.pmdec = pmdec
 
     # def plot(self, field: pd.DataFrame | None = None, fig=None, ax=None, **kwargs):
     #     """Plots the current cluster using oc_selection.plots.cluster_plot.
