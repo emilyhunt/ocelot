@@ -6,7 +6,7 @@ import pandas as pd
 import warnings
 
 
-def _closest_gaia_star(cluster: ocelot.simulate.cluster.Cluster, field: pd.DataFrame):
+def _closest_gaia_star(cluster: ocelot.simulate.cluster.SimulatedCluster, field: pd.DataFrame):
     """Finds the nearest star in G-band magnitude to a given star."""
     field_magnitudes = field["phot_g_mean_mag"].to_numpy()
     stars_to_assign = cluster.cluster["g_true"].notna()
@@ -31,7 +31,7 @@ def _closest_gaia_star(cluster: ocelot.simulate.cluster.Cluster, field: pd.DataF
 
 
 def _assign_field_uncertainties_to_cluster(
-    cluster: ocelot.simulate.cluster.Cluster, field: None | pd.DataFrame = None
+    cluster: ocelot.simulate.cluster.SimulatedCluster, field: None | pd.DataFrame = None
 ):
     if (
         not cluster.parameters.photometric_errors
@@ -87,7 +87,7 @@ def _assign_field_uncertainties_to_cluster(
 
 
 def apply_gaia_photometric_uncertainties(
-    cluster: ocelot.simulate.cluster.Cluster, field: None | pd.DataFrame = None
+    cluster: ocelot.simulate.cluster.SimulatedCluster, field: None | pd.DataFrame = None
 ):
     """Applies representative Gaia photometric uncertainties to photometry in a cluster."""
     _assign_field_uncertainties_to_cluster(cluster, field)
@@ -102,7 +102,7 @@ def apply_gaia_photometric_uncertainties(
     raise NotImplementedError("Cluster photometric errors are not implemented.")
 
 
-def apply_gaia_astrometric_uncertainties(cluster: ocelot.simulate.cluster.Cluster):
+def apply_gaia_astrometric_uncertainties(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Applies representative Gaia astrometric uncertainties to the astrometry of a
     cluster. Assumes that photometric errors have already been applied (which also adds
     astrometric uncertainties for each star.)

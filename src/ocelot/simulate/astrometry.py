@@ -11,7 +11,7 @@ from astropy import units as u
 from scipy.stats import multivariate_normal
 
 
-def generate_star_positions(cluster: ocelot.simulate.cluster.Cluster):
+def generate_star_positions(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Generates positions of member stars in polar coordinates relative to the center
     of the cluster.
     """
@@ -40,7 +40,7 @@ def spherical_to_cartesian(radii, thetas, phis):
     return x_values, y_values, z_values
 
 
-def generate_star_velocities(cluster: ocelot.simulate.cluster.Cluster):
+def generate_star_velocities(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Generates the velocities of stars in a cluster."""
     distribution = multivariate_normal(
         mean=np.zeros(3),
@@ -51,7 +51,7 @@ def generate_star_velocities(cluster: ocelot.simulate.cluster.Cluster):
     return CartesianDifferential(d_x=v_x, d_y=v_y, d_z=v_z, unit=u.m / u.s)
 
 
-def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.Cluster):
+def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Generates the true values of cluster astrometry (not affected by errors)."""
     positions = generate_star_positions(cluster)
     velocities = generate_star_velocities(cluster)
@@ -85,7 +85,7 @@ def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.Cluster):
     cluster.cluster["parallax_true"] = 1000 / final_coords.distance.value
 
 
-def generate_cluster_astrometry(cluster: ocelot.simulate.cluster.Cluster):
+def generate_cluster_astrometry(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Generates the astrometry of clusters."""
     generate_true_star_astrometry(cluster)
     apply_gaia_astrometric_uncertainties(cluster)

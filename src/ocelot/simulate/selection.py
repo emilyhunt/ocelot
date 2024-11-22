@@ -109,7 +109,7 @@ def subsample_selection_function(
 
 
 def calculate_selection_function(
-    cluster: ocelot.simulate.cluster.Cluster,
+    cluster: ocelot.simulate.cluster.SimulatedCluster,
     field: pd.DataFrame,
     g_min: int | float = 2,
     g_max: int | float = 21,
@@ -148,7 +148,7 @@ def interpolate_selection_function(
 
 
 def apply_selection_functions(
-    cluster: ocelot.simulate.cluster.Cluster, field: None | pd.DataFrame = None
+    cluster: ocelot.simulate.cluster.SimulatedCluster, field: None | pd.DataFrame = None
 ):
     """Applies selection functions to a cluster."""
     if not cluster.parameters.selection_effects:

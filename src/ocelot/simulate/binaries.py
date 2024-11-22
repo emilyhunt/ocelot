@@ -302,7 +302,7 @@ def _recalculate_magnitudes(cluster):
     # cluster.cluster = cluster.cluster.drop(columns=["g_flux", "bp_flux", "rp_flux"])
 
 
-def make_binaries(cluster: ocelot.simulate.cluster.Cluster):
+def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Pairs a simulated cluster up into binaries."""
     if not cluster.parameters.binary_stars:
         return

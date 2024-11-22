@@ -32,7 +32,7 @@ MINIMUM_METALLICITY = AVAILABLE_METALLICITIES.min()
 MAXIMUM_METALLICITY = AVAILABLE_METALLICITIES.max()
 
 
-def load_isochrone(cluster: ocelot.simulate.cluster.Cluster):
+def load_isochrone(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Loads a simulated stellar population at a given age."""
     # Check that the requested metallicity is valid
     metallicity = cluster.parameters.metallicity
@@ -73,7 +73,7 @@ def _interpolated_parameter(parameter, isochrone, masses):
     return interp1d(isochrone["Mini"], isochrone[parameter], bounds_error=False)(masses)
 
 
-def create_population(cluster: ocelot.simulate.cluster.Cluster, minimum_mass=0.03):
+def create_population(cluster: ocelot.simulate.cluster.SimulatedCluster, minimum_mass=0.03):
     """Samples from a pre-simulated stellar population until the sample population has
     the correct mass.
     """
@@ -120,7 +120,7 @@ def create_population(cluster: ocelot.simulate.cluster.Cluster, minimum_mass=0.0
     ]
 
 
-def apply_extinction(cluster: ocelot.simulate.cluster.Cluster):
+def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Applies extinction to a simulated cluster."""
     if cluster.parameters.extinction == 0.0:
         cluster.cluster["a_g"] = 0.0
@@ -148,7 +148,7 @@ def apply_extinction(cluster: ocelot.simulate.cluster.Cluster):
 
 
 def generate_cluster_photometry(
-    cluster: ocelot.simulate.cluster.Cluster, field: None | pd.DataFrame = None
+    cluster: ocelot.simulate.cluster.SimulatedCluster, field: None | pd.DataFrame = None
 ):
     """Generates a star cluster of given photometry at a given age and extinction."""
     create_population(cluster)
