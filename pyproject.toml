@@ -35,6 +35,7 @@ dependencies = [
   "galpy>1.9,<2.0",
   "imf @ git+https://github.com/keflavich/imf",
   "dustmaps",
+  "gaiaunlimited"
 ]
 
 
