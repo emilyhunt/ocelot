@@ -1,6 +1,6 @@
 [project]
 name = "ocelot" # Required
-version = "0.3.1-alpha" # Required
+version = "0.4.0" # Required
 description = "A toolbox for working with observations of star clusters." # Optional
 readme = "README.md" # Optional
 requires-python = ">=3.10"
@@ -30,28 +30,30 @@ dependencies = [
   "scipy>1.0.0,<2.0",
   "pandas>1.0.0,<3.0",
   "pyarrow",
-  "astropy>4.0.0,<7.0",
+  "astropy>=6.0.0,<7.0",
   "healpy>1.13.0,<2.0",
   "galpy>1.9,<2.0",
   "imf @ git+https://github.com/keflavich/imf",
   "dustmaps",
-  "gaiaunlimited"
+  "gaiaunlimited",
 ]
 
 
 [project.optional-dependencies]
 dev = [
-  "check-manifest",
-  "pytest",
   "mkdocs-material[imaging]",
   "mkdocstrings[python]>=0.18",
-  "ruff",
-  "ezpadova @ git+https://github.com/mfouesneau/ezpadova",
+  "mkdocs-jupyter",
   "jupyter",  # for working on notebooks
+  "check-manifest",
+  "pytest",
+  "ruff",
+  "ezpadova @ git+https://github.com/mfouesneau/ezpadova",  # PARSEC isochrone download
 ]
 docs = [
   "mkdocs-material[imaging]",
   "mkdocstrings[python]>=0.18",
+  "mkdocs-jupyter",
 ] # For building docs on GitHub
 test = ["pytest"]
 

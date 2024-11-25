@@ -64,6 +64,7 @@ plugins:
     - search  # default search plugin; needs manually re-enabling when using any other plugins
     - autorefs  # Cross-links to headings
     - social  # Makes a preview image for each page
+    - mkdocs-jupyter  # Allows for display of notebooks directly in docs site
     - mkdocstrings:
         handlers:
             python:
@@ -98,7 +99,7 @@ nav:
             - Work with MIST isochrones: 'wip.md'
             - Fit an isochrone: 'wip.md'
         - Simulating clusters:
-            - Simulate a star cluster from scratch: 'wip.md'
+            - Simulate a star cluster from scratch: 'tutorials/simulate_a_cluster.ipynb'
     - API Reference:
         - Calculate: 'api/calculate.md'
     - Contibute to ocelot!: 
