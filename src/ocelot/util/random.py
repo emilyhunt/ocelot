@@ -1,5 +1,5 @@
-"""Functions for doing various random sampling problems that aren't otherwise defined.
-"""
+"""Functions for doing various random sampling problems that aren't otherwise defined."""
+
 import numpy as np
 from typing import Tuple
 
@@ -35,3 +35,34 @@ def points_on_sphere(
         return theta, phi
     else:
         return theta * 180 / np.pi, phi * 180 / np.pi
+
+
+def fractal_noise_2d(resolution: int, seed: None):
+    """Creates pink noise.
+
+    Implemented for use in making synthetic (correlated) differential reddening.
+
+    This function is completely beyond me. Thanks, StackOverflow!
+    https://stackoverflow.com/a/76605642
+    """
+    rng = np.random.default_rng(seed)
+
+    # Create white noise
+    whitenoise = rng.uniform(0, 1, (resolution, resolution))
+
+    # Generate frequency matrix
+    ft_arr = np.fft.fftshift(np.fft.fft2(whitenoise))
+    _x, _y = np.mgrid[0 : ft_arr.shape[0], 0 : ft_arr.shape[1]]
+    f = np.hypot(_x - ft_arr.shape[0] / 2, _y - ft_arr.shape[1] / 2)
+
+    # Convert to fractal noise
+    fractal_fourier_transform = np.zeros_like(ft_arr)
+    nonzero_denominator = (f != 0).nonzero()
+    fractal_fourier_transform[nonzero_denominator] = (
+        ft_arr[nonzero_denominator] / f[nonzero_denominator]
+    )
+    fractal_noise = np.fft.ifft2(np.fft.ifftshift(fractal_fourier_transform)).real
+
+    # Rescale to have unit variance
+    fractal_noise = fractal_noise / np.std(fractal_noise)
+    return fractal_noise
