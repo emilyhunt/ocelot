@@ -1,4 +1,4 @@
-"""Definition of a base SimualtedCluster class that handles checking and grouping of 
+"""Definition of a base SimualtedCluster class that handles checking and grouping of
 parameters and data.
 """
 
@@ -14,12 +14,11 @@ from ocelot.simulate.photometry import generate_cluster_photometry
 from ocelot.simulate.astrometry import generate_cluster_astrometry
 from ocelot.simulate.binaries import MoeDiStefanoMultiplicityRelation
 from dataclasses import dataclass, asdict, field
-import dustmaps.map_base
 
 
 def calculate_r_50(r_core: int | float, r_tidal: int | float):
     """Calculates r_50 for a given King+62 model.
-    
+
     # Todo: move this
     """
     if r_core >= r_tidal:
@@ -62,12 +61,10 @@ def calculate_velocity_dispersion_1d(r_50, mass, virial_ratio, eta=10.0):
     return ((2 * virial_ratio * constants.G.value * mass_kg) / (eta * r_50_m)) ** 0.5
 
 
-DEFAULT_BAYESTAR_WEB_QUERY = dustmaps.bayestar.BayestarWebQuery()
-
-
 @dataclass
 class SimulatedClusterParameters:
     """Class for keeping track of parameters specified for a cluster to simulate."""
+
     # Todo: all of these should really be astropy quantity objects. Units!!!
     position: SkyCoord
     mass: float
@@ -82,7 +79,7 @@ class SimulatedClusterParameters:
     velocity_dispersion_1d: float | None = None
     eta_virial_ratio: float | int = 10.0
     radial_velocity: float | int = 0.0
-    photometric_errors: bool = False
+    photometric_errors: bool = True
     astrometric_errors: bool = True
     astrometric_errors_scale_factor: float | int = 1.0
     selection_effects: bool = True
@@ -95,7 +92,6 @@ class SimulatedClusterParameters:
     # values:
     r_50: float = field(init=False)
     n_stars: int = field(init=False, default=0)
-    dust_map: str = field(init=False, default="")
     ra: float = field(init=False)
     dec: float = field(init=False)
     l: float = field(init=False)  # noqa: E741
@@ -118,14 +114,14 @@ class SimulatedClusterParameters:
         # easily convertible to a dict at a later date.
         position_icrs = self.position.transform_to("icrs")
         position_galactic = self.position.transform_to("galactic")
-        self.ra = position_icrs.ra.to(u.deg).value 
+        self.ra = position_icrs.ra.to(u.deg).value
         self.dec = position_icrs.dec.to(u.deg).value
-        self.distance = position_icrs.distance.to(u.pc).value 
-        self.pmra = position_icrs.pm_ra_cosdec.to(u.mas / u.yr).value 
+        self.distance = position_icrs.distance.to(u.pc).value
+        self.pmra = position_icrs.pm_ra_cosdec.to(u.mas / u.yr).value
         self.pmdec = position_icrs.pm_dec.to(u.mas / u.yr).value
         self.radial_velocity = position_icrs.radial_velocity.to(u.m / u.s).value
         self.l = position_galactic.l.to(u.deg).value
-        self.b = position_galactic.b.to(u.deg).value 
+        self.b = position_galactic.b.to(u.deg).value
 
         self.check()
 
@@ -158,10 +154,7 @@ class SimulatedClusterParameters:
 
 class SimulatedCluster:
     def __init__(
-        self,
-        random_seed: int,
-        parameters: SimulatedClusterParameters | None,
-        **kwargs
+        self, random_seed: int, parameters: SimulatedClusterParameters | None, **kwargs
     ):
         """This is a helper class used to specify the parameters of a cluster to
         simulate.
@@ -218,13 +211,11 @@ class SimulatedCluster:
         generate_cluster_astrometry(self)
         self.astrometry_made = True
 
-        # It's assumed that users will usually want to set proper motions many times
-        # after generating the cluster, but we also support setting it in the initial
-        # parameter object. Calling this initially will by default just set it to (0,0).
-        self.set_proper_motion(self.parameters.pmra, self.parameters.pmdec)
-
     def make(self, field: None | pd.DataFrame = None):
-        """Generates photometry and astrometry for the cluster."""
+        """Generates photometry and astrometry for the cluster.
+
+        # Todo: field should really be an astrometric & photometric error model
+        """
         self.make_photometry(field)
         self.make_astrometry()
 

@@ -262,7 +262,13 @@ def _mag_to_flux(magnitudes, zero_point):
 
 
 def _flux_to_mag(fluxes, zero_point):
-    return -2.5 * np.log10(fluxes) + zero_point
+    # We also handle negative fluxes here - in that case, it should just be inf
+    good_fluxes = np.atleast_1d(fluxes > 0).flatten()
+    magnitudes = (
+        -2.5 * np.log10(np.atleast_1d(fluxes).flatten(), where=good_fluxes) + zero_point
+    )
+    magnitudes[np.invert(good_fluxes)] = np.inf
+    return magnitudes
 
 
 def _calculate_fluxes(cluster):

@@ -1,23 +1,27 @@
 """Functions for applying representative Gaia uncertainties to a simulated cluster."""
+
 from __future__ import annotations
 import numpy as np  # Necessary to type hint without cyclic import
 import ocelot.simulate.cluster
 import pandas as pd
 import warnings
+from .binaries import G_ZP, BP_ZP, RP_ZP, _flux_to_mag
 
 
-def _closest_gaia_star(cluster: ocelot.simulate.cluster.SimulatedCluster, field: pd.DataFrame):
+def _closest_gaia_star(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, field: pd.DataFrame
+):
     """Finds the nearest star in G-band magnitude to a given star."""
     field_magnitudes = field["phot_g_mean_mag"].to_numpy()
     stars_to_assign = cluster.cluster["g_true"].notna()
-    cluster_magnitudes = (
-        cluster.cluster.loc[stars_to_assign, "g_true"].to_numpy()
-    )
+    cluster_magnitudes = cluster.cluster.loc[stars_to_assign, "g_true"].to_numpy()
 
     # Search a sorted version of the field magnitudes array to find closest real star
     sort_args = np.argsort(field_magnitudes)
     field_magnitudes_sorted = field_magnitudes[sort_args]
-    best_matching_stars_in_sorted = np.searchsorted(field_magnitudes_sorted, cluster_magnitudes)
+    best_matching_stars_in_sorted = np.searchsorted(
+        field_magnitudes_sorted, cluster_magnitudes
+    )
 
     # Any simulated stars with magnitudes higher than observed in the field are given
     # the closest available star
@@ -68,12 +72,12 @@ def _assign_field_uncertainties_to_cluster(
         cluster.cluster.loc[stars_to_assign, "phot_g_mean_flux_error"] = matching_stars[
             "phot_g_mean_flux_error"
         ].to_numpy()
-        cluster.cluster.loc[
-            stars_to_assign, "phot_bp_mean_flux_error"
-        ] = matching_stars["phot_bp_mean_flux_error"].to_numpy()
-        cluster.cluster.loc[
-            stars_to_assign, "phot_rp_mean_flux_error"
-        ] = matching_stars["phot_rp_mean_flux_error"].to_numpy()
+        cluster.cluster.loc[stars_to_assign, "phot_bp_mean_flux_error"] = (
+            matching_stars["phot_bp_mean_flux_error"].to_numpy()
+        )
+        cluster.cluster.loc[stars_to_assign, "phot_rp_mean_flux_error"] = (
+            matching_stars["phot_rp_mean_flux_error"].to_numpy()
+        )
     if cluster.parameters.astrometric_errors:
         cluster.cluster.loc[stars_to_assign, "pmra_error"] = matching_stars[
             "pmra_error"
@@ -97,12 +101,28 @@ def apply_gaia_photometric_uncertainties(
         cluster.cluster["phot_bp_mean_mag"] = cluster.cluster["bp_true"]
         cluster.cluster["phot_rp_mean_mag"] = cluster.cluster["rp_true"]
         return
+    
+    # Cycle over pmra, pmdec, and parallax, updating their uncertainty value
+    for photometric_band, zero_point in zip(("g", "bp", "rp"), (G_ZP, BP_ZP, RP_ZP)):
+        error_column = f"phot_{photometric_band}_mean_flux_error"
+        flux_column = f"{photometric_band}_flux"
+        mag_column = f"phot_{photometric_band}_mean_mag"
 
-    # Todo: allow for photometric uncertainties (not necessary at this point, but...)
-    raise NotImplementedError("Cluster photometric errors are not implemented.")
+        to_assign = cluster.cluster[error_column].notna()
+        std = cluster.cluster.loc[to_assign, error_column]
+
+        cluster.cluster.loc[to_assign, mag_column] = _flux_to_mag(
+            cluster.cluster.loc[to_assign, flux_column] + 
+            cluster.random_generator.normal(loc=0, scale=std),
+            zero_point
+        )
+
+    # Todo: BP and RP flux issues for Gaia DR3 not added
 
 
-def apply_gaia_astrometric_uncertainties(cluster: ocelot.simulate.cluster.SimulatedCluster):
+def apply_gaia_astrometric_uncertainties(
+    cluster: ocelot.simulate.cluster.SimulatedCluster,
+):
     """Applies representative Gaia astrometric uncertainties to the astrometry of a
     cluster. Assumes that photometric errors have already been applied (which also adds
     astrometric uncertainties for each star.)
@@ -114,17 +134,15 @@ def apply_gaia_astrometric_uncertainties(cluster: ocelot.simulate.cluster.Simula
         return
 
     # Cycle over pmra, pmdec, and parallax, updating their uncertainty value
-    for dim, output in zip(
-        ("pmra", "pmdec", "parallax"), ("_plus_anomaly", "_plus_anomaly", "")
-    ):
-        to_assign = cluster.cluster[f"{dim}_error"].notna()
+    for dimension in ("pmra", "pmdec", "parallax"):
+        to_assign = cluster.cluster[f"{dimension}_error"].notna()
         std = (
-            cluster.cluster.loc[to_assign, f"{dim}_error"]
+            cluster.cluster.loc[to_assign, f"{dimension}_error"]
             * cluster.parameters.astrometric_errors_scale_factor
         )
-        cluster.cluster.loc[to_assign, f"{dim}{output}"] = (
+        cluster.cluster.loc[to_assign, f"{dimension}"] += (
             cluster.random_generator.normal(loc=0, scale=std)
-            + cluster.cluster.loc[to_assign, f"{dim}_true"]
+            # + cluster.cluster.loc[to_assign, f"{dim}_true"]
         )
 
-    warnings.warn("Addition of systematic uncertainties (e.g. parallax) not yet done!")
+    # Todo: Addition of systematic uncertainties (e.g. parallax) not yet done

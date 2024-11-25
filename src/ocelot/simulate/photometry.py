@@ -26,7 +26,10 @@ if not ISOCHRONES_DIRECTORY.exists():
 
 
 AVAILABLE_METALLICITIES = np.asarray(
-    [float(name.stem.split("=")[1]) for name in ISOCHRONES_DIRECTORY]
+    [
+        float(name.stem.split("=")[1])
+        for name in ISOCHRONES_DIRECTORY.glob("mh=*.parquet")
+    ]
 )
 MINIMUM_METALLICITY = AVAILABLE_METALLICITIES.min()
 MAXIMUM_METALLICITY = AVAILABLE_METALLICITIES.max()
@@ -73,7 +76,9 @@ def _interpolated_parameter(parameter, isochrone, masses):
     return interp1d(isochrone["Mini"], isochrone[parameter], bounds_error=False)(masses)
 
 
-def create_population(cluster: ocelot.simulate.cluster.SimulatedCluster, minimum_mass=0.03):
+def create_population(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, minimum_mass=0.03
+):
     """Samples from a pre-simulated stellar population until the sample population has
     the correct mass.
     """

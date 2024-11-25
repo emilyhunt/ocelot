@@ -47,7 +47,9 @@ def generate_star_velocities(cluster: ocelot.simulate.cluster.SimulatedCluster):
         cov=np.identity(3) * cluster.parameters.velocity_dispersion_1d,
         seed=cluster.random_generator,
     )
-    v_x, v_y, v_z = distribution.rvs(cluster.stars).T.reshape(3, -1)  # We also reshape to make sure a size-1 cluster is handled correctly
+    v_x, v_y, v_z = distribution.rvs(cluster.stars).T.reshape(
+        3, -1
+    )  # We also reshape to make sure a size-1 cluster is handled correctly
     return CartesianDifferential(d_x=v_x, d_y=v_y, d_z=v_z, unit=u.m / u.s)
 
 
@@ -58,8 +60,8 @@ def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.SimulatedClus
 
     # Do coordinate frame stuff to get final values (dont look astropy devs, dont tell
     # me what I can and cant do, i live in a lawless realm, this works so it works)
-    cluster_center = cluster.parameters.get_position_as_skycoord(
-        frame="galactocentric", with_zeroed_proper_motions=True
+    cluster_center = cluster.parameters.position.transform_to(
+        "galactocentric"
     ).cartesian
     cluster_differential = cluster_center.differentials["s"]
 
@@ -77,12 +79,13 @@ def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.SimulatedClus
     cluster.cluster["dec"] = final_coords.dec.value
     cluster.cluster["l"] = final_coords_galactic.l.value
     cluster.cluster["b"] = final_coords_galactic.b.value
-    cluster.cluster["pmra"] = np.nan  # Gets set later
-    cluster.cluster["pmdec"] = np.nan  # Gets set later
-    cluster.cluster["pmra_true"] = final_coords.pm_ra_cosdec.value
-    cluster.cluster["pmdec_true"] = final_coords.pm_dec.value
+    cluster.cluster["pmra"] = final_coords.pm_ra_cosdec.value
+    cluster.cluster["pmdec"] = final_coords.pm_dec.value
+    cluster.cluster["parallax"] = 1000 / final_coords.distance.value
+    cluster.cluster["pmra_true"] = cluster.cluster["pmra"]
+    cluster.cluster["pmdec_true"] = cluster.cluster["pmdec"]
+    cluster.cluster["parallax_true"] = cluster.cluster["parallax"]
     cluster.cluster["radial_velocity_true"] = final_coords.radial_velocity.value
-    cluster.cluster["parallax_true"] = 1000 / final_coords.distance.value
 
 
 def generate_cluster_astrometry(cluster: ocelot.simulate.cluster.SimulatedCluster):
