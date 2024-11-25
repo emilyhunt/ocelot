@@ -1,5 +1,5 @@
 from abc import ABC
 
 
-class ClusterDistributionModel(ABC):
+class BaseClusterDistributionModel(ABC):
     pass

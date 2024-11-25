@@ -1,5 +1,5 @@
-from ._base import ClusterDistributionModel
+from ._base import BaseClusterDistributionModel
 
 
-class Plummer(ClusterDistributionModel):
+class Plummer(BaseClusterDistributionModel):
     pass

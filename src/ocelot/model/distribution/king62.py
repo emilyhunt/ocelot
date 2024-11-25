@@ -1,5 +1,5 @@
-from ._base import ClusterDistributionModel
+from ._base import BaseClusterDistributionModel
 
 
-class King62(ClusterDistributionModel):
+class King62(BaseClusterDistributionModel):
     pass
