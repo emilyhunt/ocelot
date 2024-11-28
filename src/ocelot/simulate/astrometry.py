@@ -88,7 +88,7 @@ def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.SimulatedClus
     cluster.cluster["radial_velocity_true"] = final_coords.radial_velocity.value
 
 
-def generate_cluster_astrometry(cluster: ocelot.simulate.cluster.SimulatedCluster):
-    """Generates the astrometry of clusters."""
-    generate_true_star_astrometry(cluster)
-    apply_gaia_astrometric_uncertainties(cluster)
+# def generate_cluster_astrometry(cluster: ocelot.simulate.cluster.SimulatedCluster):
+#     """Generates the astrometry of clusters."""
+#     generate_true_star_astrometry(cluster)
+#     apply_gaia_astrometric_uncertainties(cluster)

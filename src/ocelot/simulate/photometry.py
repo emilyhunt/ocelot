@@ -152,12 +152,12 @@ def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
     cluster.cluster["rp_true"] = cluster.cluster["rp_true"] + cluster.cluster["a_rp"]
 
 
-def generate_cluster_photometry(
-    cluster: ocelot.simulate.cluster.SimulatedCluster, field: None | pd.DataFrame = None
-):
-    """Generates a star cluster of given photometry at a given age and extinction."""
-    create_population(cluster)
-    apply_extinction(cluster)
-    make_binaries(cluster)
-    apply_selection_functions(cluster, field)
-    apply_gaia_photometric_uncertainties(cluster, field)
+# def generate_cluster_photometry(
+#     cluster: ocelot.simulate.cluster.SimulatedCluster, field: None | pd.DataFrame = None
+# ):
+#     """Generates a star cluster of given photometry at a given age and extinction."""
+#     create_population(cluster)
+#     apply_extinction(cluster)
+#     make_binaries(cluster)
+#     apply_selection_functions(cluster, field)
+#     apply_gaia_photometric_uncertainties(cluster, field)

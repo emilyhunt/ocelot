@@ -16,49 +16,7 @@ from ocelot.simulate.binaries import MoeDiStefanoMultiplicityRelation
 from dataclasses import dataclass, asdict, field
 
 
-def calculate_r_50(r_core: int | float, r_tidal: int | float):
-    """Calculates r_50 for a given King+62 model.
-
-    # Todo: move this
-    """
-    if r_core >= r_tidal:
-        raise CoreRadiusTooLargeError("r_core may not be greater than r_tidal!")
-    if r_core < 0:
-        raise ValueError("r_core must be positive!")
-    if r_tidal < 0:
-        raise ValueError("r_tidal must be positive!")
-    total_value = king_number_density(r_tidal, r_core, r_tidal)
-    target_value = total_value / 2
-
-    def func_to_minimise(r):
-        return (target_value - king_number_density(r, r_core, r_tidal)) ** 2
-
-    result = minimize(
-        func_to_minimise,
-        np.atleast_1d([r_core]),
-        method="Nelder-Mead",
-        bounds=((0.0, r_tidal),),
-    )
-
-    if not result.success:
-        raise RuntimeError(
-            f"unable to find an r_50 value given r_core={r_core} and r_tidal={r_tidal}"
-        )
-
-    return result.x[0]
-
-
-def calculate_velocity_dispersion_1d(r_50, mass, virial_ratio, eta=10.0):
-    """Calculates the 1D velocity dispersion of a cluster given its current virial
-    state. See Portegies-Zwart+10 / Emily's thesis for equation derivation
-
-    sigma_1d = [ ( 2 * Q * G * M) / (eta * r_50) ]^0.5
-
-    # Todo: move this
-    """
-    mass_kg = (mass * u.M_sun).to(u.kg).value
-    r_50_m = (r_50 * u.pc).to(u.m).value
-    return ((2 * virial_ratio * constants.G.value * mass_kg) / (eta * r_50_m)) ** 0.5
+SUPPORTED_OBSERVATIONS = ["gaia_dr3"]
 
 
 @dataclass
@@ -154,7 +112,13 @@ class SimulatedClusterParameters:
 
 class SimulatedCluster:
     def __init__(
-        self, random_seed: int, parameters: SimulatedClusterParameters | None, **kwargs
+        self,
+        random_seed: int,
+        parameters: SimulatedClusterParameters | None,
+        observations: list[str] | None = None,
+        models: dict | None = None,  # Todo make it do something - this should be an overwritable list of models that can be changed
+        prune_simulated_cluster: dict | None = None,  # Todo also make it do something
+        **kwargs,
     ):
         """This is a helper class used to specify the parameters of a cluster to
         simulate.
@@ -162,19 +126,20 @@ class SimulatedCluster:
         if parameters is None:
             parameters = SimulatedClusterParameters(**kwargs)
         self.parameters: SimulatedClusterParameters = parameters
+        self._observations_to_make: list[str] = observations
 
         # Stuff for handling randomness
-        # Todo: IMF package isn't using these and there's seemingly no way to fix it
-        self.random_seed = random_seed
-        self.random_generator = np.random.default_rng(random_seed)
+        # Todo: IMF package isn't using these and there's seemingly no way to fix it without a PR
+        self.random_seed: int = random_seed
+        self.random_generator: np.random.Generator = np.random.default_rng(random_seed)
 
         # Empty things
-        self.cluster: pd.DataFrame = (
-            pd.DataFrame()
-        )  # Initialise blank to shut pylance up
+        self.isochrone: pd.DataFrame = pd.DataFrame()
+        self.cluster: pd.DataFrame = pd.DataFrame()
+        self.observations: dict[pd.DataFrame] = {}
         self.stars: int = 0
-        self.photometry_made: bool = False
-        self.astrometry_made: bool = False
+        self._true_cluster_generated: bool = False
+        self._observations_generated: bool = False
 
     def _check_if_has_enough_stars(self):
         """Checks if the cluster has enough stars."""
@@ -185,39 +150,74 @@ class SimulatedCluster:
                 "specified!"
             )
 
-    def make_photometry(self, field: None | pd.DataFrame = None):
-        """Generates photometry for this cluster given its own parameters."""
-        if self.photometry_made:
-            raise RuntimeError(
-                "Photometry for this cluster was already made! Cannot run again."
-            )
-        generate_cluster_photometry(self, field)
-        self._check_if_has_enough_stars()
-        self.photometry_made = True
+    def _reseed_random_generator(self, seed: int):
+        self.random_seed = seed
+        self.random_generator = np.random.default_rng(seed)
 
-    def make_astrometry(self):
-        """Generates astrometry for this cluster. Only works if the cluster has
-        photometry already.
-        """
-        if self.astrometry_made:
-            raise RuntimeError(
-                "Astrometry for this cluster was already made! Cannot run again."
-            )
-        if not self.photometry_made:
-            raise RuntimeError(
-                "Photometry is required to generate astrometry! Try doing "
-                "make_photometry first."
-            )
-        generate_cluster_astrometry(self)
-        self.astrometry_made = True
+    def make(self):
+        """Makes entire cluster according to specification set at initialization."""
+        self.make_cluster()
+        for observation in self._observations_to_make:
+            self.make_observation(observation)
 
-    def make(self, field: None | pd.DataFrame = None):
-        """Generates photometry and astrometry for the cluster.
+    def make_cluster(self):
+        """Creates the true stars and positions in a cluster."""
+        if self._true_cluster_generated:
+            raise RuntimeError(
+                "Cluster already made! You already called make_cluster or make once, "
+                "and cannot do so again."
+            )
+        return self.cluster
 
-        # Todo: field should really be an astrometric & photometric error model
-        """
-        self.make_photometry(field)
-        self.make_astrometry()
+    def make_observation(self, survey: str, seed=None):
+        if not self._true_cluster_generated:
+            raise RuntimeError(
+                "You must make the true cluster first before generating observations, "
+                "either by calling make_cluster or make."
+            )
+
+        # Allow for per-observation seed: useful when making many observations of the
+        # same cluster.
+        if seed is not None:
+            self._reseed_random_generator(seed)
+
+        # Todo, & don't forget to assign to SimulatedCluster object!
+
+
+
+    # def make_photometry(self, field: None | pd.DataFrame = None):
+    #     """Generates photometry for this cluster given its own parameters."""
+    #     if self.photometry_made:
+    #         raise RuntimeError(
+    #             "Photometry for this cluster was already made! Cannot run again."
+    #         )
+    #     generate_cluster_photometry(self, field)
+    #     self._check_if_has_enough_stars()
+    #     self.photometry_made = True
+
+    # def make_astrometry(self):
+    #     """Generates astrometry for this cluster. Only works if the cluster has
+    #     photometry already.
+    #     """
+    #     if self.astrometry_made:
+    #         raise RuntimeError(
+    #             "Astrometry for this cluster was already made! Cannot run again."
+    #         )
+    #     if not self.photometry_made:
+    #         raise RuntimeError(
+    #             "Photometry is required to generate astrometry! Try doing "
+    #             "make_photometry first."
+    #         )
+    #     generate_cluster_astrometry(self)
+    #     self.astrometry_made = True
+
+    # def make(self, field: None | pd.DataFrame = None):
+    #     """Generates photometry and astrometry for the cluster.
+
+    #     # Todo: field should really be an astrometric & photometric error model
+    #     """
+    #     self.make_photometry(field)
+    #     self.make_astrometry()
 
     # def plot(self, field: pd.DataFrame | None = None, fig=None, ax=None, **kwargs):
     #     """Plots the current cluster using oc_selection.plots.cluster_plot.
@@ -250,3 +250,48 @@ class SimulatedCluster:
     #         raise ImportError("oc_selection library not found! Unable to plot cluster.")
 
     #     return cluster_plot([self], field, fig, ax, **kwargs)
+
+
+def calculate_r_50(r_core: int | float, r_tidal: int | float):
+    """Calculates r_50 for a given King+62 model.
+
+    # Todo: move this
+    """
+    if r_core >= r_tidal:
+        raise CoreRadiusTooLargeError("r_core may not be greater than r_tidal!")
+    if r_core < 0:
+        raise ValueError("r_core must be positive!")
+    if r_tidal < 0:
+        raise ValueError("r_tidal must be positive!")
+    total_value = king_number_density(r_tidal, r_core, r_tidal)
+    target_value = total_value / 2
+
+    def func_to_minimise(r):
+        return (target_value - king_number_density(r, r_core, r_tidal)) ** 2
+
+    result = minimize(
+        func_to_minimise,
+        np.atleast_1d([r_core]),
+        method="Nelder-Mead",
+        bounds=((0.0, r_tidal),),
+    )
+
+    if not result.success:
+        raise RuntimeError(
+            f"unable to find an r_50 value given r_core={r_core} and r_tidal={r_tidal}"
+        )
+
+    return result.x[0]
+
+
+def calculate_velocity_dispersion_1d(r_50, mass, virial_ratio, eta=10.0):
+    """Calculates the 1D velocity dispersion of a cluster given its current virial
+    state. See Portegies-Zwart+10 / Emily's thesis for equation derivation
+
+    sigma_1d = [ ( 2 * Q * G * M) / (eta * r_50) ]^0.5
+
+    # Todo: move this
+    """
+    mass_kg = (mass * u.M_sun).to(u.kg).value
+    r_50_m = (r_50 * u.pc).to(u.m).value
+    return ((2 * virial_ratio * constants.G.value * mass_kg) / (eta * r_50_m)) ** 0.5
