@@ -9,76 +9,27 @@ from numba import jit
 from ocelot import DATA_PATH
 
 
-# The below values are hard-coded directly from the tables of the following papers.
-# Stellar masses 1+ Msun: Moe & DiStefano 2017
-# Below this: Duchene & Kraus 2013
-mass = np.asarray([0.10, 0.30, 1.00, 3.50, 7.00, 12.5, 16.0])
-multiplicity_fraction = np.asarray([0.22, 0.26, 0.40, 0.59, 0.76, 0.84, 0.94])
-companion_star_frequency = np.asarray([0.22, 0.33, 0.50, 0.84, 1.30, 1.60, 2.10])
+def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
+    """Assigns certain stars in a cluster as binaries."""
+    if not cluster.parameters.binary_stars:
+        return
 
-MF_INTERPOLATOR = interp1d(
-    mass,
-    multiplicity_fraction,
-    bounds_error=False,
-    fill_value=(multiplicity_fraction.min(), multiplicity_fraction.max()),
-)
+    multiplicity_relation_all, multiplicity_relation_resolved = (
+        _get_multiplicity_relations(cluster)
+    )
 
-CSF_INTERPOLATOR = interp1d(
-    mass,
-    companion_star_frequency,
-    bounds_error=False,
-    fill_value=(companion_star_frequency.min(), companion_star_frequency.max()),
-)
+    _assign_number_of_companions(cluster, multiplicity_relation_all)
 
+    # No need to go any further if nobody is going to be a binary
+    if cluster.cluster["companions"].sum() == 0:
+        return
 
-location_random_q_interpolator = (
-    DATA_PATH / "binaries/Moe_DiStefano17_interpolated_random_q_relation.pickle"
-)
-with open(location_random_q_interpolator, "rb") as handle:
-    MOE_DI_STEFANO_RANDOM_Q_INTERPOLATOR = pickle.load(handle)
-
-
-class MoeDiStefanoMultiplicityRelation:
-    def __init__(
-        self,
-        make_resolved_stars=True,
-        distance=None,
-        separation=0.6,
-        interpolated_q=True,
-    ) -> None:
-        """An interpolated implementation of the MoeDiStefano17 multiplicity relations,
-        plus DucheneKraus+13 for stars below 1 MSun.
-        """
-        self.make_resolved_stars = make_resolved_stars
-        self.distance = distance
-        self.separation = separation
-
-        if not interpolated_q:
-            raise ValueError(
-                "interpolated_q may only be set to True. This implementation only "
-                "supports using pre-computed data from Hunt & Reffert 2024."
-            )
-
-        with open(location_random_q_interpolator, "rb") as handle:
-            self.interpolator = pickle.load(handle)
-
-        # If no distance specified in interpolation mode, then set to max distance
-        # (where everything is unresolved anyway)
-        if self.distance is None or make_resolved_stars is False:
-            self.distance = np.max(self.interpolator.grid[1])
-
-    def companion_star_fraction(self, masses):
-        return CSF_INTERPOLATOR(masses)
-
-    def multiplicity_fraction(self, masses):
-        return MF_INTERPOLATOR(masses)
-
-    def random_q(self, masses, random_generator):
-        masses = np.atleast_1d(masses)
-        distances = np.repeat(self.distance, len(masses))
-        samples = random_generator.uniform(size=len(masses))
-        points = np.vstack([masses, distances, samples]).T
-        return self.interpolator(points)
+    # Cycle over every star, giving it companions
+    _convert_singles_to_systems(
+        cluster,
+        multiplicity_relation_all,
+        multiplicity_relation_resolved,
+    )
 
 
 def _get_multiplicity_relations(cluster):
@@ -111,6 +62,43 @@ def _assign_number_of_companions(cluster, multiplicity_relation_all_binaries):
         )
         + 1
     ).astype(int)
+
+
+def _convert_singles_to_systems(
+    cluster, multiplicity_relation_all_binaries, multiplicity_relation_resolved_binaries
+):
+    """Converts single stars to systems, based on precomputed appropriate numbers of
+    companions to make for each one.
+
+    # Todo tidy this function please it's a mess
+    """
+    # Ensure we start with the most massive star and go down
+    cluster.cluster = cluster.cluster.sort_values("mass", ignore_index=True)
+
+    query = "companions > 0"
+    # Todo: add new limiting optimization here
+    # if cluster.parameters.selection_effects:
+    #     query += " and g_true < 21"
+    indices_to_go_over = cluster.cluster.query(query).index.to_numpy()[::-1]
+
+    masses = cluster.cluster["mass"].to_numpy()
+    companions = cluster.cluster.loc[indices_to_go_over, "companions"].to_numpy()
+    index_primary = np.full(len(cluster.cluster), -2)
+
+    masses_repeated = np.repeat(masses[indices_to_go_over], companions)
+    q_values = multiplicity_relation_all_binaries.random_q(
+        masses_repeated, cluster.random_generator
+    )
+
+    # Todo: Whether or not stars are resolved is currently done independent of mass. This is wrong! Minimal impact on distant clusters but bad in other cases.
+    q_resolved = multiplicity_relation_resolved_binaries.random_q(
+        masses_repeated, cluster.random_generator
+    )
+    is_resolved = q_resolved < 0.1  # Weird thing with how the interp is specced
+
+    cluster.cluster["index_primary"] = _convert_singles_numba(
+        masses, companions, indices_to_go_over, index_primary, q_values, is_resolved
+    )
 
 
 @jit(nopython=True, cache=True)
@@ -196,60 +184,6 @@ def _convert_singles_numba(
     return index_primary
 
 
-def _convert_singles_to_systems(
-    cluster, multiplicity_relation_all_binaries, multiplicity_relation_resolved_binaries
-):
-    """Converts single stars to systems, based on precomputed appropriate numbers of
-    companions to make for each one.
-
-    # Todo tidy this function please it's a mess
-    """
-    query = "companions > 0"
-    if cluster.parameters.selection_effects:
-        query += " and g_true < 21"
-    indices_to_go_over = cluster.cluster.query(query).index.to_numpy()[::-1]
-
-    masses = cluster.cluster["mass"].to_numpy()
-    companions = cluster.cluster.loc[indices_to_go_over, "companions"].to_numpy()
-    index_primary = np.full(len(cluster.cluster), -2)
-
-    masses_repeated = np.repeat(masses[indices_to_go_over], companions)
-    q_values = multiplicity_relation_all_binaries.random_q(
-        masses_repeated, cluster.random_generator
-    )
-
-    # Todo: Whether or not stars are resolved is currently done independent of mass. This is wrong! Minimal impact on distant clusters but bad in other cases.
-    q_resolved = multiplicity_relation_resolved_binaries.random_q(
-        masses_repeated, cluster.random_generator
-    )
-    is_resolved = q_resolved < 0.1  # Weird thing with how the interp is specced
-
-    cluster.cluster["index_primary"] = _convert_singles_numba(
-        masses, companions, indices_to_go_over, index_primary, q_values, is_resolved
-    )
-
-    # Add fluxes
-    summed_fluxes_of_companions = (
-        cluster.cluster.query("index_primary >= 0")
-        .groupby("index_primary")[["g_flux", "bp_flux", "rp_flux"]]
-        .sum()
-    )
-
-    primary_indices = summed_fluxes_of_companions.index
-    cluster.cluster.loc[primary_indices, "g_flux"] += summed_fluxes_of_companions[
-        "g_flux"
-    ]
-    cluster.cluster.loc[primary_indices, "bp_flux"] += summed_fluxes_of_companions[
-        "bp_flux"
-    ]
-    cluster.cluster.loc[primary_indices, "rp_flux"] += summed_fluxes_of_companions[
-        "rp_flux"
-    ]
-
-    # Drop the taken stars
-    cluster.cluster = cluster.cluster.query("index_primary < 0").reset_index(drop=True)
-
-
 # Zeropoints in the Vegamag system (see documentation table 5.2)
 # These are for Gaia DR3!
 G_ZP = 25.6874
@@ -271,67 +205,11 @@ def _flux_to_mag(fluxes, zero_point):
     return magnitudes
 
 
-def _calculate_fluxes(cluster):
-    """Calculate fluxes for stars in the cluster"""
-    good_stars = cluster.cluster["g_true"].notna()
-    bad_stars = np.invert(good_stars)
-    cluster.cluster.loc[good_stars, "g_flux"] = _mag_to_flux(
-        cluster.cluster.loc[good_stars, "g_true"], G_ZP
-    )
-    cluster.cluster.loc[good_stars, "bp_flux"] = _mag_to_flux(
-        cluster.cluster.loc[good_stars, "bp_true"], BP_ZP
-    )
-    cluster.cluster.loc[good_stars, "rp_flux"] = _mag_to_flux(
-        cluster.cluster.loc[good_stars, "rp_true"], RP_ZP
-    )
-    cluster.cluster.loc[bad_stars, "g_flux"] = 0.0
-    cluster.cluster.loc[bad_stars, "bp_flux"] = 0.0
-    cluster.cluster.loc[bad_stars, "rp_flux"] = 0.0
+def _add_two_magnitudes(magnitude_1, magnitude_2):
+    """Correct (simplified) equation to add two magnitudes.
+    Source: https://www.astro.keele.ac.uk/jkt/pubs/JKTeq-fluxsum.pdf
+    """
+    return -2.5 * np.log10(10 ** (-magnitude_1 / 2.5) + 10 ** (-magnitude_2 / 2.5))
 
 
-def _recalculate_magnitudes(cluster):
-    """Recalculate magnitudes for stars in the cluster, after adding binaries."""
-    good_stars = cluster.cluster["g_flux"] > 0
-    bad_stars = np.invert(good_stars)
-    cluster.cluster.loc[good_stars, "g_true"] = _flux_to_mag(
-        cluster.cluster.loc[good_stars, "g_flux"], G_ZP
-    )
-    cluster.cluster.loc[good_stars, "bp_true"] = _flux_to_mag(
-        cluster.cluster.loc[good_stars, "bp_flux"], BP_ZP
-    )
-    cluster.cluster.loc[good_stars, "rp_true"] = _flux_to_mag(
-        cluster.cluster.loc[good_stars, "rp_flux"], RP_ZP
-    )
-    cluster.cluster.loc[bad_stars, "g_true"] = np.nan
-    cluster.cluster.loc[bad_stars, "bp_true"] = np.nan
-    cluster.cluster.loc[bad_stars, "rp_true"] = np.nan
-    # cluster.cluster = cluster.cluster.drop(columns=["g_flux", "bp_flux", "rp_flux"])
 
-
-def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
-    """Pairs a simulated cluster up into binaries."""
-    if not cluster.parameters.binary_stars:
-        return
-
-    multiplicity_relation_all, multiplicity_relation_resolved = (
-        _get_multiplicity_relations(cluster)
-    )
-
-    _assign_number_of_companions(cluster, multiplicity_relation_all)
-
-    # No need to go any further if nobody is going to be a binary
-    if cluster.cluster["companions"].sum() == 0:
-        return
-
-    # Do some setup of the dataframe
-    cluster.cluster = cluster.cluster.sort_values("mass", ignore_index=True)
-    _calculate_fluxes(cluster)
-
-    # Cycle over every star, giving it companions
-    _convert_singles_to_systems(
-        cluster,
-        multiplicity_relation_all,
-        multiplicity_relation_resolved,
-    )
-
-    _recalculate_magnitudes(cluster)

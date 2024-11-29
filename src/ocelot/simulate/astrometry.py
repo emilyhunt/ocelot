@@ -2,7 +2,6 @@
 
 from __future__ import annotations  # Necessary to type hint without cyclic import
 import numpy as np
-from ocelot.simulate.uncertainties import apply_gaia_astrometric_uncertainties
 from ocelot.calculate.profile import sample_1d_king_profile
 from ocelot.util.random import points_on_sphere
 import ocelot.simulate.cluster
@@ -18,7 +17,7 @@ def generate_star_positions(cluster: ocelot.simulate.cluster.SimulatedCluster):
     radii = sample_1d_king_profile(
         cluster.parameters.r_core,
         cluster.parameters.r_tidal,
-        cluster.stars,
+        len(cluster.cluster),
         seed=cluster.random_seed,
     )
     phis, thetas = points_on_sphere(
@@ -47,7 +46,7 @@ def generate_star_velocities(cluster: ocelot.simulate.cluster.SimulatedCluster):
         cov=np.identity(3) * cluster.parameters.velocity_dispersion_1d,
         seed=cluster.random_generator,
     )
-    v_x, v_y, v_z = distribution.rvs(cluster.stars).T.reshape(
+    v_x, v_y, v_z = distribution.rvs(len(cluster.cluster)).T.reshape(
         3, -1
     )  # We also reshape to make sure a size-1 cluster is handled correctly
     return CartesianDifferential(d_x=v_x, d_y=v_y, d_z=v_z, unit=u.m / u.s)

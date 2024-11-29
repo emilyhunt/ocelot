@@ -10,9 +10,9 @@ from ocelot.calculate.profile import king_number_density
 import pandas as pd
 from scipy.optimize import minimize
 from ocelot.simulate.errors import NotEnoughStarsError, CoreRadiusTooLargeError
-from ocelot.simulate.photometry import generate_cluster_photometry
-from ocelot.simulate.astrometry import generate_cluster_astrometry
-from ocelot.simulate.binaries import MoeDiStefanoMultiplicityRelation
+from ocelot.simulate.photometry import create_population
+from ocelot.simulate.astrometry import generate_true_star_astrometry
+from ocelot.simulate.binaries import MoeDiStefanoMultiplicityRelation, make_binaries
 from dataclasses import dataclass, asdict, field
 
 
@@ -167,6 +167,9 @@ class SimulatedCluster:
                 "Cluster already made! You already called make_cluster or make once, "
                 "and cannot do so again."
             )
+        create_population(self)
+        make_binaries(self)
+        generate_true_star_astrometry(self)
         return self.cluster
 
     def make_observation(self, survey: str, seed=None):

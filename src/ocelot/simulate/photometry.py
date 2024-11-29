@@ -5,12 +5,9 @@ subsample selection functions.
 from __future__ import annotations  # Necessary to type hint without cyclic import
 import warnings
 import numpy as np
-from ocelot.simulate.selection import apply_selection_functions
 import pandas as pd
 import ocelot.simulate.cluster
-from ocelot.simulate.binaries import make_binaries
 from ocelot.simulate import photutils
-from ocelot.simulate.uncertainties import apply_gaia_photometric_uncertainties
 from scipy.interpolate import interp1d
 import imf
 from ocelot import DATA_PATH
