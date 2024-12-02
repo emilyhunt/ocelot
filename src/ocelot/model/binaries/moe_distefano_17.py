@@ -1,5 +1,28 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
+from ocelot.model.binaries._base import BinaryStarModelWithPeriods
+from imf.distributions import BrokenPowerLaw
+
+
+class MoeDiStefanoMultiplicityRelation(BinaryStarModelWithPeriods):
+    def __init__(self) -> None:
+        """An interpolated implementation of the MoeDiStefano17 multiplicity relations,
+        plus DucheneKraus+13 for stars below 1 MSun.
+        """
+        pass
+
+    def multiplicity_fraction(self, masses: np.ndarray) -> np.ndarray:
+        return np.interp(masses, mass, multiplicity_fraction)
+
+    def companion_star_frequency(self, masses: np.ndarray) -> np.ndarray:
+        return np.interp(masses, mass, companion_star_frequency)
+    
+    def random_mass_ratio(self, masses: np.ndarray, seed=None) -> np.ndarray:
+        return self.random_binary(masses, seed=seed)
+
+    def random_binary(self, masses: np.ndarray, seed=None) -> tuple[np.ndarray]:
+        mass_ratios, log_periods = _sample_binary(masses, seed=seed)
+        return mass_ratios, 10**log_periods
 
 
 # The below values are hard-coded directly from the tables of the following papers.
@@ -14,6 +37,7 @@ companion_star_frequency = np.asarray([0.22, 0.33, 0.50, 0.84, 1.30, 1.60, 2.10]
 # should use the first bin, as this info is only available down to solar-like stars.
 # N.B.: this is specified in terms of mass on first axis and period on the second.
 mass_ratio_periods = np.asarray([1.0, 3.0, 5.0, 7.0])  # Set to bounds outside this
+mass_ratio_periods_with_bounds = np.hstack([0.2, mass_ratio_periods, 8.0])
 
 period_frequencies = np.asarray(
     [
@@ -68,18 +92,7 @@ eccentricities = np.asarray(
     ]
 )
 
-_period_interpolator = RegularGridInterpolator(
-    (mass[2:], mass_ratio_periods), period_frequencies
-)
-_gamma_large_interpolator = RegularGridInterpolator(
-    (mass[2:], mass_ratio_periods), gamma_large
-)
-_gamma_small_interpolator = RegularGridInterpolator(
-    (mass[2:], mass_ratio_periods), gamma_small
-)
-_twin_fraction_interpolator = RegularGridInterpolator(
-    (mass[2:], mass_ratio_periods), twin_fraction
-)
+
 _eccentricity_interpolator = RegularGridInterpolator(
     (mass[2:], eccentricity_periods), eccentricities
 )
@@ -113,6 +126,17 @@ def _get_eccentricity_parameters(
     return _eccentricity_interpolator(points), _calculate_max_eccentricity(log_period)
 
 
+_gamma_large_interpolator = RegularGridInterpolator(
+    (mass[2:], mass_ratio_periods), gamma_large
+)
+_gamma_small_interpolator = RegularGridInterpolator(
+    (mass[2:], mass_ratio_periods), gamma_small
+)
+_twin_fraction_interpolator = RegularGridInterpolator(
+    (mass[2:], mass_ratio_periods), twin_fraction
+)
+
+
 def _get_mass_ratio_distribution_parameters(
     primary_mass: np.ndarray, log_period: np.ndarray
 ):
@@ -140,7 +164,20 @@ def _get_mass_ratio_distribution_parameters(
     )
 
 
-def _get_period_pdf(primary_mass: np.ndarray) -> np.ndarray:
+# The period interpolator is set up so that it has extra flat regions from 0.2 to 1.0 and from 7.0 to 8.0 (as in the original paper)
+_period_interpolator = RegularGridInterpolator(
+    (mass[2:], mass_ratio_periods_with_bounds),
+    np.hstack(
+        (period_frequencies[:, :1], period_frequencies, period_frequencies[:, -1:])
+    ),
+    bounds_error=False,
+    fill_value=0.0,
+)
+
+
+def _get_period_pdf(
+    primary_mass: np.ndarray, resolution: int = 100
+) -> tuple[np.ndarray]:
     """Calculate the period pdf distribution from Moe & DiStefano 2017.
 
     Parameters
@@ -151,54 +188,114 @@ def _get_period_pdf(primary_mass: np.ndarray) -> np.ndarray:
     Returns
     -------
     np.ndarray
-        The period PDF for each primary mass, defined for periods from 0.5 to 8.0.
+        The period PDF for each primary mass, defined for periods from 0.2 to 8.0.
     """
+    # periods = mass_ratio_periods_with_bounds
+    periods = np.linspace(0.2, 8.0, num=resolution)
     primary_mass_clipped = np.clip(primary_mass, 1.0, 16.0)
-    points = np.vstack([primary_mass_clipped, mass_ratio_periods])
-    values = _period_interpolator(points).reshape(points.shape)
+    n_masses, n_periods = len(primary_mass_clipped), len(periods)
 
-    # Ensure that the bounds are properly defined (i.e. values from 0.5 to 8.0 allowed)
-    values = np.hstack((values[:1], values, values[-1:]))
-    return values
+    points = np.vstack(
+        [
+            np.repeat(primary_mass_clipped, n_periods),
+            np.tile(periods, n_masses),
+        ]
+    ).T
+    values = _period_interpolator(points).reshape(n_masses, n_periods)
+
+    # Normalize to unit area
+    values = values / np.trapz(values, np.tile(periods, (n_masses, 1)), axis=1).reshape(
+        n_masses, 1
+    )
+
+    # Ensure that the bounds are properly defined (i.e. values from 0.2 to 8.0 allowed)
+    # values = np.hstack((values[:1], values, values[-1:]))
+    return periods, values
 
 
-# def _get_period_percentile_point_function(primary_mass: np.ndarray) -> np.ndarray:
-#     period_pdf = _get_period_pdf(primary_mass)
-#     period_ecdf = 
+def _pdf_to_cdf(x: np.ndarray, pdf: np.ndarray):
+    """Converts a piecewise PDF to a CDF. Assumes that the starting value is the
+    lower bound, i.e. the CDF below x[0] should be zero.
+    """
+    # Deal with 1D input
+    if len(pdf.shape) == 1:
+        pdf = pdf.reshape(1, -1)
+
+    # Calculate CDF
+    delta_x = np.diff(x).reshape(1, -1)
+    cdf = np.cumsum((pdf[:, :-1] + pdf[:, 1:]) / 2 * delta_x, axis=1)
+
+    # Ensure lower bound defined, i.e. we start at zero
+    cdf = np.hstack((np.zeros((pdf.shape[0], 1)), cdf))
+
+    # Set to range [0, 1]
+    cdf = cdf / cdf[:, -1].reshape(-1, 1)
+
+    return cdf
 
 
-# def _sample_period(seed=None):
-#     rng = np.random.default_rng(seed)
+def _get_period_percentile_point_function(
+    primary_mass: np.ndarray,
+) -> tuple[np.ndarray]:
+    x_periods, period_pdf = _get_period_pdf(primary_mass)
+    period_cdf = _pdf_to_cdf(x_periods, period_pdf)
+    return period_cdf, x_periods
 
 
-# class MoeDiStefanoMultiplicityRelation:
-#     def __init__(
-#         self,
-#         make_resolved_stars=True,
-#         distance=None,
-#         separation=0.6,
-#         interpolated_q=True,
-#     ) -> None:
-#         """An interpolated implementation of the MoeDiStefano17 multiplicity relations,
-#         plus DucheneKraus+13 for stars below 1 MSun.
-#         """
-#         self.make_resolved_stars = make_resolved_stars
-#         self.distance = distance
-#         self.separation = separation
+def _sample_period(
+    primary_mass: np.ndarray[float | int] | float | int, seed=None
+) -> np.ndarray:
+    """Sample log period as a function of primary star mass."""
+    rng = np.random.default_rng(seed)
+    primary_mass = np.atleast_1d(primary_mass).astype(float)
+    period_ppf, period_values = _get_period_percentile_point_function(primary_mass)
+    uniform_deviates = rng.uniform(size=len(primary_mass))
+    periods = np.zeros_like(primary_mass)
+    for i in range(len(periods)):
+        periods[i] = np.interp(
+            uniform_deviates[i], period_ppf[i], period_values, 0.2, 8.0
+        )
+    return periods
 
-#         if not interpolated_q:
-#             raise ValueError(
-#                 "interpolated_q may only be set to True. This implementation only "
-#                 "supports using pre-computed data from Hunt & Reffert 2024."
-#             )
 
-#         # If no distance specified in interpolation mode, then set to max distance
-#         # (where everything is unresolved anyway)
-#         if self.distance is None or make_resolved_stars is False:
-#             self.distance = np.max(self.interpolator.grid[1])
+def _sample_mass_ratio(
+    primary_mass: np.ndarray[float | int],
+    periods: np.ndarray[float | int],
+    seed=None,
+):
+    """Samples binary star mass ratios."""
+    gamma_large, gamma_small, twin_fraction = _get_mass_ratio_distribution_parameters(
+        primary_mass, periods
+    )
 
-#     def companion_star_fraction(self, masses):
-#         return CSF_INTERPOLATOR(masses)
+    n_stars = len(gamma_large)
+    if n_stars == 0:
+        return np.atleast_1d([])
+    rng = np.random.default_rng(seed)
+    mass_ratios = np.zeros_like(gamma_large)
 
-#     def multiplicity_fraction(self, masses):
-#         return MF_INTERPOLATOR(masses)
+    # Assign some as twins
+    is_twin = rng.uniform(size=n_stars) < twin_fraction
+    not_twin = np.invert(is_twin)
+    n_twins = is_twin.sum()
+    mass_ratios[is_twin] = rng.uniform(low=0.95, high=1.0, size=n_twins)
+    if n_twins == n_stars:
+        return mass_ratios
+
+    # Assign the rest from the power law
+    # Todo seeds are ignored by imf.distribution
+    gamma_large, gamma_small = gamma_large[not_twin], gamma_small[not_twin]
+    power_laws = [
+        BrokenPowerLaw([gamma_small[i], gamma_large[i]], [0.1, 0.3, 1.0])
+        for i in range(len(gamma_large))
+    ]
+    mass_ratios[not_twin] = np.hstack([dist.rvs(1) for dist in power_laws])
+    return mass_ratios
+
+
+def _sample_binary(primary_mass: np.ndarray[float | int] | float | int, seed=None):
+    """Returns binary star mass ratios and periods."""
+    primary_mass = np.atleast_1d(primary_mass).astype(float)
+    periods = _sample_period(primary_mass, seed=seed)
+    mass_ratios = _sample_mass_ratio(primary_mass, periods, seed=seed)
+    return mass_ratios, periods
