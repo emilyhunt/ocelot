@@ -12,7 +12,13 @@ from scipy.optimize import minimize
 from ocelot.simulate.errors import NotEnoughStarsError, CoreRadiusTooLargeError
 from ocelot.simulate.photometry import create_population
 from ocelot.simulate.astrometry import generate_true_star_astrometry
-from ocelot.simulate.binaries import MoeDiStefanoMultiplicityRelation, make_binaries
+from ocelot.simulate.binaries import make_binaries
+from ocelot.model.binaries import BaseBinaryStarModel, MoeDiStefanoMultiplicityRelation
+from ocelot.model.differential_reddening import (
+    BaseDifferentialReddeningModel,
+    FractalDifferentialReddening,
+)
+from ocelot.model.distribution import BaseClusterDistributionModel, King62
 from dataclasses import dataclass, asdict, field
 
 
@@ -110,28 +116,79 @@ class SimulatedClusterParameters:
         return asdict(self)
 
 
+@dataclass
+class SimulatedClusterModels:
+    """Class for keeping track of all models that a generated SimulatedCluster will use."""
+
+    distribution: BaseClusterDistributionModel | None = None
+    binaries: BaseBinaryStarModel | None = None
+    differential_reddening: BaseDifferentialReddeningModel | None = None
+
+    def initialise_defaults(self, seed: int):
+        """For all class attributes, replace None values with sensible default models.
+
+        Parameters
+        ----------
+        seed : int
+            Random seed to use for default models that incorporate randomness.
+        """
+        if self.distribution is None:
+            self.distribution = King62()
+        if self.binaries is None:
+            self.binaries = MoeDiStefanoMultiplicityRelation()
+        if self.differential_reddening is None:
+            self.differential_reddening = FractalDifferentialReddening(seed=seed)
+        return self
+
+    @staticmethod
+    def with_default_options(seed: int):
+        return SimulatedClusterModels().initialise_defaults(seed=seed)
+
+
 class SimulatedCluster:
     def __init__(
         self,
-        random_seed: int,
-        parameters: SimulatedClusterParameters | None,
+        parameters: SimulatedClusterParameters | dict,
         observations: list[str] | None = None,
-        models: dict | None = None,  # Todo make it do something - this should be an overwritable list of models that can be changed
+        models: SimulatedClusterModels | dict | None = None,
         prune_simulated_cluster: dict | None = None,  # Todo also make it do something
-        **kwargs,
+        random_seed: int | None = None,
     ):
         """This is a helper class used to specify the parameters of a cluster to
         simulate.
         """
-        if parameters is None:
-            parameters = SimulatedClusterParameters(**kwargs)
-        self.parameters: SimulatedClusterParameters = parameters
-        self._observations_to_make: list[str] = observations
-
         # Stuff for handling randomness
-        # Todo: IMF package isn't using these and there's seemingly no way to fix it without a PR
+        if random_seed is None:
+            # Select a random seed from 0 to the largest possible signed 64 bit int
+            # This enforces seeding even when a user doesn't specify a seed - helping
+            # to ensure reproducibility.
+            random_seed = np.random.default_rng().integers(2**63 - 1)
+        
+        # Set various state things
         self.random_seed: int = random_seed
-        self.random_generator: np.random.Generator = np.random.default_rng(random_seed)
+        self.random_generator: np.random.Generator = np.random.default_rng(
+            random_seed
+        )
+
+        # Set legacy numpy seed for IMF package's benefit
+        # Todo: IMF package isn't using these and there's seemingly no way to fix it without a PR
+        np.random.seed(random_seed)
+
+        # Handle parameter input
+        if isinstance(parameters, dict):
+            parameters = SimulatedClusterParameters(**parameters)
+        self.parameters: SimulatedClusterParameters = parameters
+
+        # Handle model input
+        if isinstance(models, None):
+            models = dict()
+        if isinstance(models, dict):
+            models = SimulatedClusterModels(**models)
+        models.initialise_defaults(seed=self.random_seed)
+        self.models = models
+
+        # Handle observation input
+        self._observations_to_make: list[str] = observations
 
         # Empty things
         self.isochrone: pd.DataFrame = pd.DataFrame()
@@ -153,6 +210,7 @@ class SimulatedCluster:
     def _reseed_random_generator(self, seed: int):
         self.random_seed = seed
         self.random_generator = np.random.default_rng(seed)
+        np.random.seed(seed)
 
     def make(self):
         """Makes entire cluster according to specification set at initialization."""
@@ -185,8 +243,6 @@ class SimulatedCluster:
             self._reseed_random_generator(seed)
 
         # Todo, & don't forget to assign to SimulatedCluster object!
-
-
 
     # def make_photometry(self, field: None | pd.DataFrame = None):
     #     """Generates photometry for this cluster given its own parameters."""
