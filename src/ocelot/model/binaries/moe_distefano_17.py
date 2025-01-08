@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from ocelot.model.binaries._base import BinaryStarModelWithPeriods
-from imf.distributions import BrokenPowerLaw
+from ocelot.model.binaries._base import BinaryStarModelWithEccentricities
+from imf.distributions import BrokenPowerLaw, PowerLaw
 
 
-class MoeDiStefanoMultiplicityRelation(BinaryStarModelWithPeriods):
+class MoeDiStefanoMultiplicityRelation(BinaryStarModelWithEccentricities):
     def __init__(self) -> None:
         """An interpolated implementation of the MoeDiStefano17 multiplicity relations,
         plus DucheneKraus+13 for stars below 1 MSun.
@@ -16,13 +16,15 @@ class MoeDiStefanoMultiplicityRelation(BinaryStarModelWithPeriods):
 
     def companion_star_frequency(self, masses: np.ndarray) -> np.ndarray:
         return np.interp(masses, mass, companion_star_frequency)
-    
-    def random_mass_ratio(self, masses: np.ndarray, seed=None) -> np.ndarray:
-        return self.random_binary(masses, seed=seed)
 
-    def random_binary(self, masses: np.ndarray, seed=None) -> tuple[np.ndarray]:
-        mass_ratios, log_periods = _sample_binary(masses, seed=seed)
-        return mass_ratios, 10**log_periods
+    def random_mass_ratio(self, masses: np.ndarray, seed=None) -> np.ndarray:
+        return self.random_binary(masses, seed=seed)[0]
+
+    def random_binary(
+        self, masses: np.ndarray, seed=None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        mass_ratios, log_periods, eccentricities = _sample_binary(masses, seed=seed)
+        return mass_ratios, 10**log_periods, eccentricities
 
 
 # The below values are hard-coded directly from the tables of the following papers.
@@ -235,9 +237,9 @@ def _pdf_to_cdf(x: np.ndarray, pdf: np.ndarray):
 
 
 def _get_period_percentile_point_function(
-    primary_mass: np.ndarray,
+    primary_mass: np.ndarray, resolution: int = 100
 ) -> tuple[np.ndarray]:
-    x_periods, period_pdf = _get_period_pdf(primary_mass)
+    x_periods, period_pdf = _get_period_pdf(primary_mass, resolution=resolution)
     period_cdf = _pdf_to_cdf(x_periods, period_pdf)
     return period_cdf, x_periods
 
@@ -260,12 +262,12 @@ def _sample_period(
 
 def _sample_mass_ratio(
     primary_mass: np.ndarray[float | int],
-    periods: np.ndarray[float | int],
+    log_period: np.ndarray[float | int],
     seed=None,
 ):
     """Samples binary star mass ratios."""
     gamma_large, gamma_small, twin_fraction = _get_mass_ratio_distribution_parameters(
-        primary_mass, periods
+        primary_mass, log_period
     )
 
     n_stars = len(gamma_large)
@@ -293,9 +295,38 @@ def _sample_mass_ratio(
     return mass_ratios
 
 
+def _sample_eccentricity(
+    primary_mass: np.ndarray[float | int],
+    log_period: np.ndarray[float | int],
+    seed=None,
+):
+    power_law_slopes, max_eccentricity = _get_eccentricity_parameters(
+        primary_mass, log_period
+    )
+
+    # Define where we'll be sampling. We set an eccentricity_min that's non-zero as
+    # power laws are undefined at zero. Whenever the max_eccentricity is less than
+    # this minimum value, we just assume zero eccentricity (it basically is anyway)
+    eccentricity_min = 1e-10
+    good_max = max_eccentricity > eccentricity_min
+
+    # Sample some eccentricities!
+    # Todo seeds are ignored by imf.distribution
+    eccentricities = np.zeros_like(primary_mass)
+    power_laws = [
+        PowerLaw(a_slope, eccentricity_min, a_max)
+        for a_slope, a_max in zip(
+            power_law_slopes[good_max], max_eccentricity[good_max]
+        )
+    ]
+    eccentricities[good_max] = np.hstack([dist.rvs(1) for dist in power_laws])
+    return eccentricities
+
+
 def _sample_binary(primary_mass: np.ndarray[float | int] | float | int, seed=None):
     """Returns binary star mass ratios and periods."""
     primary_mass = np.atleast_1d(primary_mass).astype(float)
-    periods = _sample_period(primary_mass, seed=seed)
-    mass_ratios = _sample_mass_ratio(primary_mass, periods, seed=seed)
-    return mass_ratios, periods
+    log_period = _sample_period(primary_mass, seed=seed)
+    mass_ratios = _sample_mass_ratio(primary_mass, log_period, seed=seed)
+    eccentricities = _sample_eccentricity(primary_mass, log_period)
+    return mass_ratios, log_period, eccentricities
