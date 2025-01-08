@@ -25,6 +25,23 @@ class BinaryStarModelWithPeriods(BinaryStarModel):
     """
 
     @abstractmethod
-    def random_binary(self, masses: np.ndarray, seed=None) -> tuple[np.ndarray]:
+    def random_binary(
+        self, masses: np.ndarray, seed=None
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Returns a random binary star mass ratio q and a period in days."""
+        pass
+
+
+class BinaryStarModelWithEccentricities(BinaryStarModelWithPeriods):
+    """An extension of BinaryStarModelWithPeriods for models that also include
+    eccentricities, allowing for binaries to be classed as resolved or unresolved.
+    """
+
+    @abstractmethod
+    def random_binary(
+        self, masses: np.ndarray, seed=None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Returns a random binary star mass ratio q, a period in days, and an 
+        eccentricity.
+        """
         pass
