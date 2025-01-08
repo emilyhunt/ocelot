@@ -5,6 +5,8 @@ from scipy.interpolate import RegularGridInterpolator
 
 
 class FractalDifferentialReddening(BaseDifferentialReddeningModel):
+    accepts_random_seed = True
+
     def __init__(self, resolution: int = 256, seed=None) -> None:
         super().__init__()
         self.resolution = resolution

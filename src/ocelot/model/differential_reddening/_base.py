@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 
 
 class BaseDifferentialReddeningModel(ABC):
+    accepts_random_seed = False  # Class attribute for whether or not a given model needs a seed in __init__
+
     def extinction(
         self,
         x: ArrayLike,
