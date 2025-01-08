@@ -2,7 +2,7 @@ import numpy as np
 from abc import ABC, abstractmethod
 
 
-class BinaryStarModel(ABC):
+class BaseBinaryStarModel(ABC):
     """A binary star model abstract base class for models that implement MF, CSF, and q."""
 
     @abstractmethod
@@ -19,7 +19,7 @@ class BinaryStarModel(ABC):
         pass
 
 
-class BinaryStarModelWithPeriods(BinaryStarModel):
+class BaseBinaryStarModelWithPeriods(BaseBinaryStarModel):
     """An extension of BinaryStarModel for models that also include period modelling,
     allowing for binaries to be classed as resolved or unresolved.
     """
@@ -32,7 +32,7 @@ class BinaryStarModelWithPeriods(BinaryStarModel):
         pass
 
 
-class BinaryStarModelWithEccentricities(BinaryStarModelWithPeriods):
+class BaseBinaryStarModelWithEccentricities(BaseBinaryStarModelWithPeriods):
     """An extension of BinaryStarModelWithPeriods for models that also include
     eccentricities, allowing for binaries to be classed as resolved or unresolved.
     """

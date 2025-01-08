@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
-from ocelot.model.binaries._base import BinaryStarModelWithEccentricities
+from ocelot.model.binaries._base import BaseBinaryStarModelWithEccentricities
 from imf.distributions import BrokenPowerLaw, PowerLaw
 
 
-class MoeDiStefanoMultiplicityRelation(BinaryStarModelWithEccentricities):
+class MoeDiStefanoMultiplicityRelation(BaseBinaryStarModelWithEccentricities):
     def __init__(self) -> None:
         """An interpolated implementation of the MoeDiStefano17 multiplicity relations,
         plus DucheneKraus+13 for stars below 1 MSun.
