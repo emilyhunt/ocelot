@@ -36,6 +36,7 @@ dependencies = [
   "imf @ git+https://github.com/keflavich/imf",
   "dustmaps",
   "gaiaunlimited",
+  "kepler.py",  # For advanced calculations of the separations of binary stars
 ]
 
 

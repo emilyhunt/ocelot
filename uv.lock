@@ -1384,6 +1384,22 @@ wheels = [
 ]
 
 [[package]]
+name = "kepler-py"
+version = "0.0.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/01/86/9da05e90cc95bbf468d4e0a25df4aa0082c0c41a7bf0d0a1e2bdbb3f92cb/kepler.py-0.0.7.tar.gz", hash = "sha256:762e19c212552a68dc3508c74391fcdefa87f1b197aa7de6528e8d366bdadd5c", size = 10790 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/45/0d/50e7281726c2b53ede17942b2a633fae695ea24635c19b99a10c29af6274/kepler.py-0.0.7-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:fda4bca4cf85af0adc0bc38c55a14074fd5526bbca64dbfd1d2c9ec629315385", size = 99788 },
+    { url = "https://files.pythonhosted.org/packages/8c/4f/26bb8cf9cecd3f29a4cab9719b682a945e400927570701a0e90236b82178/kepler.py-0.0.7-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:4d45347528b9caaedf2f6dd7bf051e26c69aeb0bf192f531c78d22ae29f3662a", size = 54656 },
+    { url = "https://files.pythonhosted.org/packages/d8/56/d6ab76125bdaa45d1b56eb9b58e496f34568a91f00fef12a63503526260e/kepler.py-0.0.7-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:633dae224bf556afa1c0cccde7308d9fde332c2324ea024862fd9835b15a8bd2", size = 51396 },
+    { url = "https://files.pythonhosted.org/packages/66/1a/e2128bc28817ecf4a84035e0fd116e513c8a9f6a6dd27e9f715a00c279aa/kepler.py-0.0.7-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:41f4c1c696e3ab99e01ab704cfcb7cfa778ad1221d261a5bfb2d172cde4e475c", size = 81466 },
+    { url = "https://files.pythonhosted.org/packages/65/e3/e7cceeb0948e4eef6245a39c4a637e3abc65d8bdc0d66b28efd53dcb64d4/kepler.py-0.0.7-cp310-cp310-win_amd64.whl", hash = "sha256:74dc4523977c039b7af3eaead91ba015deca3519b68a753efd75da0b80526a65", size = 65505 },
+]
+
+[[package]]
 name = "keyring"
 version = "25.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1996,6 +2012,7 @@ dependencies = [
     { name = "galpy" },
     { name = "healpy" },
     { name = "imf" },
+    { name = "kepler-py" },
     { name = "matplotlib" },
     { name = "numba" },
     { name = "numpy" },
@@ -2036,6 +2053,7 @@ requires-dist = [
     { name = "healpy", specifier = ">1.13.0,<2.0" },
     { name = "imf", git = "https://github.com/keflavich/imf" },
     { name = "jupyter", marker = "extra == 'dev'" },
+    { name = "kepler-py" },
     { name = "matplotlib", specifier = ">3.4.0,<4.0" },
     { name = "mkdocs-jupyter", marker = "extra == 'dev'" },
     { name = "mkdocs-jupyter", marker = "extra == 'docs'" },
