@@ -18,7 +18,11 @@ from ocelot.model.differential_reddening import (
     BaseDifferentialReddeningModel,
     FractalDifferentialReddening,
 )
-from ocelot.model.distribution import BaseClusterDistributionModel, King62
+from ocelot.model.distribution import (
+    BaseClusterDistributionModel,
+    King62,
+    Implements3DMethods,
+)
 from dataclasses import dataclass, asdict, field
 
 
@@ -124,6 +128,15 @@ class SimulatedClusterModels:
     binaries: BaseBinaryStarModel | None = None
     differential_reddening: BaseDifferentialReddeningModel | None = None
 
+    def __post_init__(self):
+        if self.distribution is not None and not isinstance(
+            self.distribution, Implements3DMethods
+        ):
+            raise ValueError(
+                "Specified distribution must implement 3D methods, i.e. it must "
+                "subclass Implements3DMethods."
+            )
+
     def initialise_defaults(self, seed: int):
         """For all class attributes, replace None values with sensible default models.
 
@@ -163,12 +176,10 @@ class SimulatedCluster:
             # This enforces seeding even when a user doesn't specify a seed - helping
             # to ensure reproducibility.
             random_seed = np.random.default_rng().integers(2**63 - 1)
-        
+
         # Set various state things
         self.random_seed: int = random_seed
-        self.random_generator: np.random.Generator = np.random.default_rng(
-            random_seed
-        )
+        self.random_generator: np.random.Generator = np.random.default_rng(random_seed)
 
         # Set legacy numpy seed for IMF package's benefit
         # Todo: IMF package isn't using these and there's seemingly no way to fix it without a PR
@@ -309,38 +320,6 @@ class SimulatedCluster:
     #         raise ImportError("oc_selection library not found! Unable to plot cluster.")
 
     #     return cluster_plot([self], field, fig, ax, **kwargs)
-
-
-def calculate_r_50(r_core: int | float, r_tidal: int | float):
-    """Calculates r_50 for a given King+62 model.
-
-    # Todo: move this
-    """
-    if r_core >= r_tidal:
-        raise CoreRadiusTooLargeError("r_core may not be greater than r_tidal!")
-    if r_core < 0:
-        raise ValueError("r_core must be positive!")
-    if r_tidal < 0:
-        raise ValueError("r_tidal must be positive!")
-    total_value = king_number_density(r_tidal, r_core, r_tidal)
-    target_value = total_value / 2
-
-    def func_to_minimise(r):
-        return (target_value - king_number_density(r, r_core, r_tidal)) ** 2
-
-    result = minimize(
-        func_to_minimise,
-        np.atleast_1d([r_core]),
-        method="Nelder-Mead",
-        bounds=((0.0, r_tidal),),
-    )
-
-    if not result.success:
-        raise RuntimeError(
-            f"unable to find an r_50 value given r_core={r_core} and r_tidal={r_tidal}"
-        )
-
-    return result.x[0]
 
 
 def calculate_velocity_dispersion_1d(r_50, mass, virial_ratio, eta=10.0):
