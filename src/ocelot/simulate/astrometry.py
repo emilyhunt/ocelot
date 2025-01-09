@@ -14,33 +14,27 @@ def generate_star_positions(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Generates positions of member stars in polar coordinates relative to the center
     of the cluster.
     """
-    radii = sample_1d_king_profile(
-        cluster.parameters.r_core,
-        cluster.parameters.r_tidal,
-        len(cluster.cluster),
-        seed=cluster.random_seed,
-    )
-    phis, thetas = points_on_sphere(
-        len(radii), phi_symmetric=False, seed=cluster.random_seed
-    )
-    x_values, y_values, z_values = spherical_to_cartesian(radii, thetas, phis)
-    return CartesianRepresentation(x_values, y_values, z_values, unit=u.pc)
+    x, y, z = cluster.models.distribution.rvs(
+        len(cluster.cluster), seed=cluster.random_generator
+    ).T
+
+    # Also handle binary star positions
+    if cluster.parameters.binary_stars:
+        x, y, z = generate_binary_star_positions(cluster, x, y, z)
+    return CartesianRepresentation(x, y, z, unit=u.pc)
 
 
-def spherical_to_cartesian(radii, thetas, phis):
-    """Converts from spherical to Cartesian coordinates. See:
-    https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
+def generate_binary_star_positions(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, x, y, z
+):
+    """Generates locations relative to their host star for secondaries in the cluster."""
 
-    Assumes radii ∈ [0, inf), thetas ∈ [0, pi], phis ∈ [0, 2pi)
-    """
-    x_values = radii * np.sin(thetas) * np.cos(phis)
-    y_values = radii * np.sin(thetas) * np.sin(phis)
-    z_values = radii * np.cos(thetas)
-    return x_values, y_values, z_values
+    pass
 
 
 def generate_star_velocities(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Generates the velocities of stars in a cluster."""
+    # Todo should get velocities from the distribution object eventually
     distribution = multivariate_normal(
         mean=np.zeros(3),
         cov=np.identity(3) * cluster.parameters.velocity_dispersion_1d,
@@ -63,6 +57,8 @@ def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.SimulatedClus
         "galactocentric"
     ).cartesian
     cluster_differential = cluster_center.differentials["s"]
+
+    # Todo binary star positions should be offset from their host star
 
     final_positions = positions + cluster_center
     final_velocities = velocities + cluster_differential
