@@ -6,9 +6,7 @@ import numpy as np
 from astropy import units as u
 from astropy import constants
 from astropy.coordinates import SkyCoord
-from ocelot.calculate.profile import king_number_density
 import pandas as pd
-from scipy.optimize import minimize
 from ocelot.simulate.errors import NotEnoughStarsError, CoreRadiusTooLargeError
 from ocelot.simulate.photometry import create_population
 from ocelot.simulate.astrometry import generate_true_star_astrometry
@@ -39,9 +37,8 @@ class SimulatedClusterParameters:
     log_age: float
     metallicity: float
     extinction: float
-    r_core: float
-    r_tidal: float
-    # profile: object = ...  # Todo: support multiple distribution profiles
+    r_core: float  # Todo these should be optional, so that e.g. a Plummer profile can be supported
+    r_tidal: float  # Todo these should be optional, so that e.g. a Plummer profile can be supported
     minimum_stars: int = 1
     virial_ratio: float | int = 0.5
     velocity_dispersion_1d: float | None = None
@@ -71,7 +68,9 @@ class SimulatedClusterParameters:
 
     def __post_init__(self):
         """Automatically calculates any additional things and does all checks."""
-        self.r_50 = calculate_r_50(self.r_core, self.r_tidal)
+        self.r_50 = (
+            King62(self.r_core * u.pc, self.r_tidal * u.pc).r_50.value
+        )  # Todo change where r_50 comes from. Probably need some fancy referencing etc
 
         # Velocity-related things
         self.velocity_dispersion_1d = calculate_velocity_dispersion_1d(
@@ -137,7 +136,7 @@ class SimulatedClusterModels:
                 "subclass Implements3DMethods."
             )
 
-    def initialise_defaults(self, seed: int):
+    def initialise_defaults(self, parameters: SimulatedClusterParameters, seed: int):
         """For all class attributes, replace None values with sensible default models.
 
         Parameters
@@ -146,7 +145,10 @@ class SimulatedClusterModels:
             Random seed to use for default models that incorporate randomness.
         """
         if self.distribution is None:
-            self.distribution = King62()
+            self.distribution = King62(
+                parameters.r_core * u.pc,
+                parameters.r_tidal * u.pc,  # Todo should have units by default
+            )
         if self.binaries is None:
             self.binaries = MoeDiStefanoMultiplicityRelation()
         if self.differential_reddening is None:
@@ -191,14 +193,16 @@ class SimulatedCluster:
         self.parameters: SimulatedClusterParameters = parameters
 
         # Handle model input
-        if isinstance(models, None):
+        if models is None:
             models = dict()
         if isinstance(models, dict):
             models = SimulatedClusterModels(**models)
-        models.initialise_defaults(seed=self.random_seed)
+        models.initialise_defaults(parameters, self.random_seed)
         self.models = models
 
         # Handle observation input
+        if observations is None:
+            observations = []
         self._observations_to_make: list[str] = observations
 
         # Empty things

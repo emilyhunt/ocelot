@@ -66,7 +66,7 @@ def _convert_singles_to_systems(cluster: ocelot.simulate.cluster.SimulatedCluste
 
     # Expensive (optimized) step to find the best secondaries for each primary
     cluster.cluster["index_primary"], index_into_parameters = _convert_singles_numba(
-        masses, companions, indices_to_go_over, secondary_masses
+        masses, secondary_masses, companions, indices_to_go_over
     )
 
     # Also save orbital parameters of each primary
@@ -194,18 +194,14 @@ def _convert_singles_numba(
         n_valid_masses -= 1
 
         # Calculate the value of the masses that we'd like to find
-        primary_mass = masses[i_primary]
         masses_to_look_for = _get_mass_values(
             desired_secondary_masses,
             starting_index_secondary_masses,
             n_companions,
-            primary_mass,
         )
 
         # Cycle over every companion and select best stars
-        for i_parameters, a_mass in enumerate(
-            masses_to_look_for, start=starting_index_secondary_masses
-        ):
+        for i_parameters, a_mass in enumerate(masses_to_look_for):
             # Stop if we've ran out of valid potential companions
             if n_valid_masses == 0:
                 break
@@ -219,7 +215,9 @@ def _convert_singles_numba(
             valid_masses[i_secondary] = False
             n_valid_masses -= 1
             index_primary[i_secondary] = i_primary
-            index_into_parameters[i_secondary] = i_parameters
+            index_into_parameters[i_secondary] = (
+                i_parameters + starting_index_secondary_masses
+            )
 
         # Setup for the next loop
         starting_index_secondary_masses += n_companions
@@ -261,28 +259,6 @@ def _get_mass_values(
     return desired_secondary_masses[
         starting_index_secondary_masses : starting_index_secondary_masses + n_companions
     ]
-
-
-# Zeropoints in the Vegamag system (see documentation table 5.2)
-# These are for Gaia DR3!
-G_ZP = 25.6874
-BP_ZP = 25.3385
-RP_ZP = 24.7479
-
-
-def _mag_to_flux(magnitudes, zero_point):
-    return 10 ** ((zero_point - magnitudes) / 2.5)
-
-
-def _flux_to_mag(fluxes, zero_point):
-    # We also handle negative fluxes here - in that case, it should just be inf
-    good_fluxes = np.atleast_1d(fluxes > 0).flatten()
-    magnitudes = (
-        -2.5 * np.log10(np.atleast_1d(fluxes).flatten(), where=good_fluxes) + zero_point
-    )
-    magnitudes[np.invert(good_fluxes)] = np.inf
-    return magnitudes
-
 
 def _add_two_magnitudes(magnitude_1, magnitude_2):
     """Correct (simplified) equation to add two magnitudes.

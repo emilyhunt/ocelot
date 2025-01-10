@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 import pandas as pd
 import ocelot.simulate.cluster
-from ocelot.simulate import photutils
+from ocelot.model.observation.gaia import photutils
 from scipy.interpolate import interp1d
 import imf
 from ocelot import DATA_PATH
@@ -34,6 +34,7 @@ MAXIMUM_METALLICITY = AVAILABLE_METALLICITIES.max()
 
 def load_isochrone(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Loads a simulated stellar population at a given age."""
+    # Todo refactor to an Isochrone model class or similar. Also add interpolation probably
     # Check that the requested metallicity is valid
     metallicity = cluster.parameters.metallicity
 
@@ -101,8 +102,11 @@ def create_population(
     distance_modulus = 5 * np.log10(distance) - 5
 
     cluster.cluster["mass"] = _interpolated_parameter("Mass", isochrone, masses)
-    cluster.cluster["t_eff"] = 10 ** (
+    cluster.cluster["temperature"] = 10 ** (
         _interpolated_parameter("logTe", isochrone, masses)
+    )
+    cluster.cluster["luminosity"] = 10 ** (
+        _interpolated_parameter("logL", isochrone, masses)
     )
     cluster.cluster["log_g"] = _interpolated_parameter("logg", isochrone, masses)
     cluster.cluster["g_true"] = (
