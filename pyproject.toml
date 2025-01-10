@@ -31,8 +31,8 @@ dependencies = [
   "pandas>1.0.0,<3.0",
   "pyarrow",
   "astropy>=6.0.0,<7.0",
-  "healpy>1.13.0,<2.0",
-  "galpy>1.9,<2.0",
+  "healpy>1.13.0,<2.0",    # Todo consider removing dependency - switch to Astropy's healpy implementation
+  "galpy>1.9,<2.0",  # Todo consider removing dependency
   "imf @ git+https://github.com/keflavich/imf",
   "dustmaps",
   "gaiaunlimited",
