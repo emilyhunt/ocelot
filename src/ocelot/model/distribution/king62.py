@@ -8,11 +8,11 @@ methods in this file.
 
 import numpy as np
 
-from ocelot.model.distribution._common import spherical_to_cartesian
+from ocelot.util.coordinates import spherical_to_cartesian
 from ._base import (
     BaseClusterDistributionModel,
-    Implements1DMethods,
-    Implements2DMethods,
+    # Implements1DMethods,
+    # Implements2DMethods,
     Implements3DMethods,
 )
 from ocelot.util.random import points_on_sphere
@@ -54,17 +54,31 @@ class King62(
         """
         self._check_input(r_core, r_tidal, dimensions)
         # Todo implement 2D and 1D versions (easy)
+        # Todo maybe I should have 2D spherical? And maybe even 3D spherical? And not just 2D/3D cartesian.
         if dimensions != 3:
             raise NotImplementedError(
                 "Other levels of dimensionality are coming soon. Sorry!"
             )
-        self.r_core = r_core
-        self.r_tidal = r_tidal
-        self._r_50 = None
-        self.dimensions = dimensions
+        self.r_core: Quantity = r_core
+        self.r_tidal: Quantity = r_tidal
+
+        # Dimensionless versions - important for numpy interface
+        self._r_core: float = self.r_core.to(u.pc).value
+        self._r_tidal: float = self.r_core.to(u.pc).value
+        self._r_50: float | None = None
+        self.dimensions: int = dimensions
 
     def _check_input(self, r_core: Quantity, r_tidal: Quantity, dimensions: int):
         """Checks validity of input parameters."""
+        if not isinstance(r_core, Quantity) or not isinstance(r_tidal, Quantity):
+            raise ValueError(
+                "Core and tidal radius must be specified as astropy Quantity objects!"
+            )
+        if r_core.unit != r_tidal.unit:
+            raise ValueError(
+                "Unable to pick best unit: r_core and r_tidal must have same input "
+                f"unit, but instead have units {r_core.unit} and {r_tidal.unit}."
+            )
         if r_core >= r_tidal:
             raise ValueError("r_core may not be greater than r_tidal!")
         if r_core < 0:
@@ -81,26 +95,30 @@ class King62(
         """
         if self._r_50 is None:
             self._calculate_r_50()
-        return self._r_50
+        return self._r_50 * self.base_unit
+
+    @property
+    def base_unit(self):
+        return self.r_tidal.unit
 
     def _calculate_r_50(self):
         """Calculates & returns the half-light radius of the cluster using method from
         Hunt+23 - i.e., it finds the radius r_50 at which the King number density is
         half that of r_tidal.
         """
-        total_value = king_number_density(self.r_tidal, self.r_core, self.r_tidal)
+        total_value = king_number_density(self._r_tidal, self._r_core, self._r_tidal)
         target_value = total_value / 2
 
         def func_to_minimise(r):
             return (
-                target_value - king_number_density(r, self.r_core, self.r_tidal)
+                target_value - king_number_density(r, self._r_core, self._r_tidal)
             ) ** 2
 
         result = minimize(
             func_to_minimise,
-            np.atleast_1d([self.r_core]),
+            np.atleast_1d([self._r_core]),
             method="Nelder-Mead",
-            bounds=((0.0, self.r_tidal),),
+            bounds=((0.0, self._r_tidal),),
         )
 
         if not result.success:
@@ -123,7 +141,7 @@ class King62(
         match self.dimensions:
             case 3:
                 return np.vstack(
-                    sample_3d_king_profile(self.r_core, self.r_tidal, size, seed=seed)
+                    sample_3d_king_profile(self._r_core, self._r_tidal, size, seed=seed)
                 ).T
         raise ValueError("Number of dimensions not supported!")
 
