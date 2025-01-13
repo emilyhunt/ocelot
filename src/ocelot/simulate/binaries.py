@@ -98,6 +98,15 @@ def _save_orbital_parameters(
     cluster.cluster.loc[i_secondary, "period"] = periods[i_parameters]
     cluster.cluster.loc[i_secondary, "eccentricity"] = eccentricites[i_parameters]
 
+    # Finally, also save the ID of each primary - this is a bit safer.
+    cluster.cluster["simulated_id_primary"] = -1
+    cluster.cluster.loc[star_is_secondary, "simulated_id_primary"] = (
+        cluster.cluster.loc[
+            cluster.cluster.loc[star_is_secondary, "index_primary"].tolist(),
+            "simulated_id",
+        ]
+    )
+
 
 def _filter_cluster(cluster: ocelot.simulate.SimulatedCluster):
     """Filters cluster to only stars we're interested in, and returns a numba-friendly
@@ -259,9 +268,3 @@ def _get_mass_values(
     return desired_secondary_masses[
         starting_index_secondary_masses : starting_index_secondary_masses + n_companions
     ]
-
-def _add_two_magnitudes(magnitude_1, magnitude_2):
-    """Correct (simplified) equation to add two magnitudes.
-    Source: https://www.astro.keele.ac.uk/jkt/pubs/JKTeq-fluxsum.pdf
-    """
-    return -2.5 * np.log10(10 ** (-magnitude_1 / 2.5) + 10 ** (-magnitude_2 / 2.5))
