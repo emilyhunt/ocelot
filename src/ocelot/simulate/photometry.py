@@ -7,10 +7,10 @@ import warnings
 import numpy as np
 import pandas as pd
 import ocelot.simulate.cluster
-from ocelot.model.observation.gaia import photutils
 from scipy.interpolate import interp1d
 import imf
 from ocelot import DATA_PATH
+from astropy.coordinates import SkyCoord
 
 
 IMF = imf.Kroupa
@@ -34,7 +34,7 @@ MAXIMUM_METALLICITY = AVAILABLE_METALLICITIES.max()
 
 def load_isochrone(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Loads a simulated stellar population at a given age."""
-    # Todo refactor to an Isochrone model class or similar. Also add interpolation probably
+    # Todo refactor to an Isochrone model class or similar. Also add interpolation probably. Also.also link up better with observation models
     # Check that the requested metallicity is valid
     metallicity = cluster.parameters.metallicity
 
@@ -109,13 +109,13 @@ def create_population(
         _interpolated_parameter("logL", isochrone, masses)
     )
     cluster.cluster["log_g"] = _interpolated_parameter("logg", isochrone, masses)
-    cluster.cluster["g_true"] = (
+    cluster.cluster["gaia_dr3_g_true"] = (
         _interpolated_parameter("Gmag", isochrone, masses) + distance_modulus
     )
-    cluster.cluster["bp_true"] = (
+    cluster.cluster["gaia_dr3_bp_true"] = (
         _interpolated_parameter("G_BPmag", isochrone, masses) + distance_modulus
     )
-    cluster.cluster["rp_true"] = (
+    cluster.cluster["gaia_dr3_rp_true"] = (
         _interpolated_parameter("G_RPmag", isochrone, masses) + distance_modulus
     )
 
@@ -127,30 +127,59 @@ def create_population(
 
 
 def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
-    """Applies extinction to a simulated cluster."""
-    if cluster.parameters.extinction == 0.0:
-        cluster.cluster["a_g"] = 0.0
-        cluster.cluster["a_bp"] = 0.0
-        cluster.cluster["a_rp"] = 0.0
+    """Applies extinction across a cluster."""
+    # Easy cases: when extinction is 0 or differential extinction is 0
+    if (
+        cluster.parameters.extinction == 0.0
+        and cluster.parameters.differential_extinction == 0.0
+    ):
+        cluster.cluster["extinction"] = 0.0
+        return
+    if cluster.parameters.differential_extinction == 0.0:
+        cluster.cluster["extinction"] = cluster.parameters.extinction
         return
 
-    extinction_repeated = np.repeat(cluster.parameters.extinction, len(cluster.cluster))
+    # Harder cases: when we need to differentially extinguish
+    # We need to change coordinate frame to be centred on the cluster
+    # Todo: may be a bad choice when dealing with a big cluster? I don't know
+    center = SkyCoord(cluster.parameters.ra, cluster.parameters.dec, unit="deg")
+    coords = SkyCoord(cluster.cluster["ra"], cluster.cluster["dec"], unit="deg")
+    coords_transformed = coords.transform_to(center.skyoffset_frame())
 
-    # Calculate G, BP, and RP band extinctions from extinction in A_V
-    cluster.cluster["a_g"] = photutils.AG(
-        extinction_repeated, cluster.cluster["t_eff"].to_numpy()
-    )
-    cluster.cluster["a_bp"] = photutils.ABP(
-        extinction_repeated, cluster.cluster["t_eff"].to_numpy()
-    )
-    cluster.cluster["a_rp"] = photutils.ARP(
-        extinction_repeated, cluster.cluster["t_eff"].to_numpy()
+    # Then, we just query the model!
+    cluster.cluster["extinction"] = cluster.models.differential_reddening.extinction(
+        coords_transformed.lon.value,
+        coords_transformed.lat.value,
+        mean=cluster.parameters.extinction,
+        width=cluster.parameters.differential_extinction,
     )
 
-    # Assign to cluster stars
-    cluster.cluster["g_true"] = cluster.cluster["g_true"] + cluster.cluster["a_g"]
-    cluster.cluster["bp_true"] = cluster.cluster["bp_true"] + cluster.cluster["a_bp"]
-    cluster.cluster["rp_true"] = cluster.cluster["rp_true"] + cluster.cluster["a_rp"]
+
+# def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
+#     """Applies extinction to a simulated cluster."""
+#     if cluster.parameters.extinction == 0.0:
+#         cluster.cluster["a_g"] = 0.0
+#         cluster.cluster["a_bp"] = 0.0
+#         cluster.cluster["a_rp"] = 0.0
+#         return
+
+#     extinction_repeated = np.repeat(cluster.parameters.extinction, len(cluster.cluster))
+
+#     # Calculate G, BP, and RP band extinctions from extinction in A_V
+#     cluster.cluster["a_g"] = photutils.AG(
+#         extinction_repeated, cluster.cluster["t_eff"].to_numpy()
+#     )
+#     cluster.cluster["a_bp"] = photutils.ABP(
+#         extinction_repeated, cluster.cluster["t_eff"].to_numpy()
+#     )
+#     cluster.cluster["a_rp"] = photutils.ARP(
+#         extinction_repeated, cluster.cluster["t_eff"].to_numpy()
+#     )
+
+#     # Assign to cluster stars
+#     cluster.cluster["g_true"] = cluster.cluster["g_true"] + cluster.cluster["a_g"]
+#     cluster.cluster["bp_true"] = cluster.cluster["bp_true"] + cluster.cluster["a_bp"]
+#     cluster.cluster["rp_true"] = cluster.cluster["rp_true"] + cluster.cluster["a_rp"]
 
 
 # def generate_cluster_photometry(
