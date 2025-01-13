@@ -1,27 +1,32 @@
 """Main class defining an observation made with Gaia DR3."""
 
 from __future__ import annotations
-from ocelot.model.observation._base import BaseObservation
+from ocelot.model.observation._base import BaseObservation, BaseSelectionFunction
 from ocelot.simulate import SimulatedCluster
+from scipy.interpolate import interp1d
+from gaiaunlimited.selectionfunctions import DR3SelectionFunctionTCG
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 from .photutils import AG, ABP, ARP
+from astropy.coordinates import SkyCoord
+from astropy.units import Quantity
+from astropy import units as u
 
 
 class GaiaDR3ObservationModel(BaseObservation):
     # Zeropoints in the Vegamag system (see documentation table 5.2)
     # These are for Gaia DR3!
-    ZEROPOINTS = dict(G_ZP=25.6874, BP_ZP=25.3385, RP_ZP=24.7479)
+    ZEROPOINTS = dict(gaia_dr3_g=25.6874, gaia_dr3_bp=25.3385, gaia_dr3_rp=24.7479)
 
     def __init__(
         self,
         representative_stars: pd.DataFrame | None = None,
-        subsample_selection_function: str = "",
+        subsample_selection_functions: tuple[BaseSelectionFunction] = tuple(),
     ):
         """A model for an observation made with Gaia DR3."""
         self.representative_stars = representative_stars
-        self.subsample_selection_function = subsample_selection_function
+        self.subsample_selection_functions = subsample_selection_functions
         self.matching_stars = None
         self.stars_to_assign = None
 
@@ -66,50 +71,63 @@ class GaiaDR3ObservationModel(BaseObservation):
     def has_parallaxes(self) -> bool:
         return True
 
-    def apply_photometric_errors(self, cluster: SimulatedCluster):
+    def calculate_photometric_errors(self, cluster: SimulatedCluster):
         """Apply photometric errors to a simulated cluster."""
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
                 cluster.observations["gaia_dr3"], self.representative_stars
             )
         observation = cluster.observations["gaia_dr3"]
-        observation.loc[self.stars_to_assign, "gaia_dr3_g_flux_error"] = (
-            self.matching_stars["phot_g_mean_flux_error"].to_numpy()
-        )
-        observation.loc[self.stars_to_assign, "gaia_dr3_bp_flux_error"] = (
-            self.matching_stars["phot_bp_mean_flux_error"].to_numpy()
-        )
-        observation.loc[self.stars_to_assign, "gaia_dr3_rp_flux_error"] = (
-            self.matching_stars["phot_rp_mean_flux_error"].to_numpy()
-        )
 
-    def apply_astrometric_errors(self, cluster: SimulatedCluster):
+        for band in ("g", "bp", "rp"):
+            observation.loc[self.stars_to_assign, f"gaia_dr3_{band}_flux_error"] = (
+                self.matching_stars[f"phot_{band}_mean_flux_error"].to_numpy()
+            )
+
+    def calculate_astrometric_errors(self, cluster: SimulatedCluster):
         """Apply astrometric errors to a simulated cluster."""
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
                 cluster.observations["gaia_dr3"], self.representative_stars
             )
         observation = cluster.observations["gaia_dr3"]
-        observation.loc[self.stars_to_assign, "pmra_error"] = (
-            self.matching_stars["pmra_error"].to_numpy()
-        )
-        observation.loc[self.stars_to_assign, "pmdec_error"] = (
-            self.matching_stars["pmdec_error"].to_numpy()
-        )
-        observation.loc[self.stars_to_assign, "parallax_error"] = (
-            self.matching_stars["parallax_error"].to_numpy()
-        )
 
-    def apply_selection_function(self, cluster: SimulatedCluster):
-        """Apply a selection function to a simulated cluster."""
-        pass
+        for column in ("pmra_error", "pmdec_error", "parallax_error"):
+            observation.loc[self.stars_to_assign, column] = self.matching_stars[
+                column
+            ].to_numpy()
 
-    def apply_extinction(self, cluster: SimulatedCluster):
-        """Applies extinction in a given photometric band observed in this dataset."""
-        for band, func in zip(self.photometric_band_names, (AG, ABP, ARP)):
-            cluster.cluster[f"extinction_{band}"] = func(
-                cluster.cluster["extinction"], cluster.cluster["Teff"]
+    def get_selection_functions(self, cluster: SimulatedCluster):
+        """Get an initialized GaiaDR3SelectionFunction in addition to any subsample
+        selection functions defined by the user.
+        """
+        gaia = GaiaDR3SelectionFunction(
+            SkyCoord(
+                cluster.parameters.ra, cluster.parameters.dec, frame="icrs", unit="deg"
             )
+        )
+        return [gaia] + list(self.subsample_selection_functions)
+
+    def calculate_extinction(self, cluster: SimulatedCluster):
+        """Applies extinction in a given photometric band observed in this dataset."""
+        observation = cluster.observations["gaia_dr3"]
+
+        for band, func in zip(self.photometric_band_names, (AG, ABP, ARP)):
+            observation[f"extinction_{band}"] = func(
+                observation["extinction"], observation["temperature"]
+            )
+
+    def _calculate_resolving_power(
+        self,
+        primary: pd.DataFrame,
+        secondary: pd.DataFrame,
+        separation: Quantity,
+    ) -> np.ndarray[float]:
+        """Calculates the probability that a given pair of stars would be separately
+        resolved."""
+        # Todo currently very simplistic
+        separation = separation.to(u.arsec).value
+        return np.where(separation >= 0.6, 1.0, 0.0)
 
     def mag_to_flux(
         self, magnitude: int | float | ArrayLike, band: str
@@ -169,3 +187,54 @@ def _closest_gaia_star(observation: pd.DataFrame, field: pd.DataFrame):
         "source_id"
     ].to_numpy()
     return matching_stars, stars_to_assign
+
+
+class GaiaDR3SelectionFunction(BaseSelectionFunction):
+    def __init__(
+        self,
+        coordinate: SkyCoord,
+        resolution: int = 500,
+        g_range: tuple | list = (2, 22),
+    ):
+        """Gaia DR3 selection function. Based on
+
+        Parameters
+        ----------
+        coordinate : astropy.coordinates.SkyCoord
+            Coordinate to query the selection function at. Must have length one!
+        resolution : int, optional
+            Resolution of the selection function interpolator. Default: 500
+        g_range : tuple or list, optional
+            Range of values in G magnitude to sample, from min to max. Default: (2, 22).
+        """
+        self._selection_function = DR3SelectionFunctionTCG()
+        self._coodinate = coordinate
+        if len(coordinate) > 1:
+            raise ValueError(
+                "You must specify exactly one coordinate to sample the selection "
+                "function at!"
+            )
+
+        # Repeat resolution times
+        coordinates = SkyCoord(
+            np.repeat(coordinate.ra.value, resolution),
+            np.repeat(coordinate.dec.value, resolution),
+            frame="icrs",
+            unit="deg",
+        )
+
+        # Query & setup
+        # Todo check that values 0 and 22 don't give stupid results
+        self._magnitudes = np.linspace(g_range[0], g_range[1])
+        self._probability = self._selection_function.query(
+            coordinates, self._magnitudes
+        )
+        self._interpolator = interp1d(
+            self._magnitudes,
+            self._probability,
+            bounds_error=False,
+            fill_value=(1.0, 0.0),  # Since this sf is always 1.0 at high mags
+        )
+
+    def _query(self, observation: pd.DataFrame) -> np.ndarray:
+        return self._interpolator(observation["gaia_dr3_g"].to_numpy())
