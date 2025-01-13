@@ -31,7 +31,10 @@ def generate_star_positions(cluster: ocelot.simulate.cluster.SimulatedCluster):
 def generate_star_positions_with_binaries(
     cluster: ocelot.simulate.cluster.SimulatedCluster,
 ):
-    """Generates locations relative to their host star for secondaries in the cluster."""
+    """Generates locations relative to their host star for secondaries in the cluster.
+    
+    Uses some help from https://space.stackexchange.com/questions/8911/determining-orbital-position-at-a-future-point-in-time
+    """
     # Firstly, let's make a temporary dataframe to store parameters in. This is easier
     # as we need to do a LOT of indexing.
     primary = (cluster.cluster["index_primary"] == -1).to_numpy()
