@@ -8,9 +8,15 @@ from astropy import constants
 from astropy.coordinates import SkyCoord
 import pandas as pd
 from ocelot.simulate.errors import NotEnoughStarsError, CoreRadiusTooLargeError
-from ocelot.simulate.photometry import create_population
+from ocelot.simulate.photometry import create_population, apply_extinction
 from ocelot.simulate.astrometry import generate_true_star_astrometry
 from ocelot.simulate.binaries import make_binaries
+from ocelot.simulate.observation import (
+    apply_extinction_to_photometry,
+    make_unresolved_stars,
+    apply_errors,
+    apply_selection_function,
+)
 from ocelot.model.binaries import BaseBinaryStarModel, MoeDiStefanoMultiplicityRelation
 from ocelot.model.differential_reddening import (
     BaseDifferentialReddeningModel,
@@ -21,6 +27,7 @@ from ocelot.model.distribution import (
     King62,
     Implements3DMethods,
 )
+from ocelot.model.observation import BaseObservation
 from dataclasses import dataclass, asdict, field
 
 
@@ -37,6 +44,7 @@ class SimulatedClusterParameters:
     log_age: float
     metallicity: float
     extinction: float
+    differential_extinction: float = 0.0
     r_core: float  # Todo these should be optional, so that e.g. a Plummer profile can be supported
     r_tidal: float  # Todo these should be optional, so that e.g. a Plummer profile can be supported
     minimum_stars: int = 1
@@ -126,6 +134,8 @@ class SimulatedClusterModels:
     distribution: BaseClusterDistributionModel | None = None
     binaries: BaseBinaryStarModel | None = None
     differential_reddening: BaseDifferentialReddeningModel | None = None
+    observations: list[BaseObservation] | tuple[BaseObservation] = tuple()
+    observations_dict: dict[str, BaseObservation] = field(init=False)
 
     def __post_init__(self):
         if self.distribution is not None and not isinstance(
@@ -135,6 +145,9 @@ class SimulatedClusterModels:
                 "Specified distribution must implement 3D methods, i.e. it must "
                 "subclass Implements3DMethods."
             )
+        self.observations_dict = {
+            observation.name: observation for observation in self.observations
+        }
 
     def initialise_defaults(self, parameters: SimulatedClusterParameters, seed: int):
         """For all class attributes, replace None values with sensible default models.
@@ -230,8 +243,7 @@ class SimulatedCluster:
     def make(self):
         """Makes entire cluster according to specification set at initialization."""
         self.make_cluster()
-        for observation in self._observations_to_make:
-            self.make_observation(observation)
+        self.make_observations()
 
     def make_cluster(self):
         """Creates the true stars and positions in a cluster."""
@@ -243,87 +255,44 @@ class SimulatedCluster:
         create_population(self)
         make_binaries(self)
         generate_true_star_astrometry(self)
+        apply_extinction(self)
+        self._true_cluster_generated = True
         return self.cluster
 
+    def make_observations(self):
+        """Makes all observations of the cluster."""
+        for observation in self._observations_to_make:
+            self.make_observation(observation)
+        self._observations_generated = True
+
     def make_observation(self, survey: str, seed=None):
+        """Makes one observation of the cluster."""
         if not self._true_cluster_generated:
             raise RuntimeError(
                 "You must make the true cluster first before generating observations, "
                 "either by calling make_cluster or make."
             )
-
         # Allow for per-observation seed: useful when making many observations of the
         # same cluster.
         if seed is not None:
             self._reseed_random_generator(seed)
 
-        # Todo, & don't forget to assign to SimulatedCluster object!
+        # Fetch the model we need
+        if survey not in self.models.observations_dict:
+            raise ValueError(
+                f"You must specify an observation model for survey {survey} to generate"
+                " an observation of it."
+            )
+        model = self.models.observations_dict[survey]
+        
+        # Create the observation!
+        self.observations[survey] = self.cluster.copy()
+        apply_extinction_to_photometry(self, model)
+        make_unresolved_stars(self, model)
+        apply_errors(self, model)
+        apply_selection_function(self, model)
 
-    # def make_photometry(self, field: None | pd.DataFrame = None):
-    #     """Generates photometry for this cluster given its own parameters."""
-    #     if self.photometry_made:
-    #         raise RuntimeError(
-    #             "Photometry for this cluster was already made! Cannot run again."
-    #         )
-    #     generate_cluster_photometry(self, field)
-    #     self._check_if_has_enough_stars()
-    #     self.photometry_made = True
-
-    # def make_astrometry(self):
-    #     """Generates astrometry for this cluster. Only works if the cluster has
-    #     photometry already.
-    #     """
-    #     if self.astrometry_made:
-    #         raise RuntimeError(
-    #             "Astrometry for this cluster was already made! Cannot run again."
-    #         )
-    #     if not self.photometry_made:
-    #         raise RuntimeError(
-    #             "Photometry is required to generate astrometry! Try doing "
-    #             "make_photometry first."
-    #         )
-    #     generate_cluster_astrometry(self)
-    #     self.astrometry_made = True
-
-    # def make(self, field: None | pd.DataFrame = None):
-    #     """Generates photometry and astrometry for the cluster.
-
-    #     # Todo: field should really be an astrometric & photometric error model
-    #     """
-    #     self.make_photometry(field)
-    #     self.make_astrometry()
-
-    # def plot(self, field: pd.DataFrame | None = None, fig=None, ax=None, **kwargs):
-    #     """Plots the current cluster using oc_selection.plots.cluster_plot.
-
-    #     Parameters
-    #     ----------
-    #     field : pd.DataFrame | None, optional
-    #         _description_, by default None
-    #     fig : _type_, optional
-    #         _description_, by default None
-    #     ax : _type_, optional
-    #         _description_, by default None
-    #     kwargs : dict, optional
-    #         Additional keyword arguments to pass to oc_selection.plots.cluster_plot
-
-    #     Returns
-    #     -------
-    #     _type_
-    #         _description_
-
-    #     Raises
-    #     ------
-    #     ImportError
-    #         If oc_selection is not installed.
-    #     """
-    #     # Import here as this is an optional dependency
-    #     try:
-    #         from oc_selection.plots import cluster_plot
-    #     except ImportError:
-    #         raise ImportError("oc_selection library not found! Unable to plot cluster.")
-
-    #     return cluster_plot([self], field, fig, ax, **kwargs)
+        return self.observations[survey]
 
 
 def calculate_velocity_dispersion_1d(r_50, mass, virial_ratio, eta=10.0):
