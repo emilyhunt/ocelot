@@ -34,8 +34,8 @@ dependencies = [
   "healpy>1.13.0,<2.0",    # Todo consider removing dependency - switch to Astropy's healpy implementation
   "galpy>1.9,<2.0",  # Todo consider removing dependency
   "imf @ git+https://github.com/keflavich/imf",
-  "dustmaps",
-  "gaiaunlimited",
+  "dustmaps",  # Todo is this needed?
+  "gaiaunlimited",  # Todo make optional?
   "kepler.py",  # For advanced calculations of the separations of binary stars
 ]
 
