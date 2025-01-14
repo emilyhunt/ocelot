@@ -1,6 +1,10 @@
 """A package for simulating star clusters."""
 
-from .cluster import SimulatedCluster, SimulatedClusterParameters  # noqa: F401
+from .cluster import (
+    SimulatedCluster,  # noqa: F401
+    SimulatedClusterParameters,  # noqa: F401
+    SimulatedClusterModels,  # noqa: F401
+)
 import warnings
 from ocelot import DATA_PATH
 
