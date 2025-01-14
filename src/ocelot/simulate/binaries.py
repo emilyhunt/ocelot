@@ -104,7 +104,7 @@ def _save_orbital_parameters(
         cluster.cluster.loc[
             cluster.cluster.loc[star_is_secondary, "index_primary"].tolist(),
             "simulated_id",
-        ]
+        ].reset_index()
     )
 
 

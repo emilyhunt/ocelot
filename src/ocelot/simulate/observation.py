@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 from ocelot.model.observation import BaseObservation
-from ocelot.simulate import SimulatedCluster
+import ocelot.simulate.cluster
 from ocelot.util.magnitudes import add_two_magnitudes
 
 
-def apply_extinction_to_photometry(cluster: SimulatedCluster, model: BaseObservation):
+def apply_extinction_to_photometry(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
+):
     """Extinguishes the photometry for this cluster based on the position of each star."""
     model.calculate_extinction(cluster)
     observation = cluster.observations[model.name]
@@ -16,7 +18,9 @@ def apply_extinction_to_photometry(cluster: SimulatedCluster, model: BaseObserva
         )
 
 
-def make_unresolved_stars(cluster: SimulatedCluster, model: BaseObservation):
+def make_unresolved_stars(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
+):
     """Combines stars that are close to one another into single sources."""
     # Todo improve to be able to consider any stars in a dataset, not just binaries
     observation = cluster.observations[model.name]
@@ -44,15 +48,17 @@ def make_unresolved_stars(cluster: SimulatedCluster, model: BaseObservation):
         primary_indices_blend, secondary_indices_blend
     ):
         observation.loc[primary_index, bands] = add_two_magnitudes(
-            observation.loc[primary_index, bands].to_numpy(),
-            observation.loc[secondary_index, bands].to_numpy(),
+            observation.loc[primary_index, bands].to_numpy().astype(float),
+            observation.loc[secondary_index, bands].to_numpy().astype(float),
         )
 
     # Drop blended stars
     observation = observation.drop(secondary_indices_blend).reset_index(drop=True)
 
 
-def apply_errors(cluster: SimulatedCluster, model: BaseObservation):
+def apply_errors(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
+):
     """Propagates errors into the cluster's photometry and astrometry."""
     observation = cluster.observations[model.name]
     model.calculate_photometric_errors(cluster)
@@ -79,15 +85,17 @@ def apply_errors(cluster: SimulatedCluster, model: BaseObservation):
         )
 
 
-def apply_selection_function(cluster: SimulatedCluster, model: BaseObservation):
+def apply_selection_function(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
+):
     """Applies selection functions to an observation."""
     observation = cluster.observations[model.name]
 
     # Query all selection functions
-    selection_functions = model.get_selection_functions()
+    selection_functions = model.get_selection_functions(cluster)
     if len(selection_functions) == 0:
         return
-    column_names = [func(cluster, model.name) for func in selection_functions]
+    column_names = [func.query(cluster, model.name) for func in selection_functions]
 
     # Total selection probability is just the product of all of them (Rix+21)
     observation["selection_probability"] = observation[column_names].prod(axis=1)
@@ -95,4 +103,8 @@ def apply_selection_function(cluster: SimulatedCluster, model: BaseObservation):
     # Sample whether or not we see each star
     samples = cluster.random_generator.uniform(0.0, 1.0, len(observation))
     star_is_visible = observation["selection_probability"] > samples
-    cluster.cluster.loc[star_is_visible].reset_index(drop=True)
+
+    # Drop missing stars!
+    cluster.observations[model.name] = observation.loc[star_is_visible].reset_index(
+        drop=True
+    )

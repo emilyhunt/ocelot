@@ -2,6 +2,7 @@
 parameters and data.
 """
 
+from __future__ import annotations
 import numpy as np
 from astropy import units as u
 from astropy import constants
@@ -43,15 +44,14 @@ class SimulatedClusterParameters:
     mass: float
     log_age: float
     metallicity: float
-    extinction: float
-    differential_extinction: float = 0.0
     r_core: float  # Todo these should be optional, so that e.g. a Plummer profile can be supported
     r_tidal: float  # Todo these should be optional, so that e.g. a Plummer profile can be supported
+    extinction: float
+    differential_extinction: float = 0.0
     minimum_stars: int = 1
     virial_ratio: float | int = 0.5
     velocity_dispersion_1d: float | None = None
     eta_virial_ratio: float | int = 10.0
-    radial_velocity: float | int = 0.0
     photometric_errors: bool = True
     astrometric_errors: bool = True
     astrometric_errors_scale_factor: float | int = 1.0
@@ -169,15 +169,18 @@ class SimulatedClusterModels:
         return self
 
     @staticmethod
-    def with_default_options(seed: int):
-        return SimulatedClusterModels().initialise_defaults(seed=seed)
+    def with_default_options(parameters: SimulatedClusterParameters, seed: int):
+        return SimulatedClusterModels().initialise_defaults(
+            parameters=parameters, seed=seed
+        )
 
 
 class SimulatedCluster:
     def __init__(
         self,
         parameters: SimulatedClusterParameters | dict,
-        observations: list[str] | None = None,
+        observations: list[str]
+        | None = None,  # Todo consider removing - we can just use the models list
         models: SimulatedClusterModels | dict | None = None,
         prune_simulated_cluster: dict | None = None,  # Todo also make it do something
         random_seed: int | None = None,
@@ -185,6 +188,7 @@ class SimulatedCluster:
         """This is a helper class used to specify the parameters of a cluster to
         simulate.
         """
+        # Todo fstring docs
         # Stuff for handling randomness
         if random_seed is None:
             # Select a random seed from 0 to the largest possible signed 64 bit int
@@ -216,12 +220,14 @@ class SimulatedCluster:
         # Handle observation input
         if observations is None:
             observations = []
+            if len(self.models.observations_dict) > 0:
+                observations = list(self.models.observations_dict.keys())
         self._observations_to_make: list[str] = observations
 
         # Empty things
         self.isochrone: pd.DataFrame = pd.DataFrame()
         self.cluster: pd.DataFrame = pd.DataFrame()
-        self.observations: dict[pd.DataFrame] = {}
+        self.observations: dict[str, pd.DataFrame] = {}
         self.stars: int = 0
         self._true_cluster_generated: bool = False
         self._observations_generated: bool = False
@@ -284,7 +290,7 @@ class SimulatedCluster:
                 " an observation of it."
             )
         model = self.models.observations_dict[survey]
-        
+
         # Create the observation!
         self.observations[survey] = self.cluster.copy()
         apply_extinction_to_photometry(self, model)

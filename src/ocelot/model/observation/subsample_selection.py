@@ -79,6 +79,7 @@ class GenericSubsampleSelectionFunction(BaseSelectionFunction):
         self._interpolator = self._setup_interpolator()
 
     def _compute_histograms(
+        self,
         all: np.ndarray,
         cut: np.ndarray,
         minimum_bin_width: float = 0.2,
@@ -86,7 +87,7 @@ class GenericSubsampleSelectionFunction(BaseSelectionFunction):
         range: tuple | None = None,
     ):
         if range is None:
-            range = all.min(), all.max()
+            range = np.nanmin(all), np.nanmax(all)
 
         count, bins = variable_bin_histogram(
             all, range[0], range[1], minimum_bin_width, minimum_size=minimum_bin_size

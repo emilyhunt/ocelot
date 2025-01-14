@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from ocelot.model.observation._base import BaseObservation, BaseSelectionFunction
-from ocelot.simulate import SimulatedCluster
+import ocelot.simulate.cluster
 from scipy.interpolate import interp1d
 from gaiaunlimited.selectionfunctions import DR3SelectionFunctionTCG
 import numpy as np
@@ -71,7 +71,9 @@ class GaiaDR3ObservationModel(BaseObservation):
     def has_parallaxes(self) -> bool:
         return True
 
-    def calculate_photometric_errors(self, cluster: SimulatedCluster):
+    def calculate_photometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
         """Apply photometric errors to a simulated cluster."""
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
@@ -84,7 +86,9 @@ class GaiaDR3ObservationModel(BaseObservation):
                 self.matching_stars[f"phot_{band}_mean_flux_error"].to_numpy()
             )
 
-    def calculate_astrometric_errors(self, cluster: SimulatedCluster):
+    def calculate_astrometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
         """Apply astrometric errors to a simulated cluster."""
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
@@ -97,7 +101,9 @@ class GaiaDR3ObservationModel(BaseObservation):
                 column
             ].to_numpy()
 
-    def get_selection_functions(self, cluster: SimulatedCluster):
+    def get_selection_functions(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
         """Get an initialized GaiaDR3SelectionFunction in addition to any subsample
         selection functions defined by the user.
         """
@@ -108,7 +114,7 @@ class GaiaDR3ObservationModel(BaseObservation):
         )
         return [gaia] + list(self.subsample_selection_functions)
 
-    def calculate_extinction(self, cluster: SimulatedCluster):
+    def calculate_extinction(self, cluster: ocelot.simulate.cluster.SimulatedCluster):
         """Applies extinction in a given photometric band observed in this dataset."""
         observation = cluster.observations["gaia_dr3"]
 
@@ -126,7 +132,7 @@ class GaiaDR3ObservationModel(BaseObservation):
         """Calculates the probability that a given pair of stars would be separately
         resolved."""
         # Todo currently very simplistic
-        separation = separation.to(u.arsec).value
+        separation = separation.to(u.arcsec).value
         return np.where(separation >= 0.6, 1.0, 0.0)
 
     def mag_to_flux(
@@ -209,7 +215,7 @@ class GaiaDR3SelectionFunction(BaseSelectionFunction):
         """
         self._selection_function = DR3SelectionFunctionTCG()
         self._coodinate = coordinate
-        if len(coordinate) > 1:
+        if coordinate.size > 1:
             raise ValueError(
                 "You must specify exactly one coordinate to sample the selection "
                 "function at!"
@@ -225,7 +231,7 @@ class GaiaDR3SelectionFunction(BaseSelectionFunction):
 
         # Query & setup
         # Todo check that values 0 and 22 don't give stupid results
-        self._magnitudes = np.linspace(g_range[0], g_range[1])
+        self._magnitudes = np.linspace(g_range[0], g_range[1], num=resolution)
         self._probability = self._selection_function.query(
             coordinates, self._magnitudes
         )

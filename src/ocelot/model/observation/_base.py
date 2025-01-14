@@ -1,5 +1,5 @@
 from __future__ import annotations  # Necessary to not get circular import on type hints
-from ocelot.simulate import SimulatedCluster
+import ocelot.simulate.cluster
 
 from abc import ABC, abstractmethod
 import numpy as np
@@ -45,18 +45,22 @@ class BaseObservation(ABC):
         pass
 
     @abstractmethod
-    def calculate_photometric_errors(self, cluster: SimulatedCluster):
+    def calculate_photometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
         """Calculate photometric errors and save them to the observation."""
         pass
 
     @abstractmethod
-    def calculate_astrometric_errors(self, cluster: SimulatedCluster):
+    def calculate_astrometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
         """Calculate astrometric errors and save them to the observation."""
         pass
 
     @abstractmethod
     def get_selection_functions(
-        self, cluster: SimulatedCluster
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
     ) -> list[BaseSelectionFunction]:
         """Fetch all selection functions associated with this observation."""
         pass
@@ -92,7 +96,7 @@ class BaseObservation(ABC):
             separation = coord_primary.separation(coord_secondary)
 
         return self._calculate_resolving_power(primary, secondary, separation)
-    
+
     @abstractmethod
     def _calculate_resolving_power(
         self,
@@ -105,7 +109,7 @@ class BaseObservation(ABC):
         pass
 
     @abstractmethod
-    def calculate_extinction(self, cluster: SimulatedCluster):
+    def calculate_extinction(self, cluster: ocelot.simulate.cluster.SimulatedCluster):
         """Calculate extinction in all photometric bands and saves them to the
         observation.
         """
@@ -127,17 +131,21 @@ class BaseObservation(ABC):
 
 
 class BaseSelectionFunction(ABC):
-    def query(self, cluster: SimulatedCluster, observation: str) -> str:
+    def query(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster, observation: str
+    ) -> str:
         """Query a selection function. Assigns a column called
         'selection_probability_NAME' to the dataframe, along with the column name.
         """
         observation_df = cluster.observations[observation]
 
-        # Think of a unique name for this column
-        column = f"selection_probability_{self.__name__}"
+        # Think of a name for this column, and ensure that it's unique if we have
+        # multiple with the same name
+        original_column = f"selection_probability_{type(self).__name__}"
+        column = original_column
         i = 1
         while column in observation_df.columns:
-            column = "_".join(column.split("_")[:2] + f"{self.__name__}_{i}")
+            column = f"{original_column}_{i}"
             i += 1
 
         # Calculate sf & assign
