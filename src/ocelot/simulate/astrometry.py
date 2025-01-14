@@ -16,7 +16,7 @@ def generate_star_positions(cluster: ocelot.simulate.cluster.SimulatedCluster):
     of the cluster.
     """
     # Also handle binary star positions
-    if cluster.parameters.binary_stars:
+    if cluster.features.binary_stars:
         return CartesianRepresentation(
             *generate_star_positions_with_binaries(cluster), unit=u.pc
         )

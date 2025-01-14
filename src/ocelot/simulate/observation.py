@@ -23,6 +23,8 @@ def make_unresolved_stars(
 ):
     """Combines stars that are close to one another into single sources."""
     # Todo improve to be able to consider any stars in a dataset, not just binaries
+    if not cluster.features.binary_stars:
+        return
     observation = cluster.observations[model.name]
 
     # Perform indexing fuckery to get our primary & secondary stars
@@ -56,11 +58,14 @@ def make_unresolved_stars(
     observation = observation.drop(secondary_indices_blend).reset_index(drop=True)
 
 
-def apply_errors(
+def apply_photometric_errors(
     cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
 ):
-    """Propagates errors into the cluster's photometry and astrometry."""
+    """Propagates errors into the cluster's photometry."""
+    if not cluster.features.photometric_uncertainties:
+        return
     observation = cluster.observations[model.name]
+
     model.calculate_photometric_errors(cluster)
     for band in model.photometric_band_names:
         new_fluxes = cluster.random_generator.normal(
@@ -68,6 +73,14 @@ def apply_errors(
             scale=observation[f"{band}_flux_error"].to_numpy(),
         )
         observation[band] = model.flux_to_mag(new_fluxes, band)
+
+
+def apply_astrometric_errors(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
+):
+    """Propagates errors into the cluster's astrometry."""
+    if not cluster.features.astrometric_uncertainties:
+        return
 
     astrometric_columns_with_error = []
     if model.has_parallaxes:
@@ -77,6 +90,7 @@ def apply_errors(
     if len(astrometric_columns_with_error) == 0:
         return
 
+    observation = cluster.observations[model.name]
     model.calculate_astrometric_errors(cluster)
     for column in astrometric_columns_with_error:
         observation[column] = cluster.random_generator.normal(
@@ -89,6 +103,9 @@ def apply_selection_function(
     cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
 ):
     """Applies selection functions to an observation."""
+    if not cluster.features.selection_effects:
+        return
+
     observation = cluster.observations[model.name]
 
     # Query all selection functions

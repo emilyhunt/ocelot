@@ -125,6 +125,12 @@ def create_population(
         nan_mass, "mass_initial"
     ]
 
+        # Optionally also prune the cluster
+    if len(cluster.prune_simulated_cluster) > 0:
+        cluster.cluster = cluster.cluster.query(
+            cluster.prune_simulated_cluster
+        ).reset_index(drop=True)
+
 
 def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Applies extinction across a cluster."""

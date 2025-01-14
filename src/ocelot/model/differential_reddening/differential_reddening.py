@@ -19,5 +19,5 @@ class FractalDifferentialReddening(BaseDifferentialReddeningModel):
     def _differential_extinction(
         self, x: np.ndarray, y: np.ndarray, width: float
     ) -> np.ndarray:
-        points = np.vstack((x, y))
+        points = np.vstack((x, y)).T
         return width * self._differential_extinction_interpolator(points)

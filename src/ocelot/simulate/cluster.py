@@ -15,7 +15,8 @@ from ocelot.simulate.binaries import make_binaries
 from ocelot.simulate.observation import (
     apply_extinction_to_photometry,
     make_unresolved_stars,
-    apply_errors,
+    apply_photometric_errors,
+    apply_astrometric_errors,
     apply_selection_function,
 )
 from ocelot.model.binaries import BaseBinaryStarModel, MoeDiStefanoMultiplicityRelation
@@ -52,12 +53,7 @@ class SimulatedClusterParameters:
     virial_ratio: float | int = 0.5
     velocity_dispersion_1d: float | None = None
     eta_virial_ratio: float | int = 10.0
-    photometric_errors: bool = True
-    astrometric_errors: bool = True
     astrometric_errors_scale_factor: float | int = 1.0
-    selection_effects: bool = True
-    visible_stars_only: bool = True
-    binary_stars: bool = True
     binary_star_relation: object = MoeDiStefanoMultiplicityRelation
     id: int = 0
 
@@ -175,6 +171,20 @@ class SimulatedClusterModels:
         )
 
 
+@dataclass
+class SimulatedClusterFeatures:
+    """Class for keeping track of all features used to simulate a cluster."""
+    # Intrinsic (i.e. impact the ideal simulated cluster)
+    binary_stars: bool = True
+    differential_extinction: bool = False
+
+    # Extrinsic (i.e. impact observations of the simulated cluster)
+    selection_effects: bool = True
+    astrometric_uncertainties: bool = True
+    photometric_uncertainties: bool = True
+
+
+
 class SimulatedCluster:
     def __init__(
         self,
@@ -182,8 +192,9 @@ class SimulatedCluster:
         observations: list[str]
         | None = None,  # Todo consider removing - we can just use the models list
         models: SimulatedClusterModels | dict | None = None,
-        prune_simulated_cluster: dict | None = None,  # Todo also make it do something
+        prune_simulated_cluster: str = "",
         random_seed: int | None = None,
+        features: SimulatedClusterFeatures | dict | None = None
     ):
         """This is a helper class used to specify the parameters of a cluster to
         simulate.
@@ -216,6 +227,16 @@ class SimulatedCluster:
             models = SimulatedClusterModels(**models)
         models.initialise_defaults(parameters, self.random_seed)
         self.models = models
+
+        # Handle features switches
+        if features is None:
+            features = SimulatedClusterFeatures()
+        if isinstance(features, dict):
+            features = SimulatedClusterFeatures(**features)
+        self.features: SimulatedClusterFeatures = features
+
+        # Handle pruning
+        self.prune_simulated_cluster = prune_simulated_cluster
 
         # Handle observation input
         if observations is None:
@@ -295,7 +316,8 @@ class SimulatedCluster:
         self.observations[survey] = self.cluster.copy()
         apply_extinction_to_photometry(self, model)
         make_unresolved_stars(self, model)
-        apply_errors(self, model)
+        apply_photometric_errors(self, model)
+        apply_astrometric_errors(self, model)
         apply_selection_function(self, model)
 
         return self.observations[survey]

@@ -12,7 +12,7 @@ from numba import jit
 
 def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Assigns certain stars in a cluster as binaries."""
-    if not cluster.parameters.binary_stars:
+    if not cluster.features.binary_stars:
         return
 
     _assign_number_of_companions(cluster)

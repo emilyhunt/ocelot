@@ -19,7 +19,7 @@ class BaseDifferentialReddeningModel(ABC):
         differential extinction.
         """
         x, y = _normalize_within_0_and_1(x), _normalize_within_0_and_1(y)
-        extinctions = self._differential_extinction(width, x, y)
+        extinctions = self._differential_extinction(x, y, width)
         return np.clip(extinctions + mean, 0, np.inf)
 
     @abstractmethod
