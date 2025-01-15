@@ -18,6 +18,7 @@ from ocelot.simulate.observation import (
     apply_photometric_errors,
     apply_astrometric_errors,
     apply_selection_function,
+    cleanup_observation,
 )
 from ocelot.model.binaries import BaseBinaryStarModel, MoeDiStefanoMultiplicityRelation
 from ocelot.model.differential_reddening import (
@@ -176,7 +177,7 @@ class SimulatedClusterFeatures:
     """Class for keeping track of all features used to simulate a cluster."""
     # Intrinsic (i.e. impact the ideal simulated cluster)
     binary_stars: bool = True
-    differential_extinction: bool = False
+    differential_extinction: bool = True
 
     # Extrinsic (i.e. impact observations of the simulated cluster)
     selection_effects: bool = True
@@ -271,6 +272,7 @@ class SimulatedCluster:
         """Makes entire cluster according to specification set at initialization."""
         self.make_cluster()
         self.make_observations()
+        return self
 
     def make_cluster(self):
         """Creates the true stars and positions in a cluster."""
@@ -284,13 +286,14 @@ class SimulatedCluster:
         generate_true_star_astrometry(self)
         apply_extinction(self)
         self._true_cluster_generated = True
-        return self.cluster
+        return self
 
     def make_observations(self):
         """Makes all observations of the cluster."""
         for observation in self._observations_to_make:
             self.make_observation(observation)
         self._observations_generated = True
+        return self
 
     def make_observation(self, survey: str, seed=None):
         """Makes one observation of the cluster."""
@@ -319,6 +322,7 @@ class SimulatedCluster:
         apply_photometric_errors(self, model)
         apply_astrometric_errors(self, model)
         apply_selection_function(self, model)
+        cleanup_observation(self, model)
 
         return self.observations[survey]
 

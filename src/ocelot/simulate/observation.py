@@ -46,6 +46,7 @@ def make_unresolved_stars(
     # Add magnitudes
     # Todo can this be sped up? May be hard as each star comes one after another
     bands = model.photometric_band_names
+    observation['unresolved_companions'] = 0
     for primary_index, secondary_index in zip(
         primary_indices_blend, secondary_indices_blend
     ):
@@ -53,9 +54,12 @@ def make_unresolved_stars(
             observation.loc[primary_index, bands].to_numpy().astype(float),
             observation.loc[secondary_index, bands].to_numpy().astype(float),
         )
+        observation.loc[primary_index, 'unresolved_companions'] += 1
 
     # Drop blended stars
-    observation = observation.drop(secondary_indices_blend).reset_index(drop=True)
+    cluster.observations[model.name] = observation.drop(
+        secondary_indices_blend
+    ).reset_index(drop=True)
 
 
 def apply_photometric_errors(
@@ -124,4 +128,18 @@ def apply_selection_function(
     # Drop missing stars!
     cluster.observations[model.name] = observation.loc[star_is_visible].reset_index(
         drop=True
+    )
+
+
+def cleanup_observation(
+    cluster: ocelot.simulate.cluster.SimulatedCluster, model: BaseObservation
+):
+    """Simple function that performs a few final cleanup tasks, like removing columns
+    that we won't want to have around.
+    """
+    # Remove index_primary because indexing on primary star will be broken now
+    columns_to_remove = ["index_primary"]
+
+    cluster.observations[model.name] = cluster.observations[model.name].drop(
+        columns=columns_to_remove
     )
