@@ -116,9 +116,6 @@ def _filter_cluster(cluster: ocelot.simulate.SimulatedCluster):
     cluster.cluster = cluster.cluster.sort_values("mass", ignore_index=True)
 
     query = "companions > 0"
-    # Todo: add new limiting optimization here
-    # if cluster.parameters.selection_effects:
-    #     query += " and g_true < 21"
     indices_to_go_over = cluster.cluster.query(query).index.to_numpy()[::-1]
     return indices_to_go_over
 
