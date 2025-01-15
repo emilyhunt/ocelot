@@ -87,6 +87,12 @@ def create_population(
     masses = imf.make_cluster(
         cluster.parameters.mass, massfunc=selected_imf, silent=True
     )
+    if len(masses) == 0:
+        raise RuntimeError(
+            "Generated cluster contains zero stars! Consider increasing the mass of "
+            "your cluster."
+        )
+
     ids = np.arange(len(masses))
     cluster.cluster = pd.DataFrame.from_dict(
         {
@@ -125,7 +131,7 @@ def create_population(
         nan_mass, "mass_initial"
     ]
 
-        # Optionally also prune the cluster
+    # Optionally also prune the cluster
     if len(cluster.prune_simulated_cluster) > 0:
         cluster.cluster = cluster.cluster.query(
             cluster.prune_simulated_cluster
@@ -141,7 +147,11 @@ def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
     ):
         cluster.cluster["extinction"] = 0.0
         return
-    if cluster.parameters.differential_extinction == 0.0:
+    if (
+        cluster.parameters.differential_extinction == 0.0
+        or not cluster.features.differential_extinction
+        or len(cluster.cluster) == 1  # Can't do diff A_V if there's just one star!
+    ):
         cluster.cluster["extinction"] = cluster.parameters.extinction
         return
 
