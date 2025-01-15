@@ -29,6 +29,7 @@ class GaiaDR3ObservationModel(BaseObservation):
         self.subsample_selection_functions = subsample_selection_functions
         self.matching_stars = None
         self.stars_to_assign = None
+        self.simulated_cluster = None  # To prevent it being removed # Todo: somehow stop issues with model not being re-assignable
 
         # Todo support other error models, like Anthony Brown's package
         # Todo refactor this way of doing errors to be less tied to this one class
@@ -75,6 +76,7 @@ class GaiaDR3ObservationModel(BaseObservation):
         self, cluster: ocelot.simulate.cluster.SimulatedCluster
     ):
         """Apply photometric errors to a simulated cluster."""
+        self._assert_simulated_cluster_not_reused(cluster)
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
                 cluster.observations["gaia_dr3"], self.representative_stars
@@ -90,6 +92,7 @@ class GaiaDR3ObservationModel(BaseObservation):
         self, cluster: ocelot.simulate.cluster.SimulatedCluster
     ):
         """Apply astrometric errors to a simulated cluster."""
+        self._assert_simulated_cluster_not_reused(cluster)
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
                 cluster.observations["gaia_dr3"], self.representative_stars
@@ -107,6 +110,7 @@ class GaiaDR3ObservationModel(BaseObservation):
         """Get an initialized GaiaDR3SelectionFunction in addition to any subsample
         selection functions defined by the user.
         """
+        self._assert_simulated_cluster_not_reused(cluster)
         gaia = GaiaDR3SelectionFunction(
             SkyCoord(
                 cluster.parameters.ra, cluster.parameters.dec, frame="icrs", unit="deg"
@@ -162,6 +166,17 @@ class GaiaDR3ObservationModel(BaseObservation):
             raise ValueError(
                 f"band {band} is not the correct name of a photometric band modelled "
                 "in this observation."
+            )
+
+    def _assert_simulated_cluster_not_reused(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
+        if self.simulated_cluster is None:
+            self.simulated_cluster = cluster
+            return
+        if cluster is not self.simulated_cluster:
+            raise RuntimeError(
+                "Gaia DR3 model may not be reused on different clusters!"
             )
 
 
