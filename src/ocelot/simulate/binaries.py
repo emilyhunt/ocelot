@@ -17,10 +17,6 @@ def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
 
     _assign_number_of_companions(cluster)
 
-    # No need to go any further if nobody is going to be a binary
-    if cluster.cluster["companions"].sum() == 0:
-        return
-
     # Cycle over every star, giving it companions
     _convert_singles_to_systems(cluster)
 
@@ -104,7 +100,7 @@ def _save_orbital_parameters(
         cluster.cluster.loc[
             cluster.cluster.loc[star_is_secondary, "index_primary"].tolist(),
             "simulated_id",
-        ].reset_index()
+        ].to_numpy()
     )
 
 
