@@ -205,7 +205,7 @@ class SimulatedCluster:
             # Select a random seed from 0 to the largest possible signed 64 bit int
             # This enforces seeding even when a user doesn't specify a seed - helping
             # to ensure reproducibility.
-            random_seed = np.random.default_rng().integers(2**63 - 1)
+            random_seed = np.random.default_rng().integers(2**32 - 1)
 
         # Set various state things
         self.random_seed: int = random_seed
