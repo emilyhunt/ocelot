@@ -1,6 +1,5 @@
 from ocelot.simulate import (
     SimulatedCluster,
-    SimulatedClusterModels,
     SimulatedClusterParameters,
 )
 from ocelot.simulate.cluster import SimulatedClusterFeatures
@@ -8,6 +7,7 @@ from astropy.coordinates import SkyCoord
 from astropy import units as u
 import pandas as pd
 import numpy as np
+import pytest
 
 
 def _get_default_parameters():
@@ -25,7 +25,7 @@ def _get_default_parameters():
         log_age=8.0,
         metallicity=0.2,
         extinction=1.0,
-        differential_extinction=0.3,
+        differential_extinction=0.1,
         r_core=2,
         r_tidal=10,
     )
@@ -106,10 +106,56 @@ def test_simulation_no_features_with_random_seed():
     assert cluster.cluster["log_g"].notna().any()
     assert cluster.cluster["luminosity"].notna().any()
 
+    # Make sure we added extinctions, and that they're all the same
+    assert (cluster.cluster["extinction"] == parameters.extinction).all()
+
+
+def test_simulation_no_features_with_pruning():
+    features = SimulatedClusterFeatures(
+        binary_stars=False,
+        differential_extinction=False,
+        selection_effects=False,
+        astrometric_uncertainties=False,
+        photometric_uncertainties=False,
+    )
+    parameters = _get_default_parameters()
+    cluster = SimulatedCluster(
+        parameters=parameters,
+        features=features,
+        random_seed=42,
+        prune_simulated_cluster="mass > 0.5",
+    )
+    cluster.make()
+
+    cluster_two = SimulatedCluster(
+        parameters=parameters, features=features, random_seed=42
+    )
+    cluster_two.make()
+
+    cluster_two_cut = cluster_two.cluster.query("mass > 0.5").reset_index(drop=True)
+
+    # Seeding is impacted by pruning, but we can at least check that the index & columns
+    # haven't been fucked up
+    pd.testing.assert_index_equal(cluster.cluster.index, cluster_two_cut.index)
+    pd.testing.assert_index_equal(cluster.cluster.columns, cluster_two_cut.columns)
+
+    # Check that we have the expected number of stars
+    assert len(cluster.cluster) == 507
+
+    # Make sure they all have masses
+    assert cluster.cluster["mass"].notna().all()
+
+    # Make sure that all have temperatures, etc - since the mass cut is waaay above BDs
+    assert cluster.cluster["temperature"].notna().all()
+    assert cluster.cluster["log_g"].notna().all()
+    assert cluster.cluster["luminosity"].notna().all()
+
+    # Make sure we added extinctions, and that they're all the same
+    assert (cluster.cluster["extinction"] == parameters.extinction).all()
+
 
 def test_simulation_with_binaries():
     features = SimulatedClusterFeatures(
-        binary_stars=True,
         differential_extinction=False,
         selection_effects=False,
         astrometric_uncertainties=False,
@@ -169,8 +215,11 @@ def test_simulation_with_binaries():
     secondaries = cluster.cluster.loc[is_secondary]
 
     # Check that indexing makes sense
-    primaries_by_index = cluster.cluster.loc[secondaries["index_primary"]].reset_index(
-        drop=True
+    primaries_by_index = (
+        cluster.cluster.loc[secondaries["index_primary"]]
+        .drop_duplicates("simulated_id")
+        .sort_values("mass")
+        .reset_index(drop=True)
     )
     primaries_by_simulated_star = (
         cluster.cluster.loc[
@@ -195,3 +244,65 @@ def test_simulation_with_binaries():
     assert (secondaries["period"] > 0.0).all()
     assert (secondaries["eccentricity"] >= 0.0).all()
     assert (secondaries["eccentricity"] < 1.0).all()
+
+
+def test_simulation_with_differential_extinction():
+    features = SimulatedClusterFeatures(
+        selection_effects=False,
+        astrometric_uncertainties=False,
+        photometric_uncertainties=False,
+    )
+    parameters = _get_default_parameters()
+    cluster = SimulatedCluster(parameters=parameters, features=features, random_seed=42)
+    cluster.make()
+
+    # Check that all stars have different extinction
+    assert len(cluster.cluster["extinction"].unique()) == len(cluster.cluster)
+
+    # Check that the mean & variance are what we expect
+    np.testing.assert_allclose(
+        cluster.cluster["extinction"].mean(),
+        cluster.parameters.extinction,
+        rtol=0.0,
+        atol=0.1,  # Margin is quite high as we have a lot of
+    )
+    np.testing.assert_allclose(
+        cluster.cluster["extinction"].std(),
+        cluster.parameters.differential_extinction,
+        rtol=0.0,
+        atol=0.01,
+    )
+
+
+def test_tiny_distant_cluster():
+    parameters = _get_default_parameters()
+    parameters.mass = 10
+    parameters.distance = 100000
+    cluster = SimulatedCluster(parameters=parameters, random_seed=42)
+    cluster.make()
+
+
+def test_tiny_nearby_cluster():
+    parameters = _get_default_parameters()
+    parameters.mass = 10
+    parameters.distance = 1
+    cluster = SimulatedCluster(parameters=parameters, random_seed=42)
+    cluster.make()
+
+
+def test_cluster_with_single_star():
+    parameters = _get_default_parameters()
+    parameters.mass = 0.3
+    cluster = SimulatedCluster(parameters=parameters, random_seed=42)
+    cluster.make()
+    assert len(cluster.cluster) == 1
+
+
+def test_cluster_with_no_stars():
+    parameters = _get_default_parameters()
+    parameters.mass = 0.0
+    cluster = SimulatedCluster(parameters=parameters, random_seed=42)
+
+    # This should raise a runtime error as we don't have any stars
+    with pytest.raises(RuntimeError, match="Generated cluster contains zero stars"):
+        cluster.make()
