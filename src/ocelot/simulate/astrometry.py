@@ -96,11 +96,15 @@ def generate_star_positions_with_binaries(
             "Something went wrong! At least one star has a non-finite position."
         )
 
-    return (
-        cluster.cluster["x"].to_numpy(),
-        cluster.cluster["y"].to_numpy(),
-        cluster.cluster["z"].to_numpy(),
+
+    # Remove x/y/z columns else they'll just be confusing later! We hijacked the df!!!
+    x, y, z = (
+        cluster.cluster["x"].to_numpy().copy(),
+        cluster.cluster["y"].to_numpy().copy(),
+        cluster.cluster["z"].to_numpy().copy(),
     )
+    cluster.cluster = cluster.cluster.drop(columns=['x', 'y', 'z'])
+    return x, y, z
 
 
 def _semimajor_axis(total_mass, period):
