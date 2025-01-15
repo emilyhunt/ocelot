@@ -319,6 +319,11 @@ def _sample_eccentricity(
             power_law_slopes[good_max], max_eccentricity[good_max]
         )
     ]
+
+    # Handle case where we have no objects at all
+    if len(power_laws) == 0:
+        return np.atleast_1d([])
+
     eccentricities[good_max] = np.hstack([dist.rvs(1) for dist in power_laws])
     return eccentricities
 
