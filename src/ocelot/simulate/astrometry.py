@@ -63,24 +63,9 @@ def generate_star_positions_with_binaries(
     )
 
     # Do some calculations for the binary stars
-    primary_mass = secondary_mass / mass_ratio
-    total_mass = primary_mass + secondary_mass
-    total_semimajor_axis = _semimajor_axis(total_mass, period)
-    primary_semimajor_axis = total_semimajor_axis * secondary_mass / total_mass
-    secondary_semimajor_axis = total_semimajor_axis * primary_mass / total_mass
-
-    # Sample a mean anomaly & compute true anomaly
-    mean_anomaly = cluster.random_generator.uniform(0, np.pi * 2, size=n_secondaries)
-    cosine_of_true_anomaly = kepler.kepler(mean_anomaly, eccentricity)[1]
-
-    # Calculate current positions of stars
-    primary_radius = _current_distance_from_barycentre(
-        primary_semimajor_axis, eccentricity, cosine_of_true_anomaly
+    separation = _compute_separation(
+        secondary_mass, mass_ratio, period, eccentricity, cluster.random_generator
     )
-    secondary_radius = _current_distance_from_barycentre(
-        secondary_semimajor_axis, eccentricity, cosine_of_true_anomaly
-    )
-    separation = primary_radius + secondary_radius
 
     # Project the separation into a random direction
     x_unit_vector, y_unit_vector, z_unit_vector = unit_vectors(
@@ -95,7 +80,7 @@ def generate_star_positions_with_binaries(
         raise RuntimeError(
             "Something went wrong! At least one star has a non-finite position."
         )
-    
+
     # Save some optional other things
     # cluster.cluster.loc[secondary, 'semimajor_axis_total'] = total_semimajor_axis
     # cluster.cluster.loc[secondary, 'semimajor_axis_primary'] = primary_semimajor_axis
@@ -116,6 +101,48 @@ def generate_star_positions_with_binaries(
     return x, y, z
 
 
+def _compute_separation(secondary_mass, mass_ratio, period, eccentricity, rng):
+    """Computes the separation (in parsecs) between binary stars in a cluster."""
+    primary_semimajor_axis, secondary_semimajor_axis = _compute_semimajor_axes(
+        secondary_mass, mass_ratio, period
+    )
+
+    # Sample a mean anomaly & compute true anomaly
+    cosine_of_true_anomaly = _sample_true_anomaly(secondary_mass, eccentricity, rng)
+
+    # Calculate current positions of stars
+    primary_radius = _current_distance_from_barycentre(
+        primary_semimajor_axis, eccentricity, cosine_of_true_anomaly
+    )
+    secondary_radius = _current_distance_from_barycentre(
+        secondary_semimajor_axis, eccentricity, cosine_of_true_anomaly
+    )
+    separation = primary_radius + secondary_radius
+    return separation
+
+
+def _sample_true_anomaly(secondary_mass, eccentricity, rng):
+    """Samples (the cosine of) an orbit's true anomaly."""
+    mean_anomaly = rng.uniform(0, np.pi * 2, size=len(secondary_mass))
+    cosine_of_true_anomaly = kepler.kepler(mean_anomaly, eccentricity)[1]
+    return cosine_of_true_anomaly
+
+
+def _compute_semimajor_axes(secondary_mass, mass_ratio, period):
+    """Computes the semimajor axis of the primary star's orbit and the secondary
+    star's orbit.
+    """
+    primary_mass = secondary_mass / mass_ratio
+    total_mass = primary_mass + secondary_mass
+
+    total_semimajor_axis = _semimajor_axis(total_mass, period)
+
+    primary_semimajor_axis = total_semimajor_axis * secondary_mass / total_mass
+    secondary_semimajor_axis = total_semimajor_axis * primary_mass / total_mass
+
+    return primary_semimajor_axis, secondary_semimajor_axis
+
+
 def _semimajor_axis(total_mass, period):
     """Kepler's 3rd law, arranged to give semi-major axis.
 
@@ -125,6 +152,7 @@ def _semimajor_axis(total_mass, period):
     """
     period_days = period << u.day
     mass_msun = total_mass << u.M_sun
+    
     semimajor_axis = (
         (period_days) ** 2 * constants.G * (mass_msun) / (4 * np.pi**2)
     ) ** (1 / 3)
