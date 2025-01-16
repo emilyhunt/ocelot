@@ -59,7 +59,7 @@ def castro_ginard(
     if min_samples == "all":
         epsilon_minimum = np.min(nn_distances, axis=0)
 
-    elif isinstance(min_samples, int):
+    elif isinstance(min_samples, str):
         raise ValueError(
             "Incompatible number or string of min_samples specified.\n"
             "Allowed values:\n"
