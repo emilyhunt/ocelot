@@ -14,6 +14,7 @@ import pandas as pd
 import numpy as np
 import pytest
 from pathlib import Path
+from astropy.coordinates import SkyCoord
 
 
 def _get_gaia_test_data():
@@ -290,9 +291,7 @@ def test_gaia_observation_selection():
 def test_gaia_observation_cannot_be_reused():
     parameters = _get_default_parameters()
     models = _get_gaia_model(subsample=False)
-    SimulatedCluster(
-        parameters=parameters, models=models, random_seed=42
-    ).make()
+    SimulatedCluster(parameters=parameters, models=models, random_seed=42).make()
 
     cluster_two = SimulatedCluster(
         parameters=parameters, models=models, random_seed=42
@@ -375,9 +374,8 @@ def test_gaia_observation_selection_with_subsample():
 
 def test_cluster_with_zero_stars():
     """Checks that generating a cluster with zero stars works."""
-    params = _get_default_parameters()
+    params = _get_default_parameters(distance=100000)
     params.mass = 10
-    params.distance = 100000
     models = _get_gaia_model(subsample=True)
     cluster = SimulatedCluster(parameters=params, random_seed=42, models=models).make()
 
@@ -444,9 +442,8 @@ def test_cluster_with_one_star():
 
     N.B. this took a lot of messing around to generate just one star. May break easily.
     """
-    params = _get_default_parameters()
+    params = _get_default_parameters(distance=10000)
     params.mass = 15
-    params.distance = 10000
     models = _get_gaia_model(subsample=True)
     cluster = SimulatedCluster(parameters=params, random_seed=42, models=models).make()
 
@@ -510,8 +507,41 @@ def test_cluster_with_one_star():
 
 def test_tiny_nearby_cluster():
     """Checks we can cope with tiny distances too!"""
-    params = _get_default_parameters()
+    params = _get_default_parameters(distance=1)
     params.mass = 10
-    params.distance = 1
     models = _get_gaia_model(subsample=True)
     SimulatedCluster(parameters=params, random_seed=42, models=models).make()
+
+
+def test_cluster_parameters():
+    """Re-measures cluster parameters and checks that EVERYTHING works out correct."""
+    params = _get_default_parameters(distance=100)
+    params.mass = 1000
+    models = _get_gaia_model(subsample=True)
+    cluster = SimulatedCluster(parameters=params, random_seed=42, models=models).make()
+
+    # Check total mass is sensible
+    simulated = cluster.cluster
+    np.testing.assert_allclose(
+        simulated["mass"].sum(), params.mass, atol=0.0, rtol=1e-3
+    )
+
+    # Check things about the observation
+    observation = cluster.observations["gaia_dr3"]
+
+    # Check bulk parameters
+    np.testing.assert_allclose(observation["ra"].mean(), params.ra, atol=0.1)
+    np.testing.assert_allclose(observation["dec"].mean(), params.dec, atol=0.1)
+    np.testing.assert_allclose(observation["pmra"].mean(), params.pmra, atol=0.1)
+    np.testing.assert_allclose(observation["pmdec"].mean(), params.pmdec, atol=0.1)
+    np.testing.assert_allclose(
+        1000 / observation["parallax"].mean(), params.distance, atol=0.01
+    )
+    np.testing.assert_allclose(
+        observation["radial_velocity_true"].mean(), params.radial_velocity, atol=0.1
+    )
+
+    # Check radius
+    coords = SkyCoord(observation['ra'], observation['dec'], unit="deg")
+    separations = coords.separation(params.position)
+    # todo
