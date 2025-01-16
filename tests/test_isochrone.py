@@ -1,12 +1,9 @@
 """A set of tests for use with the pytest module, covering ocelot.isochrone"""
 
-# FUCKING HATE PYTHON IMPORTS AAAA
-# (the below fixes this though)
 from ocelot import isochrone
 from pathlib import Path
 import numpy as np
 import pytest
-from astropy.io import ascii
 
 # Path towards the test isochrones
 test_data_path = Path(__file__).parent / "test_data"
@@ -59,8 +56,6 @@ def test_read_parsec():
     assert my_isochrones.loc[1000, "Gmag"] == 7.681
     assert my_isochrones.loc[2877, "label"] == 3
 
-    return my_isochrones
-
 
 def test_read_parsec_multiple_isochrones():
     """Specifically tests the ability of ocelot.isochrone.read_parsec to read multiple files."""
@@ -82,8 +77,6 @@ def test_read_parsec_multiple_isochrones():
 
     assert isochrones_read_as_list.loc[5000, "Gmag"] == -0.866
     assert isochrones_read_as_list.loc[5001, "Gmag"] == -0.908
-
-    return isochrones_read_as_directory
 
 
 def test_isochrone_interpolation():
@@ -117,8 +110,6 @@ def test_isochrone_interpolation():
     assert np.allclose(
         output_y[[0, 100, 200]], [9.753, 10.0945, 10.436], rtol=0.0, atol=1e-8
     )
-
-    return [isochrones_for_fun_and_profit, output_x, output_y]
 
 
 def test_find_nearest_point():

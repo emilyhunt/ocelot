@@ -1,13 +1,12 @@
 """A set of tests for ocelot.calculate."""
 
 from ocelot.calculate.generic import _weighted_standard_deviation
-import pickle
-from pathlib import Path
+# from pathlib import Path
 import numpy as np
 
-path_to_blanco_1_cluster = Path(
-    "./test_data/blanco_1_gaia_dr2_gmag_18_cut_cluster_only.pickle"
-)
+# path_to_blanco_1_cluster = Path(
+#     "./test_data/blanco_1_gaia_dr2_gmag_18_cut_cluster_only.pickle"
+# )
 
 
 def test__weighted_standard_deviation():

@@ -1,13 +1,9 @@
 """A set of tests for use with the pytest module, covering ocelot.plot"""
 
-# FUCKING HATE PYTHON IMPORTS AAAA
-# (the below fixes this though)
 from ocelot import plot
-
 import pickle
 import pandas as pd
 from pathlib import Path
-
 import numpy as np
 import pytest
 
@@ -151,8 +147,6 @@ def test_clustering_result_plotting(show_figure=False):
     del data_gaia
     del labels
 
-    return fig, ax
-
 
 def test_location_plotting(show_figure=False):
     """Integration test for the function ocelot.plot.location."""
@@ -171,8 +165,6 @@ def test_location_plotting(show_figure=False):
 
     # Friendship ended with excessive memory use,,, now "del" is my friend
     del data_gaia
-
-    return fig, ax
 
 
 def test_nearest_neighbour_plotting(show_figure=True):
@@ -258,14 +250,3 @@ def test_gaia_explorer():
         error_regions_multiplier=5.0,
     )
     gaia_explorer()
-
-
-# Run tests manually if the file is ran
-if __name__ == "__main__":
-    # test_curve_normalisation()
-    # test_percentile_based_plot_limits()
-    # iso = test_isochrone_plotting(show_figure=True)
-    # clustering_result = test_clustering_result_plotting(show_figure=True)
-    # location = test_location_plotting(show_figure=True)
-    # test_nearest_neighbour_plotting(True)
-    test_gaia_explorer()

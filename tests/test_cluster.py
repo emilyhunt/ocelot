@@ -1,11 +1,8 @@
 """A set of tests for use with the pytest module, covering ocelot.isochrone"""
 
-# FUCKING HATE PYTHON IMPORTS AAAA
-# (the below fixes this though)
 import ocelot.cluster
 import pickle
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest

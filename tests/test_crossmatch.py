@@ -126,6 +126,3 @@ def test_catalogue():
     pd.testing.assert_frame_equal(
         summary_all, pd.read_csv(location_crossmatch_summary_all, index_col=0)
     )
-
-    return matches, summary, matches_all, summary_all, data_mwsc, data_perturbed
-
