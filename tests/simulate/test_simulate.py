@@ -10,12 +10,12 @@ import numpy as np
 import pytest
 
 
-def _get_default_parameters():
+def _get_default_parameters(distance=1000):
     return SimulatedClusterParameters(
         position=SkyCoord(
             ra=45 * u.deg,
             dec=0 * u.deg,
-            distance=1000 * u.pc,
+            distance=distance * u.pc,
             pm_ra_cosdec=10 * u.mas / u.yr,
             pm_dec=0 * u.mas / u.yr,
             radial_velocity=0 * u.km / u.s,
@@ -275,17 +275,15 @@ def test_simulation_with_differential_extinction():
 
 
 def test_tiny_distant_cluster():
-    parameters = _get_default_parameters()
+    parameters = _get_default_parameters(distance=100000)
     parameters.mass = 10
-    parameters.distance = 100000
     cluster = SimulatedCluster(parameters=parameters, random_seed=42)
     cluster.make()
 
 
 def test_tiny_nearby_cluster():
-    parameters = _get_default_parameters()
+    parameters = _get_default_parameters(distance=1)
     parameters.mass = 10
-    parameters.distance = 1
     cluster = SimulatedCluster(parameters=parameters, random_seed=42)
     cluster.make()
 
