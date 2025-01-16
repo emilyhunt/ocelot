@@ -32,7 +32,7 @@ def generate_star_positions_with_binaries(
     cluster: ocelot.simulate.cluster.SimulatedCluster,
 ):
     """Generates locations relative to their host star for secondaries in the cluster.
-    
+
     Uses some help from https://space.stackexchange.com/questions/8911/determining-orbital-position-at-a-future-point-in-time
     """
     # Firstly, let's make a temporary dataframe to store parameters in. This is easier
@@ -96,14 +96,13 @@ def generate_star_positions_with_binaries(
             "Something went wrong! At least one star has a non-finite position."
         )
 
-
     # Remove x/y/z columns else they'll just be confusing later! We hijacked the df!!!
     x, y, z = (
         cluster.cluster["x"].to_numpy().copy(),
         cluster.cluster["y"].to_numpy().copy(),
         cluster.cluster["z"].to_numpy().copy(),
     )
-    cluster.cluster = cluster.cluster.drop(columns=['x', 'y', 'z'])
+    cluster.cluster = cluster.cluster.drop(columns=["x", "y", "z"])
     return x, y, z
 
 
