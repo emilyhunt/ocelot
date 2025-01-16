@@ -95,6 +95,16 @@ def generate_star_positions_with_binaries(
         raise RuntimeError(
             "Something went wrong! At least one star has a non-finite position."
         )
+    
+    # Save some optional other things
+    # cluster.cluster.loc[secondary, 'semimajor_axis_total'] = total_semimajor_axis
+    # cluster.cluster.loc[secondary, 'semimajor_axis_primary'] = primary_semimajor_axis
+    # cluster.cluster.loc[secondary, 'semimajor_axis_secondary'] = secondary_semimajor_axis
+    # cluster.cluster.loc[secondary, 'orbit_mean_anomaly'] = mean_anomaly
+    # cluster.cluster.loc[secondary, 'orbit_unit_vec_x'] = x_unit_vector
+    # cluster.cluster.loc[secondary, 'orbit_unit_vec_y'] = y_unit_vector
+    # cluster.cluster.loc[secondary, 'orbit_unit_vec_z'] = z_unit_vector
+    # cluster.cluster.loc[secondary, 'orbit_separation'] = separation
 
     # Remove x/y/z columns else they'll just be confusing later! We hijacked the df!!!
     x, y, z = (
@@ -113,19 +123,12 @@ def _semimajor_axis(total_mass, period):
 
     Returns semimajor axis in parsecs.
     """
-    return (
-        (
-            (
-                (period << u.day) ** 2
-                * constants.G
-                * (total_mass << u.M_sun)
-                / (4 * np.pi**2)
-            )
-            ** (1 / 3)
-        )
-        .to(u.pc)
-        .value
-    )
+    period_days = period << u.day
+    mass_msun = total_mass << u.M_sun
+    semimajor_axis = (
+        (period_days) ** 2 * constants.G * (mass_msun) / (4 * np.pi**2)
+    ) ** (1 / 3)
+    return semimajor_axis.to(u.pc).value
 
 
 def _current_distance_from_barycentre(
