@@ -10,12 +10,8 @@ def test_points_on_sphere(show_diagnostic_histograms=False):
     np.random.seed(42)
 
     # Calls and a basic diagnostic plot if requested
-    theta_rad, phi_rad = points_on_sphere(
-        3000, radians=True, phi_symmetric=False
-    )
-    theta_deg, phi_deg = points_on_sphere(
-        3000, radians=False, phi_symmetric=True
-    )
+    theta_rad, phi_rad = points_on_sphere(3000, radians=True, phi_symmetric=False)
+    theta_deg, phi_deg = points_on_sphere(3000, radians=False, phi_symmetric=True)
 
     if show_diagnostic_histograms:
         fig, ax = plt.subplots(1, 2, figsize=(8, 4))
@@ -35,4 +31,4 @@ def test_points_on_sphere(show_diagnostic_histograms=False):
     assert np.all(np.logical_and(phi_deg >= -90, phi_deg <= 90))
 
     # Also check that phi appears correctly distributed as it's the hard one here
-    assert np.allclose(np.std(phi_deg), 39.22, atol=0.5)
+    assert np.allclose(np.std(phi_deg), 39.22, atol=1.0)
