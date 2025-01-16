@@ -34,6 +34,7 @@ def generate_star_positions_with_binaries(
     """Generates locations relative to their host star for secondaries in the cluster.
 
     Uses some help from https://space.stackexchange.com/questions/8911/determining-orbital-position-at-a-future-point-in-time
+    As well as diagram from https://physics.stackexchange.com/questions/61116/semi-major-axis-and-ellipticity-of-a-binary-system
     """
     # Firstly, let's make a temporary dataframe to store parameters in. This is easier
     # as we need to do a LOT of indexing.
