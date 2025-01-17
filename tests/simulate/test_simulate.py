@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 
-def _get_default_parameters(distance=1000):
+def _get_default_parameters(distance=1000, r_core=2):
     return SimulatedClusterParameters(
         position=SkyCoord(
             ra=45 * u.deg,
@@ -26,7 +26,7 @@ def _get_default_parameters(distance=1000):
         metallicity=0.2,
         extinction=1.0,
         differential_extinction=0.1,
-        r_core=2,
+        r_core=r_core,
         r_tidal=10,
     )
 

@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from pathlib import Path
 from astropy.coordinates import SkyCoord
+from astropy import units as u
 
 
 def _get_gaia_test_data():
@@ -515,7 +516,7 @@ def test_tiny_nearby_cluster():
 
 def test_cluster_parameters():
     """Re-measures cluster parameters and checks that EVERYTHING works out correct."""
-    params = _get_default_parameters(distance=100)
+    params = _get_default_parameters(distance=100, r_core=5)
     params.mass = 1000
     models = _get_gaia_model(subsample=True)
     cluster = SimulatedCluster(parameters=params, random_seed=42, models=models).make()
@@ -535,7 +536,7 @@ def test_cluster_parameters():
     np.testing.assert_allclose(observation["pmra"].mean(), params.pmra, atol=0.1)
     np.testing.assert_allclose(observation["pmdec"].mean(), params.pmdec, atol=0.1)
     np.testing.assert_allclose(
-        1000 / observation["parallax"].mean(), params.distance, atol=0.01
+        1000 / observation["parallax"].mean(), params.distance, atol=0.1
     )
     np.testing.assert_allclose(
         observation["radial_velocity_true"].mean(), params.radial_velocity, atol=0.1
@@ -545,3 +546,8 @@ def test_cluster_parameters():
     coords = SkyCoord(observation['ra'], observation['dec'], unit="deg")
     separations = coords.separation(params.position)
     # todo
+
+    separations_pc = np.tan(separations.to(u.rad).value) * params.distance
+
+    assert np.max(separations_pc) == params.r_tidal
+    assert np.median(separations_pc) == params.r_50

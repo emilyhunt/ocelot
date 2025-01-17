@@ -7,18 +7,18 @@ methods in this file.
 # Todo tidy old methods
 
 import numpy as np
+from numba import jit
 
-from ocelot.util.coordinates import spherical_to_cartesian
 from ._base import (
     BaseClusterDistributionModel,
     # Implements1DMethods,
     # Implements2DMethods,
     Implements3DMethods,
 )
-from ocelot.util.random import points_on_sphere
 from astropy import units as u
 from astropy.units import Quantity
 from scipy.optimize import minimize
+from scipy.interpolate import interp1d
 
 
 class King62(
@@ -64,7 +64,7 @@ class King62(
 
         # Dimensionless versions - important for numpy interface
         self._r_core: float = self.r_core.to(u.pc).value
-        self._r_tidal: float = self.r_core.to(u.pc).value
+        self._r_tidal: float = self.r_tidal.to(u.pc).value
         self._r_50: float | None = None
         self.dimensions: int = dimensions
 
@@ -200,10 +200,12 @@ def king_surface_density(
     return result
 
 
-def king_number_density(r, r_core, r_tidal, k=1):
+def king_number_density(r, r_core, r_tidal, k=1, cumulative=False):
     """Calculates the King1962 number density (eqn 18 in the paper.)
 
     Unnormalised by default (i.e. k=1.)
+
+    Returns cumulative distribution function for cumulative=True.
     """
     x = (r / r_core) ** 2
     x_t = (r_tidal / r_core) ** 2
@@ -212,7 +214,10 @@ def king_number_density(r, r_core, r_tidal, k=1):
     term_2 = -4 * ((1 + x) ** (0.5) - 1) / (1 + x_t) ** (0.5)
     term_3 = x / (1 + x_t)
 
-    return np.pi * r_core**2 * k * (term_1 + term_2 + term_3)
+    result = np.pi * r_core**2 * k * (term_1 + term_2 + term_3)
+    if cumulative:
+        result = result / king_number_density(r_tidal, r_core, r_tidal)
+    return result
 
 
 def _check_r_values(r_values):
@@ -232,38 +237,13 @@ def _check_core_and_tidal_radii(r_core, r_tidal):
         raise ValueError("parameters must satisfy 0 < r_core < r_tidal")
 
 
-def king_surface_density_fast(r_values: np.ndarray, r_core: float, r_tidal: float):
-    """Computes the King surface density (King 1962, equation 14) given the three parameters. Can take vectorised input.
-    Fast version intended for use with random sampling - it has no checks and cannot be normalised! Be careful!
-
-    Valid only for:
-        0 <= r < r_tidal (NOT CHECKED in this function!)
-        0 < r_core < r_tidal (NOT CHECKED in this function!)
-
-    Args:
-        r_values (np.ndarray): r values to compute the surface density at. Must be a numpy array!
-        r_core (float): the core radius of the cluster.
-        r_tidal (float): the tidal radius of the cluster.
-
-    Returns:
-        a float or array of floats of the surface density for the cluster.
-
-    """
-    # Constants
-    rt_rc = r_tidal / r_core
-    a = (1 + rt_rc**2) ** -0.5
-
-    # Compute result
-    return ((1 + (r_values / r_core) ** 2) ** (-0.5) - a) ** 2
-
-
 def sample_2d_king_profile(
     r_core: float,
     r_tidal: float,
     n_samples: int,
     seed=None,
-    oversampling_factor: float = 10,
     return_generator: bool = False,
+    resolution: int = 500,
 ):
     """Samples a 2D King profile to return n_samples sample radii.
 
@@ -283,88 +263,47 @@ def sample_2d_king_profile(
         an array of sample radii of size n_samples, plus the random generator if return_generator==True.
     """
     _check_core_and_tidal_radii(r_core, r_tidal)
-
-    r_samples = np.empty(n_samples, dtype=float)
     generator = np.random.default_rng(seed=seed)
-    completed_samples = 0
 
-    max_value = king_surface_density_fast(np.zeros(1), r_core, r_tidal)[0]
-
-    while completed_samples < n_samples:
-        remaining_samples = n_samples - completed_samples
-        samples_to_generate = int(
-            np.clip(remaining_samples * oversampling_factor, 10, np.inf)
-        )
-
-        # Generate some initial radius samples
-        test_r_values = generator.uniform(high=r_tidal, size=samples_to_generate)
-        test_king_values = king_surface_density_fast(test_r_values, r_core, r_tidal)
-        test_mcmc_values = generator.uniform(size=samples_to_generate, high=max_value)
-
-        # See which & how many are valid and save them!
-        valid_test_samples = test_king_values < test_mcmc_values
-        n_valid_test_samples = np.count_nonzero(valid_test_samples)
-
-        if n_valid_test_samples > remaining_samples:
-            r_samples[completed_samples:] = test_r_values[valid_test_samples][
-                :remaining_samples
-            ]
-            break
-
-        r_samples[completed_samples : completed_samples + n_valid_test_samples] = (
-            test_r_values[valid_test_samples]
-        )
-        completed_samples += n_valid_test_samples
-
-    if return_generator:
-        return r_samples, generator
-    return r_samples
-
-
-def sample_1d_king_profile(
-    r_core: float,
-    r_tidal: float,
-    n_samples: int,
-    seed: int = None,
-    oversampling_factor: float = 10,
-    return_generator: bool = False,
-):
-    """Samples a 1D King profile (e.g. useful to get line of sight distances from the center of a cluster.) Uses a
-    little trick - assumes that we're looking at the cluster side-on and removes the not-line-of-sight axis as if we
-    were looking at it from the front. (This is because I cba to work out a 1D profile and more to the point, I (Emily Hunt) couldn't
-    find one...)
-
-    Valid only when:
-        0 < r_core < r_tidal
-
-    Args:
-        r_core (float): the core radius of the cluster.
-        r_tidal (float): the tidal radius of the cluster.
-        n_samples (int): the number of samples to generate.
-        seed (int, optional): the seed of the random number generator. Default: None.
-        oversampling_factor (float): how many times n_samples to generate each step, which helps to make sure that
-            enough samples are quickly generated in just one or two loops. Default: 10.
-
-    Returns:
-        an array of sample radii of size n_samples
-    """
-    # Todo: change this to using the strip density g(x), which I *think* could do this better...
-    r_samples, generator = sample_2d_king_profile(
-        r_core,
-        r_tidal,
-        n_samples,
-        seed=seed,
-        oversampling_factor=oversampling_factor,
-        return_generator=True,
+    r_values = np.linspace(0, r_tidal, num=resolution)
+    cumulative_density_function = king_number_density(
+        r_values, r_core, r_tidal, cumulative=True
     )
+    percentile_point_function = interp1d(cumulative_density_function, r_values)
 
-    # Now, deproject this to 1D by giving every value an angle and then finding the 1D radius with the cosine
-    random_angles = generator.uniform(high=2 * np.pi, size=n_samples)
-    r_samples = r_samples * np.cos(random_angles)
+    r_samples = percentile_point_function(generator.uniform(size=n_samples))
 
     if return_generator:
         return r_samples, generator
     return r_samples
+
+
+def king_spatial_density(radius_values, r_core, r_tidal, k=1):
+    out = np.zeros_like(radius_values)
+    good_radius = radius_values <= r_tidal
+    out[good_radius] = _king_spatial_density_inner(
+        radius_values[good_radius], r_core, r_tidal, k=k
+    )
+    return out
+
+
+@jit(nopython=True, cache=True)
+def _king_spatial_density_inner(radius_values, r_core, r_tidal, k=1):
+    rt_rc = 1 + (r_tidal / r_core) ** 2
+    z = ((1 + (radius_values / r_core) ** 2) / rt_rc) ** (1 / 2)
+
+    part_1 = k / (np.pi * r_core * rt_rc ** (3 / 2))
+    part_2 = 1 / z**2
+    part_3 = 1 / z * np.arccos(z) - (1 - z**2) ** (1 / 2)
+
+    return part_1 * part_2 * part_3
+
+
+@jit(nopython=True, cache=True)
+def _king_spatial_density_one_val_numba(radius: float, r_core: float, r_tidal: float):
+    if radius > r_tidal:
+        return 0.0
+    return _king_spatial_density_inner(radius, r_core, r_tidal, k=1)
 
 
 def sample_3d_king_profile(
@@ -372,16 +311,10 @@ def sample_3d_king_profile(
     r_tidal: float,
     n_samples: int,
     seed: int = None,
-    oversampling_factor: float = 10,
 ):
-    """Samples a 1D King profile (e.g. useful to get line of sight distances from the center of a cluster.) Uses a
-    little trick - assumes that we're looking at the cluster side-on and removes the not-line-of-sight axis as if we
-    were looking at it from the front. (This is because I cba to work out a 1D profile and more to the point, I couldn't
-    fucking find one)
+    """Samples a 2D King profile to return n_samples sample radii.
 
-    Todo: change this to using the strip density g(x), which I *think* could do this better...
-
-    Valid only when:
+    Valid only for:
         0 < r_core < r_tidal
 
     Args:
@@ -389,20 +322,47 @@ def sample_3d_king_profile(
         r_tidal (float): the tidal radius of the cluster.
         n_samples (int): the number of samples to generate.
         seed (int, optional): the seed of the random number generator. Default: None.
-        oversampling_factor (float): how many times n_samples to generate each step, which helps to make sure that
-            enough samples are quickly generated in just one or two loops. Default: 10.
+        return_generator (bool): whether or not to return the numpy random number generator created. Default: False
 
     Returns:
-        an array of sample radii of size (n_samples, 3)
+        an array of sample radii of size n_samples, plus the random generator if return_generator==True.
     """
-    r_samples, generator = sample_1d_king_profile(
-        r_core,
-        r_tidal,
-        n_samples,
-        seed=seed,
-        oversampling_factor=oversampling_factor,
-        return_generator=True,
-    )
-    phis, thetas = points_on_sphere(len(r_samples), phi_symmetric=False, seed=seed)
-    x_values, y_values, z_values = spherical_to_cartesian(r_samples, thetas, phis)
-    return x_values, y_values, z_values
+    _check_core_and_tidal_radii(r_core, r_tidal)
+
+    if seed is None:
+        seed = np.random.default_rng().integers(2**32 - 1)
+
+    return _sample_king_spatial_density_numba(r_core, r_tidal, n_samples, seed)
+
+
+@jit(nopython=True, cache=True)
+def _sample_king_spatial_density_numba(
+    r_core: float, r_tidal: float, n_samples: int, seed: int
+):
+    """Optimized rejection sampling to sample 3D spatial coordiantes of a King62 model."""
+    # Set seed
+    np.random.seed(seed)
+
+    # Calculate max value
+    max_value = _king_spatial_density_one_val_numba(0.0, r_core, r_tidal)
+
+    # Loop, each time doing rejection sampling with some random coordinates
+    out = np.empty((n_samples, 3))
+    i = 0
+    while i < n_samples:
+        random_coordinates = np.random.uniform(
+            low=-r_tidal, high=r_tidal, size=3
+        )
+        random_radius = (
+            random_coordinates[0] ** 2
+            + random_coordinates[1] ** 2
+            + random_coordinates[2] ** 2
+        ) ** (1 / 2)
+        trial_value = np.random.uniform(low=0.0, high=max_value)
+        king_value = _king_spatial_density_one_val_numba(random_radius, r_core, r_tidal)
+
+        if trial_value < king_value:
+            out[i] = random_coordinates
+            i += 1
+
+    return out
