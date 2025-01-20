@@ -545,9 +545,9 @@ def test_cluster_parameters():
     # Check radius
     coords = SkyCoord(observation['ra'], observation['dec'], unit="deg")
     separations = coords.separation(params.position)
-    # todo
-
     separations_pc = np.tan(separations.to(u.rad).value) * params.distance
 
-    assert np.max(separations_pc) == params.r_tidal
-    assert np.median(separations_pc) == params.r_50
+    np.testing.assert_allclose(np.max(separations_pc), params.r_tidal, atol=0, rtol=0.1)
+    np.testing.assert_allclose(np.median(separations_pc), params.r_50, atol=0, rtol=0.1)
+
+    # Todo test parallax and pmra distributions. Hard to do as they include errors.
