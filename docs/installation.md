@@ -8,6 +8,14 @@ pip install ocelot
 
 to get started, which will install the latest release of the code.
 
+To install dependencies required for cluster simulation, you'll need to do
+
+```bash
+pip install ocelot[simulate]
+```
+
+due to a separate issue that's currently being resolved in one of our dependencies.
+
 
 ## Getting additional data
 

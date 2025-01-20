@@ -1,6 +1,6 @@
 [project]
 name = "ocelot" # Required
-version = "0.4.0" # Required
+version = "0.4.1" # Required
 description = "A toolbox for working with observations of star clusters." # Optional
 readme = "README.md" # Optional
 requires-python = ">=3.10"
@@ -33,7 +33,6 @@ dependencies = [
   "astropy>=6.0.0,<7.0",
   "healpy>1.13.0,<2.0",    # Todo consider removing dependency - switch to Astropy's healpy implementation
   "galpy>1.9,<2.0",  # Todo consider removing dependency
-  "imf @ git+https://github.com/keflavich/imf",
   "dustmaps",  # Todo is this needed?
   "gaiaunlimited",  # Todo make optional?
   "kepler.py",  # For advanced calculations of the separations of binary stars
@@ -41,6 +40,9 @@ dependencies = [
 
 
 [project.optional-dependencies]
+simulate = [
+  "imf @ git+https://github.com/keflavich/imf",
+]
 dev = [
   "mkdocs-material[imaging]",
   "mkdocstrings[python]>=0.18",
