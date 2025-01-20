@@ -24,7 +24,6 @@ def generate_star_positions(cluster: ocelot.simulate.cluster.SimulatedCluster):
         *cluster.models.distribution.rvs(
             len(cluster.cluster), seed=cluster.random_generator
         ).T,
-        unit=u.pc,
     )
 
 
@@ -47,7 +46,7 @@ def generate_star_positions_with_binaries(
     cluster.cluster[["x", "y", "z"]] = np.nan  # Todo see if can remove
     cluster.cluster.loc[primary, ["x", "y", "z"]] = cluster.models.distribution.rvs(
         n_primaries, seed=cluster.random_generator
-    )
+    ).to(u.pc).value
 
     # Pull everything we might need out of the dataframe. This will make life easier
     host_x, host_y, host_z = (
@@ -153,7 +152,7 @@ def _semimajor_axis(total_mass, period):
     """
     period_days = period << u.day
     mass_msun = total_mass << u.M_sun
-    
+
     semimajor_axis = (
         (period_days) ** 2 * constants.G * (mass_msun) / (4 * np.pi**2)
     ) ** (1 / 3)
@@ -178,12 +177,13 @@ def generate_star_velocities(cluster: ocelot.simulate.cluster.SimulatedCluster):
     # Todo should get velocities from the distribution object eventually
     distribution = multivariate_normal(
         mean=np.zeros(3),
-        cov=np.identity(3) * cluster.parameters.velocity_dispersion_1d,
+        cov=cluster.parameters.velocity_dispersion_1d**2,
         seed=cluster.random_generator,
     )
     v_x, v_y, v_z = distribution.rvs(len(cluster.cluster)).T.reshape(
         3, -1
     )  # We also reshape to make sure a size-1 cluster is handled correctly
+
     return CartesianDifferential(d_x=v_x, d_y=v_y, d_z=v_z, unit=u.m / u.s)
 
 
@@ -198,8 +198,6 @@ def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.SimulatedClus
         "galactocentric"
     ).cartesian
     cluster_differential = cluster_center.differentials["s"]
-
-    # Todo binary star positions should be offset from their host star
 
     final_positions = positions + cluster_center
     final_velocities = velocities + cluster_differential
