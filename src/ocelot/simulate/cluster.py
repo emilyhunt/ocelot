@@ -54,8 +54,6 @@ class SimulatedClusterParameters:
     virial_ratio: float | int = 0.5
     velocity_dispersion_1d: float | None = None
     eta_virial_ratio: float | int = 10.0
-    astrometric_errors_scale_factor: float | int = 1.0
-    binary_star_relation: object = MoeDiStefanoMultiplicityRelation
     id: int = 0
 
     # The following fields are calculated in __post_init__, as they depend on initial
