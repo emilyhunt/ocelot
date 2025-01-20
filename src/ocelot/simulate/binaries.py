@@ -1,102 +1,32 @@
-"""Binary star relations for clusters."""
+"""Methods to pair stars randomly picked from the IMF into binaries."""
 
 from __future__ import annotations
 import numpy as np
-import pickle
+from ocelot.model.binaries import (
+    BaseBinaryStarModelWithPeriods,
+    BaseBinaryStarModelWithEccentricities,
+)
 import ocelot.simulate.cluster
-from scipy.interpolate import interp1d
 from numba import jit
-from ocelot import DATA_PATH
 
 
-# The below values are hard-coded directly from the tables of the following papers.
-# Stellar masses 1+ Msun: Moe & DiStefano 2017
-# Below this: Duchene & Kraus 2013
-mass = np.asarray([0.10, 0.30, 1.00, 3.50, 7.00, 12.5, 16.0])
-multiplicity_fraction = np.asarray([0.22, 0.26, 0.40, 0.59, 0.76, 0.84, 0.94])
-companion_star_frequency = np.asarray([0.22, 0.33, 0.50, 0.84, 1.30, 1.60, 2.10])
+def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
+    """Assigns certain stars in a cluster as binaries."""
+    if not cluster.features.binary_stars:
+        return
 
-MF_INTERPOLATOR = interp1d(
-    mass,
-    multiplicity_fraction,
-    bounds_error=False,
-    fill_value=(multiplicity_fraction.min(), multiplicity_fraction.max()),
-)
+    _assign_number_of_companions(cluster)
 
-CSF_INTERPOLATOR = interp1d(
-    mass,
-    companion_star_frequency,
-    bounds_error=False,
-    fill_value=(companion_star_frequency.min(), companion_star_frequency.max()),
-)
+    # Cycle over every star, giving it companions
+    _convert_singles_to_systems(cluster)
 
 
-location_random_q_interpolator = (
-    DATA_PATH / "binaries/Moe_DiStefano17_interpolated_random_q_relation.pickle"
-)
-with open(location_random_q_interpolator, "rb") as handle:
-    MOE_DI_STEFANO_RANDOM_Q_INTERPOLATOR = pickle.load(handle)
-
-
-class MoeDiStefanoMultiplicityRelation:
-    def __init__(
-        self,
-        make_resolved_stars=True,
-        distance=None,
-        separation=0.6,
-        interpolated_q=True,
-    ) -> None:
-        """An interpolated implementation of the MoeDiStefano17 multiplicity relations,
-        plus DucheneKraus+13 for stars below 1 MSun.
-        """
-        self.make_resolved_stars = make_resolved_stars
-        self.distance = distance
-        self.separation = separation
-
-        if not interpolated_q:
-            raise ValueError(
-                "interpolated_q may only be set to True. This implementation only "
-                "supports using pre-computed data from Hunt & Reffert 2024."
-            )
-
-        with open(location_random_q_interpolator, "rb") as handle:
-            self.interpolator = pickle.load(handle)
-
-        # If no distance specified in interpolation mode, then set to max distance
-        # (where everything is unresolved anyway)
-        if self.distance is None or make_resolved_stars is False:
-            self.distance = np.max(self.interpolator.grid[1])
-
-    def companion_star_fraction(self, masses):
-        return CSF_INTERPOLATOR(masses)
-
-    def multiplicity_fraction(self, masses):
-        return MF_INTERPOLATOR(masses)
-
-    def random_q(self, masses, random_generator):
-        masses = np.atleast_1d(masses)
-        distances = np.repeat(self.distance, len(masses))
-        samples = random_generator.uniform(size=len(masses))
-        points = np.vstack([masses, distances, samples]).T
-        return self.interpolator(points)
-
-
-def _get_multiplicity_relations(cluster):
-    multiplicity_relation_all_binaries = cluster.parameters.binary_star_relation(
-        make_resolved_stars=False
-    )
-    multiplicity_relation_resolved_binaries = cluster.parameters.binary_star_relation(
-        make_resolved_stars=True, distance=cluster.parameters.distance
-    )
-    return multiplicity_relation_all_binaries, multiplicity_relation_resolved_binaries
-
-
-def _assign_number_of_companions(cluster, multiplicity_relation_all_binaries):
+def _assign_number_of_companions(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Assigns a number of companions to each star probabilistically."""
-    expected_companions = multiplicity_relation_all_binaries.companion_star_fraction(
+    expected_companions = cluster.models.binaries.companion_star_frequency(
         cluster.cluster["mass"]
     )
-    expected_multiplicity = multiplicity_relation_all_binaries.multiplicity_fraction(
+    expected_multiplicity = cluster.models.binaries.multiplicity_fraction(
         cluster.cluster["mass"]
     )
     n_stars = len(cluster.cluster)
@@ -105,7 +35,7 @@ def _assign_number_of_companions(cluster, multiplicity_relation_all_binaries):
 
     cluster.cluster["companions"] = np.zeros(n_stars, dtype=int)
     cluster.cluster.loc[is_multiple, "companions"] = (
-        np.random.poisson(
+        cluster.random_generator.poisson(
             (expected_companions[is_multiple] / expected_multiplicity[is_multiple]) - 1,
             size=total_multiples,
         )
@@ -113,225 +43,221 @@ def _assign_number_of_companions(cluster, multiplicity_relation_all_binaries):
     ).astype(int)
 
 
+def _convert_singles_to_systems(cluster: ocelot.simulate.cluster.SimulatedCluster):
+    """Converts single stars to systems, based on precomputed appropriate numbers of
+    companions to make for each one.
+    """
+    indices_to_go_over = _filter_cluster(cluster)
+
+    # Do some setup of arrays
+    masses = cluster.cluster["mass"].to_numpy()
+    companions = cluster.cluster.loc[indices_to_go_over, "companions"].to_numpy()
+    masses_repeated = np.repeat(masses[indices_to_go_over], companions)
+
+    # Query binary star relation to get ideal binary parameters for each primary
+    mass_ratios, periods, eccentricites = _get_binary_parameters(
+        cluster, masses_repeated
+    )
+    secondary_masses = masses_repeated * mass_ratios
+
+    # Expensive (optimized) step to find the best secondaries for each primary
+    cluster.cluster["index_primary"], index_into_parameters = _convert_singles_numba(
+        masses, secondary_masses, companions, indices_to_go_over
+    )
+
+    # Also save orbital parameters of each primary
+    _save_orbital_parameters(
+        cluster, mass_ratios, periods, eccentricites, index_into_parameters
+    )
+
+
+def _save_orbital_parameters(
+    cluster: ocelot.simulate.cluster.SimulatedCluster,
+    mass_ratios: np.ndarray,
+    periods: np.ndarray,
+    eccentricites: np.ndarray,
+    index_into_parameters: np.ndarray,
+):
+    # Some extra indexing faff as index_into_parameters includes many stars with '-1'
+    # (i.e. not a binary)
+    star_is_secondary = index_into_parameters > -1
+    i_secondary = star_is_secondary.nonzero()[0]
+    i_parameters = index_into_parameters[star_is_secondary]
+
+    # Save!
+    (
+        cluster.cluster["mass_ratio"],
+        cluster.cluster["period"],
+        cluster.cluster["eccentricity"],
+    ) = np.nan, np.nan, np.nan
+    cluster.cluster.loc[i_secondary, "mass_ratio"] = mass_ratios[i_parameters]
+    cluster.cluster.loc[i_secondary, "period"] = periods[i_parameters]
+    cluster.cluster.loc[i_secondary, "eccentricity"] = eccentricites[i_parameters]
+
+    # Finally, also save the ID of each primary - this is a bit safer.
+    cluster.cluster["simulated_id_primary"] = -1
+    cluster.cluster.loc[star_is_secondary, "simulated_id_primary"] = (
+        cluster.cluster.loc[
+            cluster.cluster.loc[star_is_secondary, "index_primary"].tolist(),
+            "simulated_id",
+        ].to_numpy()
+    )
+
+
+def _filter_cluster(cluster: ocelot.simulate.SimulatedCluster):
+    """Filters cluster to only stars we're interested in, and returns a numba-friendly
+    set of indices for them.
+    """
+    # Ensure we start with the most massive star and go down
+    cluster.cluster = cluster.cluster.sort_values("mass", ignore_index=True)
+
+    query = "companions > 0"
+    indices_to_go_over = cluster.cluster.query(query).index.to_numpy()[::-1]
+    return indices_to_go_over
+
+
+def _get_binary_parameters(
+    cluster: ocelot.simulate.SimulatedCluster, masses: np.ndarray
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Fetches parameters of the binary stars to simulate.
+
+    Parameters
+    ----------
+    cluster : ocelot.simulate.SimulatedCluster
+        Simulated cluster to work with.
+    masses : np.ndarray
+        Array of primary star masses.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray, np.ndarray]
+        Array of mass ratios
+        Array of periods (measured in days)
+        Array of eccentricities in range [0, 1)
+    """
+    if isinstance(cluster.models.binaries, BaseBinaryStarModelWithEccentricities):
+        return cluster.models.binaries.random_binary(masses, seed=cluster.random_seed)
+
+    eccentricities = np.zeros_like(masses)
+    if isinstance(cluster.models.binaries, BaseBinaryStarModelWithPeriods):
+        mass_ratios, periods = cluster.models.binaries.random_binary(
+            masses, seed=cluster.random_seed
+        )
+        return mass_ratios, periods, eccentricities
+
+    periods = np.zeros_like(masses)
+    mass_ratios = cluster.models.binaries.random_mass_ratio(
+        masses, seed=cluster.random_seed
+    )
+    return mass_ratios, periods, eccentricities
+
+
 @jit(nopython=True, cache=True)
 def _convert_singles_numba(
-    masses, companions, indices_to_go_over, index_primary, q_values, is_resolved
+    masses,
+    desired_secondary_masses,
+    companions_per_primary,
+    indices_of_stars_with_companions,
 ):
     """Fast inner loop for convert_singles_to_systems.
 
     It's very weirdly written so that it works with numba (I had to really wrestle with
     making it optimisation-friendly), sorry :D
-
-    # Todo: make this function non-shit
     """
-    index_into_companions = 0
-    all_star_indices = np.arange(masses.size)
-    valid_masses = np.ones(masses.size, dtype=np.bool_)
+    # Initialisation
+    starting_index_secondary_masses = 0
 
-    for i_primary, n_companions in zip(indices_to_go_over, companions):
-        # -------------
-        # CHECKS
-        # -------------
+    # Helper array used to get original index after boolean indexing
+    all_star_indices = np.arange(masses.size)
+
+    # Boolean array saying which masses (stars) are available to be assigned
+    valid_masses = np.ones(masses.size, dtype=np.bool_)
+    n_valid_masses = masses.size
+
+    # Index into masses that is the index of the primary star
+    index_primary = np.full_like(all_star_indices, -1)
+
+    # Index into q_values that is the index of the parameters of the binary
+    index_into_parameters = np.full_like(all_star_indices, -1)
+
+    for i_primary, n_companions in zip(
+        indices_of_stars_with_companions, companions_per_primary
+    ):
         # Skip stars that are already binaries
-        if index_primary[i_primary] > -2:
-            index_into_companions += n_companions
+        if index_primary[i_primary] >= 0:
+            starting_index_secondary_masses += n_companions
             continue
         # Can't run on the lowest-mass star
         if i_primary == 0:
             continue
 
-        # -------------
-        # GET DATA FROM OVERALL ARRAYS INTO SHORTER ONES
-        # -------------
-        primary_mass = masses[i_primary]
+        # Prevent this star from being picked as a binary
         valid_masses[i_primary] = False
+        n_valid_masses -= 1
+
+        # Calculate the value of the masses that we'd like to find
+        masses_to_look_for = _get_mass_values(
+            desired_secondary_masses,
+            starting_index_secondary_masses,
+            n_companions,
+        )
+
+        # Cycle over every companion and select best stars
+        for i_parameters, a_mass in enumerate(masses_to_look_for):
+            # Stop if we've ran out of valid potential companions
+            if n_valid_masses == 0:
+                break
+
+            # Look for best potential companion
+            i_secondary = _get_index_of_best_star(
+                masses, all_star_indices, valid_masses, a_mass
+            )
+
+            # Save this result
+            valid_masses[i_secondary] = False
+            n_valid_masses -= 1
+            index_primary[i_secondary] = i_primary
+            index_into_parameters[i_secondary] = (
+                i_parameters + starting_index_secondary_masses
+            )
+
+        # Setup for the next loop
+        starting_index_secondary_masses += n_companions
 
         # Stop if we've ran out of valid potential companions
-        if np.sum(valid_masses) == 0:
-            return index_primary
+        if n_valid_masses == 0:
+            break
 
-        mass_companions = (
-            q_values[index_into_companions : index_into_companions + n_companions]
-            * primary_mass
-        )
-        resolved_companions = is_resolved[
-            index_into_companions : index_into_companions + n_companions
-        ]
-
-        # Increment for next loop
-        index_into_companions += n_companions
-
-        # -------------
-        # CYCLE OVER EVERY COMPANION AND SELECT
-        # -------------
-        # Get (unique) indices of companions
-        for a_mass, a_resolved in zip(mass_companions, resolved_companions):
-            # Find star closest in mass to the one required by q
-            i_secondary = np.searchsorted(masses[valid_masses], a_mass)
-
-            # Get a valid index for this star
-            indices_to_search = all_star_indices[valid_masses]
-
-            # Prevent issues if the best star is at the end of the array
-            if i_secondary >= len(indices_to_search):
-                i_secondary = len(indices_to_search) - 1
-
-            # Now, finally, we can grab the index of the star and set that it's now a
-            # secondary!
-            i_secondary_converted = indices_to_search[i_secondary]
-            valid_masses[i_secondary_converted] = False
-
-            # If the star is resolved (randomly sampled for now), then assign it as
-            # such; otherwise, set it to contribute to the primary star's magnitude
-            # (i.e. be unresolved), meaning it later gets removed from the star list
-            if a_resolved:
-                index_primary[i_secondary_converted] = -1
-            else:
-                index_primary[i_secondary_converted] = i_primary
-
-            # Stop if we've ran out of valid potential companions
-            if np.sum(valid_masses) == 0:
-                return index_primary
-
-    return index_primary
+    return index_primary, index_into_parameters
 
 
-def _convert_singles_to_systems(
-    cluster, multiplicity_relation_all_binaries, multiplicity_relation_resolved_binaries
+@jit(nopython=True, cache=True)
+def _get_index_of_best_star(
+    masses, all_star_indices, valid_masses, closest_mass_to_find
 ):
-    """Converts single stars to systems, based on precomputed appropriate numbers of
-    companions to make for each one.
-
-    # Todo tidy this function please it's a mess
-    """
-    query = "companions > 0"
-    if cluster.parameters.selection_effects:
-        query += " and g_true < 21"
-    indices_to_go_over = cluster.cluster.query(query).index.to_numpy()[::-1]
-
-    masses = cluster.cluster["mass"].to_numpy()
-    companions = cluster.cluster.loc[indices_to_go_over, "companions"].to_numpy()
-    index_primary = np.full(len(cluster.cluster), -2)
-
-    masses_repeated = np.repeat(masses[indices_to_go_over], companions)
-    q_values = multiplicity_relation_all_binaries.random_q(
-        masses_repeated, cluster.random_generator
+    """Finds the index of the valid star closest in mass to the one"""
+    i_secondary_on_valid_array = np.searchsorted(
+        masses[valid_masses], closest_mass_to_find
     )
 
-    # Todo: Whether or not stars are resolved is currently done independent of mass. This is wrong! Minimal impact on distant clusters but bad in other cases.
-    q_resolved = multiplicity_relation_resolved_binaries.random_q(
-        masses_repeated, cluster.random_generator
-    )
-    is_resolved = q_resolved < 0.1  # Weird thing with how the interp is specced
+    # Now we need to convert this to an index back in the main index space
+    # (i.e. 0 to n_stars, not 0 to n_valid_stars)
+    # We start by preventing issues if the best star is at the end of the array, i.e.
+    # all stars are smaller than closest_mass_to_find - in that case, we pick the
+    # smallest available star (the last one)
+    indices_to_search = all_star_indices[valid_masses]
+    if i_secondary_on_valid_array >= len(indices_to_search):
+        i_secondary_on_valid_array = len(indices_to_search) - 1
 
-    cluster.cluster["index_primary"] = _convert_singles_numba(
-        masses, companions, indices_to_go_over, index_primary, q_values, is_resolved
-    )
+    # Now, finally, we can grab the index of the star!
+    return indices_to_search[i_secondary_on_valid_array]
 
-    # Add fluxes
-    summed_fluxes_of_companions = (
-        cluster.cluster.query("index_primary >= 0")
-        .groupby("index_primary")[["g_flux", "bp_flux", "rp_flux"]]
-        .sum()
-    )
 
-    primary_indices = summed_fluxes_of_companions.index
-    cluster.cluster.loc[primary_indices, "g_flux"] += summed_fluxes_of_companions[
-        "g_flux"
+@jit(nopython=True, cache=True)
+def _get_mass_values(
+    desired_secondary_masses, starting_index_secondary_masses, n_companions
+):
+    """Calculates mass values we need to search for based on the mass ratios."""
+    return desired_secondary_masses[
+        starting_index_secondary_masses : starting_index_secondary_masses + n_companions
     ]
-    cluster.cluster.loc[primary_indices, "bp_flux"] += summed_fluxes_of_companions[
-        "bp_flux"
-    ]
-    cluster.cluster.loc[primary_indices, "rp_flux"] += summed_fluxes_of_companions[
-        "rp_flux"
-    ]
-
-    # Drop the taken stars
-    cluster.cluster = cluster.cluster.query("index_primary < 0").reset_index(drop=True)
-
-
-# Zeropoints in the Vegamag system (see documentation table 5.2)
-# These are for Gaia DR3!
-G_ZP = 25.6874
-BP_ZP = 25.3385
-RP_ZP = 24.7479
-
-
-def _mag_to_flux(magnitudes, zero_point):
-    return 10 ** ((zero_point - magnitudes) / 2.5)
-
-
-def _flux_to_mag(fluxes, zero_point):
-    # We also handle negative fluxes here - in that case, it should just be inf
-    good_fluxes = np.atleast_1d(fluxes > 0).flatten()
-    magnitudes = (
-        -2.5 * np.log10(np.atleast_1d(fluxes).flatten(), where=good_fluxes) + zero_point
-    )
-    magnitudes[np.invert(good_fluxes)] = np.inf
-    return magnitudes
-
-
-def _calculate_fluxes(cluster):
-    """Calculate fluxes for stars in the cluster"""
-    good_stars = cluster.cluster["g_true"].notna()
-    bad_stars = np.invert(good_stars)
-    cluster.cluster.loc[good_stars, "g_flux"] = _mag_to_flux(
-        cluster.cluster.loc[good_stars, "g_true"], G_ZP
-    )
-    cluster.cluster.loc[good_stars, "bp_flux"] = _mag_to_flux(
-        cluster.cluster.loc[good_stars, "bp_true"], BP_ZP
-    )
-    cluster.cluster.loc[good_stars, "rp_flux"] = _mag_to_flux(
-        cluster.cluster.loc[good_stars, "rp_true"], RP_ZP
-    )
-    cluster.cluster.loc[bad_stars, "g_flux"] = 0.0
-    cluster.cluster.loc[bad_stars, "bp_flux"] = 0.0
-    cluster.cluster.loc[bad_stars, "rp_flux"] = 0.0
-
-
-def _recalculate_magnitudes(cluster):
-    """Recalculate magnitudes for stars in the cluster, after adding binaries."""
-    good_stars = cluster.cluster["g_flux"] > 0
-    bad_stars = np.invert(good_stars)
-    cluster.cluster.loc[good_stars, "g_true"] = _flux_to_mag(
-        cluster.cluster.loc[good_stars, "g_flux"], G_ZP
-    )
-    cluster.cluster.loc[good_stars, "bp_true"] = _flux_to_mag(
-        cluster.cluster.loc[good_stars, "bp_flux"], BP_ZP
-    )
-    cluster.cluster.loc[good_stars, "rp_true"] = _flux_to_mag(
-        cluster.cluster.loc[good_stars, "rp_flux"], RP_ZP
-    )
-    cluster.cluster.loc[bad_stars, "g_true"] = np.nan
-    cluster.cluster.loc[bad_stars, "bp_true"] = np.nan
-    cluster.cluster.loc[bad_stars, "rp_true"] = np.nan
-    # cluster.cluster = cluster.cluster.drop(columns=["g_flux", "bp_flux", "rp_flux"])
-
-
-def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
-    """Pairs a simulated cluster up into binaries."""
-    if not cluster.parameters.binary_stars:
-        return
-
-    multiplicity_relation_all, multiplicity_relation_resolved = (
-        _get_multiplicity_relations(cluster)
-    )
-
-    _assign_number_of_companions(cluster, multiplicity_relation_all)
-
-    # No need to go any further if nobody is going to be a binary
-    if cluster.cluster["companions"].sum() == 0:
-        return
-
-    # Do some setup of the dataframe
-    cluster.cluster = cluster.cluster.sort_values("mass", ignore_index=True)
-    _calculate_fluxes(cluster)
-
-    # Cycle over every star, giving it companions
-    _convert_singles_to_systems(
-        cluster,
-        multiplicity_relation_all,
-        multiplicity_relation_resolved,
-    )
-
-    _recalculate_magnitudes(cluster)

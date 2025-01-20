@@ -2,6 +2,7 @@
 
 import numpy as np
 from typing import Tuple
+from ocelot.util.coordinates import spherical_to_cartesian
 
 
 def points_on_sphere(
@@ -35,6 +36,27 @@ def points_on_sphere(
         return theta, phi
     else:
         return theta * 180 / np.pi, phi * 180 / np.pi
+
+
+def unit_vectors(size: int, seed=None):
+    """Returns an array of random unit vectors on the surface of a 3D unit sphere.
+
+    Parameters
+    ----------
+    size : int
+        Number of unit vectors to return.
+    seed : _type_, optional
+        Seed for the numpy random generator. Default: None
+
+    Returns
+    -------
+    An array of shape (size, 3) of unit vectors.
+    """
+    theta, phi = points_on_sphere(size, phi_symmetric=False, seed=seed)
+    x, y, z = spherical_to_cartesian(
+        1.0, phi, theta
+    )  # N.B. unhelpfully this function has different argument names
+    return np.vstack((x, y, z)).T
 
 
 def fractal_noise_2d(resolution: int, seed: None):

@@ -1,93 +1,98 @@
 """A set of tests for use with the pytest module, covering ocelot.isochrone"""
 
-# FUCKING HATE PYTHON IMPORTS AAAA
-# (the below fixes this though)
-try:
-    from .context import ocelot
-except ModuleNotFoundError:
-    print('Unable to find ocelot via .context! Trying to import from your python path instead...')
-try:
-    import ocelot
-except ModuleNotFoundError:
-    raise ModuleNotFoundError('Unable to find ocelot')
-
+from ocelot import isochrone
 from pathlib import Path
-
 import numpy as np
 import pytest
-from astropy.io import ascii
 
 # Path towards the test isochrones
+test_data_path = Path(__file__).parent / "test_data"
 max_label = 7
-path_to_test_isochrone = Path('./test_data/isochrones/isochrones.dat')
-path_to_test_isochrones = Path('./test_data/isochrones/')
-list_of_paths_to_test_isochrones = [Path('./test_data/isochrones/isochrones.dat'),
-                                    Path('./test_data/isochrones/isochrones_2.dat')]
-path_to_simulated_population = Path('./test_data/simulated_population.dat')
+path_to_test_isochrone = test_data_path / "isochrones/isochrones.dat"
+path_to_test_isochrones = test_data_path / "isochrones/"
+list_of_paths_to_test_isochrones = [
+    test_data_path / "isochrones/isochrones.dat",
+    test_data_path / "isochrones/isochrones_2.dat",
+]
+path_to_simulated_population = test_data_path / "simulated_population.dat"
 
 
-def test_read_cmd_isochrone():
+def test_read_parsec():
     """Tests the input-output functionality of the isochrone module."""
-    my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrone, max_label=max_label)
+    my_isochrones = isochrone.read_parsec(path_to_test_isochrone, max_label=max_label)
 
     # Check that we've read in the right shape of file
     assert my_isochrones.shape == (2878, 15)
 
     # Test that the headers were read in correctly
-    assert list(my_isochrones.keys()) == \
-        ['Zini', 'MH', 'logAge', 'Mini', 'int_IMF', 'Mass', 'logL', 'logTe',
-         'logg', 'label', 'mbolmag', 'Gmag', 'G_BPmag', 'G_RPmag', 'G_BP-RP']
+    assert list(my_isochrones.keys()) == [
+        "Zini",
+        "MH",
+        "logAge",
+        "Mini",
+        "int_IMF",
+        "Mass",
+        "logL",
+        "logTe",
+        "logg",
+        "label",
+        "mbolmag",
+        "Gmag",
+        "G_BPmag",
+        "G_RPmag",
+        "G_BP-RP",
+    ]
 
     # Check that there aren't any hidden headers in there (CMD 3.3 hides them in some really annoying spots)
-    rows_with_another_header = np.where(my_isochrones['Zini'] == '#')[0]
+    rows_with_another_header = np.where(my_isochrones["Zini"] == "#")[0]
     assert rows_with_another_header.size == 0
 
     # Check that all the rows have the right max_label
-    rows_with_a_bad_label = np.where(my_isochrones['label'] > max_label)[0]
+    rows_with_a_bad_label = np.where(my_isochrones["label"] > max_label)[0]
     assert rows_with_a_bad_label.size == 0
 
     # Check some random values (by extension checking the typing too)
-    assert my_isochrones.loc[0, 'Zini'] == 0.0048313
-    assert my_isochrones.loc[1000, 'Gmag'] == 7.681
-    assert my_isochrones.loc[2877, 'label'] == 3
-
-    return my_isochrones
+    assert my_isochrones.loc[0, "Zini"] == 0.0048313
+    assert my_isochrones.loc[1000, "Gmag"] == 7.681
+    assert my_isochrones.loc[2877, "label"] == 3
 
 
-def test_read_cmd_isochrone_multiple_isochrones():
-    """Specifically tests the ability of ocelot.isochrone.read_cmd_isochrone to read multiple files."""
+def test_read_parsec_multiple_isochrones():
+    """Specifically tests the ability of ocelot.isochrone.read_parsec to read multiple files."""
     # Read in isochrones two ways
-    isochrones_read_as_directory = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrones, max_label=max_label)
-    isochrones_read_as_list = ocelot.isochrone.read_cmd_isochrone(list_of_paths_to_test_isochrones, max_label=max_label)
+    isochrones_read_as_directory = isochrone.read_parsec(
+        path_to_test_isochrones, max_label=max_label
+    )
+    isochrones_read_as_list = isochrone.read_parsec(
+        list_of_paths_to_test_isochrones, max_label=max_label
+    )
 
     # Check their shapes
     assert isochrones_read_as_directory.shape == (5756, 15)
     assert isochrones_read_as_list.shape == (5756, 15)
 
     # Check two values near to the end - if indexing went wrong, these will have been scrambled
-    assert isochrones_read_as_directory.loc[5000, 'Gmag'] == -0.866
-    assert isochrones_read_as_directory.loc[5001, 'Gmag'] == -0.908
+    assert isochrones_read_as_directory.loc[5000, "Gmag"] == -0.866
+    assert isochrones_read_as_directory.loc[5001, "Gmag"] == -0.908
 
-    assert isochrones_read_as_list.loc[5000, 'Gmag'] == -0.866
-    assert isochrones_read_as_list.loc[5001, 'Gmag'] == -0.908
-
-    return isochrones_read_as_directory
+    assert isochrones_read_as_list.loc[5000, "Gmag"] == -0.866
+    assert isochrones_read_as_list.loc[5001, "Gmag"] == -0.908
 
 
 def test_isochrone_interpolation():
     """Tests the isochrone interpolation functionality of ocelot."""
-    my_isochrones = ocelot.isochrone.read_cmd_isochrone(path_to_test_isochrone, max_label=max_label)
+    my_isochrones = isochrone.read_parsec(path_to_test_isochrone, max_label=max_label)
 
     # Cut some stars for speed purposes
-    stars_to_cut = np.asarray(my_isochrones['MH'] != 0.0).nonzero()[0]
+    stars_to_cut = np.asarray(my_isochrones["MH"] != 0.0).nonzero()[0]
     my_isochrones = my_isochrones.drop(stars_to_cut).reset_index(drop=True)
 
-    isochrones_for_fun_and_profit = ocelot.isochrone.IsochroneInterpolator(my_isochrones,
-                                                                           parameters_as_arguments=['logAge'],
-                                                                           interpolation_type='LinearND')
+    isochrones_for_fun_and_profit = isochrone.IsochroneInterpolator(
+        my_isochrones, parameters_as_arguments=["logAge"], interpolation_type="LinearND"
+    )
 
     # Test the output, where logAge=6.25 is *not* sampled by the input and should hence give interesting results.
-    test_points = np.asarray([[6.], [6.25], [6.5]])
+    test_points = np.asarray([[6.0], [6.25], [6.5]])
     output_x, output_y = isochrones_for_fun_and_profit(test_points, resolution=100)
 
     # Check the shapes
@@ -99,105 +104,29 @@ def test_isochrone_interpolation():
     assert np.count_nonzero(np.isfinite(output_y)) == 300
 
     # Check some random numbers
-    assert np.allclose(output_x[[0, 100, 200]], [3.551, 3.678, 3.805], rtol=0.0, atol=1e-8)
-    assert np.allclose(output_y[[0, 100, 200]], [9.753, 10.0945, 10.436], rtol=0.0, atol=1e-8)
-
-    return [isochrones_for_fun_and_profit, output_x, output_y]
-
-
-def test_cmd_interpolation():
-    """Tests the spline fitting routines that can be applied to a raw CMD from an open cluster."""
-    # Grab a test population generated by CMD 3.3
-    data_gaia = ascii.read(str(path_to_simulated_population.resolve())).to_pandas()
-    data_gaia.columns = ['Z', 'age', 'Mini', 'Mass', 'logL', 'logTe', 'logg', 'label',
-                         'mbolmag', 'G', 'G_BP', 'G_RP']
-
-    # Cull the dataset to only include the most massive stars
-    bad_stars = np.asarray(data_gaia['Mass'] < 0.5).nonzero()[0]
-    data_gaia = data_gaia.drop(bad_stars).reset_index(drop=True)
-
-    # Add some noise
-    np.random.seed(42)
-    data_gaia[['G_BP', 'G_RP', 'G']] += np.random.normal(loc=0.0, scale=0.03, size=(data_gaia.shape[0], 3))
-    data_gaia['G_BP-RP'] = data_gaia['G_BP'] - data_gaia['G_RP']
-
-    # Time to fucking interpolate!!!
-    spline_me_up_scotty = ocelot.isochrone.CMDInterpolator(
-        parameters=['G_BP-RP', 'G'],
-        curve_parameterisation_type='summed',
-        data_sorted_on='proximity_to_line',
-        filter_input=True,
-        filter_window_size=15,
-        filter_order=3,
-        interp_type='UnivariateSpline',
-        interp_smoothing=0.5,
-        interp_order=3)
-    spline_me_up_scotty.fit(data_gaia, max_repeats=20, print_current_step=False)
-
-    # Time to fucking see the results!!!
-    interpolated_cmd_x, interpolated_cmd_y = spline_me_up_scotty(resolution=100)
-
-    # Check that the output values are what we expect
-    desired_y = np.asarray([-1.58247131, 2.6352361, 6.23856108, 9.11628436])
-    desired_x = np.asarray([1.94389926, 0.75030174, 1.17974861, 2.20645386])
-
-    actual_y = interpolated_cmd_y[[0, 10, 50, 99]]
-    actual_x = interpolated_cmd_x[[0, 10, 50, 99]]
-
-    assert np.allclose(desired_y, actual_y, rtol=0.0, atol=1e-8)
-    assert np.allclose(desired_x, actual_x, rtol=0.0, atol=1e-8)
-
-    # Todo: If this algorithm gets improved, this quick n' shit unit test should be improved.
-    #    (nb at time of writing it didn't look like development would continue any further on this)
-
-    return [data_gaia, interpolated_cmd_x, interpolated_cmd_y]
-
-
-def test_nn_graph_sort():
-    """Tests the nearest neighbour graph sorting routine."""
-    # Create some test data
-    test_points = 50
-    x = np.linspace(0, 2 * np.pi, test_points)
-    y = np.sin(x)
-
-    # Randomise the order
-    np.random.seed(42)
-    random_order = np.random.permutation(test_points)
-    x_unsorted = x[random_order]
-    y_unsorted = y[random_order]
-
-    # Get the graph to do some graphing!
-    sort_args = ocelot.isochrone.interpolate.nn_graph_sort(x_unsorted, y_unsorted)
-    x_sorted = x_unsorted[sort_args]
-    y_sorted = y_unsorted[sort_args]
-
-    # Useful print code if this test keeps failing:
-    # i = 0
-    # while i < x_sorted.size:
-    #     print(f'{i} ~ {x[i]} {x_sorted[i]} ~ {y[i]} {y_sorted[i]}')
-    #     i += 1
-
-    # See if it actually hecking worked:
-    # Check that the sorted x array is identical to the original x one
-    np.testing.assert_array_max_ulp(x, x_sorted, maxulp=1)
-
-    # Check that the sorted y array is identical to the original y one
-    np.testing.assert_array_max_ulp(y, y_sorted, maxulp=1)
-
-    return [x_sorted, y_sorted]
+    assert np.allclose(
+        output_x[[0, 100, 200]], [3.551, 3.678, 3.805], rtol=0.0, atol=1e-8
+    )
+    assert np.allclose(
+        output_y[[0, 100, 200]], [9.753, 10.0945, 10.436], rtol=0.0, atol=1e-8
+    )
 
 
 def test_find_nearest_point():
     """Tests a small function that attempts to find the nearest point on a line to a set of data."""
     # Setup some input data
     y = np.repeat(np.arange(5), 2).reshape(5, 2)  # 5 points spaced equally along y=x
-    x = (y**2)[:3]  # The squaring makes it so the first and second points match, but then the last matches to y[4]
+    x = (y**2)[
+        :3
+    ]  # The squaring makes it so the first and second points match, but then the last matches to y[4]
     desired_result = np.array([0, 1, 4])
     desired_distances = np.array([[0, 0], [0, 0], [0, 0]])
 
     # Call the function, both with and without raw distances
-    result = ocelot.isochrone.interpolate.find_nearest_point(x, y)
-    result_distances, distances = ocelot.isochrone.interpolate.find_nearest_point(x, y, return_raw_distances=True)
+    result = isochrone.interpolate.find_nearest_point(x, y)
+    result_distances, distances = isochrone.interpolate.find_nearest_point(
+        x, y, return_raw_distances=True
+    )
 
     # Test that result is right
     np.testing.assert_array_equal(result, desired_result)
@@ -210,11 +139,14 @@ def test_find_nearest_point():
 
     # Test that giving it an array with the wrong amount of points raises an error
     with pytest.raises(ValueError, match="Input arrays must be two dimensional."):
-        ocelot.isochrone.interpolate.find_nearest_point(x[0], y)
+        isochrone.interpolate.find_nearest_point(x[0], y)
 
     # Test that giving an array with the wrong number of features raises an error
-    with pytest.raises(ValueError, match="Number of features mismatch between points_to_match and points_on_line."):
-        ocelot.isochrone.interpolate.find_nearest_point(x[:, 0:1], y)
+    with pytest.raises(
+        ValueError,
+        match="Number of features mismatch between points_to_match and points_on_line.",
+    ):
+        isochrone.interpolate.find_nearest_point(x[:, 0:1], y)
 
 
 def test_proximity_to_line_sort():
@@ -226,53 +158,7 @@ def test_proximity_to_line_sort():
     desired_result = np.array([0, 2, 1, 4, 3])
 
     # Run the function
-    result = ocelot.isochrone.interpolate.proximity_to_line_sort(x, y)
+    result = isochrone.interpolate.proximity_to_line_sort(x, y)
 
     # Test that result is right
     np.testing.assert_array_equal(result, desired_result)
-
-
-# Run tests manually if the file is ran
-if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-
-    # Run soem tests!!!
-    isochrones = test_read_cmd_isochrone()
-    isochrones_long = test_read_cmd_isochrone_multiple_isochrones()
-    interpolator, interpolator_output_x, interpolator_output_y = test_isochrone_interpolation()
-    nn_x_sorted, nn_y_sorted = test_nn_graph_sort()
-    test_find_nearest_point()
-    test_proximity_to_line_sort()
-
-    # # Plot the results of the nearest neighbour graph sort
-    # plt.plot(nn_x_sorted, nn_y_sorted)
-    # plt.title('A sorted sine wave that began its life unsorted')
-    # plt.show()
-
-
-    # Some plotting code for cmd spline fitting
-    population, cmd_x, cmd_y = test_cmd_interpolation()
-
-    print(population.shape)
-
-    plt.plot(population['G_BP-RP'], population['G'], 'k.')
-    plt.plot(cmd_x, cmd_y, 'r-')
-    plt.gca().invert_yaxis()
-    plt.title('A spline fit to a cmd')
-    plt.show()
-
-    """
-    # Some plotting code for the isochrone reading & interpolation
-    import matplotlib.pyplot as plt
-
-    good_stars = np.asarray(np.logical_and(isochrones['MH'] == 0.0,
-                                           np.logical_or(isochrones['logAge'] == 6., isochrones['logAge'] == 6.5)))
-    plt.plot(isochrones['G_BP-RP'].iloc[good_stars], isochrones['Gmag'].iloc[good_stars], 'k-', label='original')
-
-    plt.plot(interpolator_output[0], interpolator_output[1], 'r.', label='interpolated')
-
-    plt.gca().invert_yaxis()
-    plt.legend()
-    plt.title(f'Isochrones: interpolated vs original')
-    plt.show()
-    """

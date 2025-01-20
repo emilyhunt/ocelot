@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 
 
 class BaseDifferentialReddeningModel(ABC):
+    accepts_random_seed = False  # Class attribute for whether or not a given model needs a seed in __init__
+
     def extinction(
         self,
         x: ArrayLike,
@@ -17,7 +19,7 @@ class BaseDifferentialReddeningModel(ABC):
         differential extinction.
         """
         x, y = _normalize_within_0_and_1(x), _normalize_within_0_and_1(y)
-        extinctions = self._differential_extinction(width, x, y)
+        extinctions = self._differential_extinction(x, y, width)
         return np.clip(extinctions + mean, 0, np.inf)
 
     @abstractmethod

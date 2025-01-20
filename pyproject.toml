@@ -24,18 +24,19 @@ classifiers = [ # Optional
 ]
 dependencies = [
   "numpy>1.21.0,<3.0",
-  "numba<1.0",
+  "numba<0.60",  # Todo increase when https://github.com/numba/numba/issues/9753 fix is on main
   "matplotlib>3.4.0,<4.0",
   "scikit-learn>0.24.0,<2.0",
   "scipy>1.0.0,<2.0",
   "pandas>1.0.0,<3.0",
   "pyarrow",
   "astropy>=6.0.0,<7.0",
-  "healpy>1.13.0,<2.0",
-  "galpy>1.9,<2.0",
+  "healpy>1.13.0,<2.0",    # Todo consider removing dependency - switch to Astropy's healpy implementation
+  "galpy>1.9,<2.0",  # Todo consider removing dependency
   "imf @ git+https://github.com/keflavich/imf",
-  "dustmaps",
-  "gaiaunlimited",
+  "dustmaps",  # Todo is this needed?
+  "gaiaunlimited",  # Todo make optional?
+  "kepler.py",  # For advanced calculations of the separations of binary stars
 ]
 
 
@@ -68,6 +69,7 @@ test = ["pytest"]
 [tool.pytest.ini_options]
 pythonpath = "src"
 addopts = ["--import-mode=importlib"]
+testpaths = ["tests"]
 
 [build-system]
 requires = ["setuptools>=43.0.0", "wheel"]

@@ -1,21 +1,19 @@
 # `ocelot` is in development!
 
-This project is a spin-out from code that Emily wrote during her PhD. It's currently in alpha / active development - check back here soon for the first production-ready versions!
+This project is a spin-out from code that I wrote during my PhD. It's currently in alpha / active development.
 
-> :warning: Impending API changes
+## :warning: Which parts of ocelot are ready to use? :warning:
 
-I've learnt a lot about programming in the last 5 years, so I intend to completely overhaul `ocelot`'s API to be cleaner. However, that means pretty much everything here is subject to change for now.
+The following parts of the library have **stable APIs**, and are ready to use in production code:
 
-## Commands for docs
+- ocelot.simulate - for simulating star clusters.
+- ocelot.model - various models useful to users of star clusters
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs -h` - Print help message and exit.
+The following parts are likely to be completely overhauled in the next few months:
 
-## Docs layout
+- ocelot.calculate
+- ocelot.cluster
+- ocelot.crossmatch
+- ocelot.isochrone
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+With that in mind, check out [how to install ocelot](installation.md).

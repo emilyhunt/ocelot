@@ -5,6 +5,8 @@ from scipy.interpolate import RegularGridInterpolator
 
 
 class FractalDifferentialReddening(BaseDifferentialReddeningModel):
+    accepts_random_seed = True
+
     def __init__(self, resolution: int = 256, seed=None) -> None:
         super().__init__()
         self.resolution = resolution
@@ -17,5 +19,5 @@ class FractalDifferentialReddening(BaseDifferentialReddeningModel):
     def _differential_extinction(
         self, x: np.ndarray, y: np.ndarray, width: float
     ) -> np.ndarray:
-        points = np.vstack((x, y))
+        points = np.vstack((x, y)).T
         return width * self._differential_extinction_interpolator(points)

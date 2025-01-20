@@ -13,6 +13,8 @@ repo_name: ocelot
 
 theme:
     name: material
+    locale: en
+    custom_dir: docs/_overrides
     features:
         - navigation.sections  # Sections are included in the navigation on the left.
         # - toc.integrate  # Table of contents is integrated on the left; does not appear separately on the right.
@@ -40,7 +42,7 @@ theme:
             name: Switch to light mode
     icon:
         repo: fontawesome/brands/github  # GitHub logo in top right
-        logo: "material/lightbulb-outline"
+        logo: "bxs--cat"
     favicon: "_static/favicon.png"
 
 markdown_extensions:
@@ -70,9 +72,9 @@ plugins:
             python:
                 options:
                     docstring_style: numpy  # Render docs as numpy style
-                    show_source: true
+                    show_source: false
                     show_root_heading: true
-                    show_object_full_path: true
+                    show_object_full_path: false
                     members_order: source
                     inherited_members: true  # Allow looking up inherited methods
     # - privacy  # Not installed error???
@@ -81,26 +83,27 @@ plugins:
 nav:
     - Getting Started: 
         - Overview: 'index.md'
-        - Installation: 'wip.md'
-        - Quick guide: 'wip.md'
-        - Configuration: 'wip.md'
+        - Installation: 'installation.md'
+        - ocelot's best bits: 'features.md'
+        # - Configuration: 'wip.md'
         - Citing ocelot: 'wip.md'
-        - Further reading: 'wip.md'
+        # - Further reading: 'wip.md'
         - Technical Stuff:
-            - Changelog: 'wip.md'
-            - Reporting an issue: 'wip.md'
+            - Changelog: 'changelog.md'
+            - Report an issue: 'wip.md'
 
     - Examples:
-        - Star clusters in Gaia data:
-            - Detect a star cluster in Gaia data: 'wip.md'
-            - Crossmatching catalogues: 'wip.md'
-        - Color-magnitude diagrams:
-            - Work with PARSEC isochrones: 'wip.md'
-            - Work with MIST isochrones: 'wip.md'
-            - Fit an isochrone: 'wip.md'
+        # - Star clusters in Gaia data:
+        #     - Detect a star cluster in Gaia data: 'wip.md'
+        #     - Crossmatching catalogues: 'wip.md'
+        # - Color-magnitude diagrams:
+        #     - Work with PARSEC isochrones: 'wip.md'
+        #     - Work with MIST isochrones: 'wip.md'
+        #     - Fit an isochrone: 'wip.md'
         - Simulating clusters:
             - Simulate a star cluster from scratch: 'tutorials/simulate_a_cluster.ipynb'
     - API Reference:
-        - Calculate: 'api/calculate.md'
+        # - Calculate: 'api/calculate.md'
+        - Simulate: 'api/simulate.md'
     - Contibute to ocelot!: 
         - Why ocelot?: 'developing.md'
