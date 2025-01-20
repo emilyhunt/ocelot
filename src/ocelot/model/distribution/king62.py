@@ -4,7 +4,6 @@ model: https://ui.adsabs.harvard.edu/abs/1962AJ.....67..471K/abstract
 In addition, some of the equations from the paper are also implemented directly as
 methods in this file.
 """
-# Todo tidy old methods
 
 import numpy as np
 from numba import jit
@@ -91,8 +90,9 @@ class King62(
     @property
     def r_50(self):
         """Median radius of the cluster (equivalent to half-light and half-mass for this
-        model).
+        model), *in on-sky units*.
         """
+        # Todo: add option to get 3D r_50.
         if self._r_50 is None:
             self._calculate_r_50()
         return self._r_50 * self.base_unit
@@ -137,77 +137,115 @@ class King62(
         # Todo implement CDF
         raise NotImplementedError("Sorry! This class is a work in progress.")
 
-    def _rvs(self, size: int, seed=None) -> np.ndarray[float]:
+    def _rvs(
+        self, size: int, seed: None | int | np.random.Generator = None
+    ) -> np.ndarray[float]:
         match self.dimensions:
             case 3:
-                return np.vstack(
-                    sample_3d_king_profile(self._r_core, self._r_tidal, size, seed=seed)
-                ).T
+                return sample_3d_king_profile(
+                    self._r_core, self._r_tidal, size, seed=seed
+                )
         raise ValueError("Number of dimensions not supported!")
 
 
 def king_surface_density(
-    r_values: float | np.ndarray,
-    r_core: float,
-    r_tidal: float,
+    radius: float | np.ndarray,
+    r_core: float | np.ndarray,
+    r_tidal: float | np.ndarray,
+    k: float | np.ndarray = 1.0,
     normalize: bool = False,
-):
-    """Computes the King surface density (King 1962, equation 14) given the three parameters. Can take vectorised input.
-    Will return the surface density per square unit expected at a distance r_values from the core of the cluster.
+) -> np.ndarray:
+    """Compute the King1962 cluster surface density, i.e. the density of stars per unit
+    area in 2D on-sky coordinates.
 
-    Valid only for:
-        0 <= r < r_tidal (0 elsewhere - this is checked internally)
-        0 < r_core < r_tidal (raises an error if not the case)
+    Parameters
+    ----------
+    radius : float | np.ndarray
+        Radius values to compute the surface density at.
+    r_core : float | np.ndarray
+        Cluster core radius. Must be positive and less than r_tidal.
+    r_tidal : float | np.ndarray
+        Cluster tidal radius. Must be positive and greater than r_core.
+    k : float | np.ndarray, optional
+        Normalization constant. Default: 1.0
+    normalize : bool, optional
+        Whether or not to return the normalized surface density, turning this into an
+        estimate of the 2D PDF of the cluster on-sky. Default: False
 
-    Args:
-        r_values (float or np.ndarray): r values to compute the surface density at.
-        r_core (float): the core radius of the cluster.
-        r_tidal (float): the tidal radius of the cluster.
-        normalise (bool): whether or not to return the normalised King surface density profile, calculated
-            numerically.
-            Default: False
-
-    Returns:
-        a float or array of floats of the surface density for the cluster.
-
+    Returns
+    -------
+    np.ndarray
+        Surface density values at the requested radius/r_core/r_tidal values.
     """
-    _check_core_and_tidal_radii(r_core, r_tidal)
-    r_values = _check_r_values(r_values)
+    _check_inputs(radius, r_core, r_tidal, k)
+    radius = np.atleast_1d(radius)
 
     # Constants
     rt_rc = r_tidal / r_core
     a = (1 + rt_rc**2) ** -0.5
 
     # Compute normalisation constant if desired
+    # Todo this math is unpublished but should be, also pretty sure I lost the derivation...
     if normalize:
         term_1 = r_core * np.arctan(rt_rc)
         term_2 = -2 * a * r_core * np.log(rt_rc + 1 / a)
         term_3 = r_tidal * a**2
         normalisation_constant = 1 / (term_1 + term_2 + term_3)
     else:
-        normalisation_constant = 1.0
+        normalisation_constant = k
 
     # Work out where  0 <= r < r_tidal
-    r_valid = np.logical_and(r_values >= 0, r_values < r_tidal)
+    r_valid = np.logical_and(radius >= 0, radius < r_tidal)
     r_invalid = np.invert(r_valid)
 
     # Compute result
-    reduced_r_values = (1 + (r_values[r_valid] / r_core) ** 2) ** (-0.5)
-    result = np.empty(r_values.shape)
+    reduced_r_values = (1 + (radius[r_valid] / r_core) ** 2) ** (-0.5)
+    result = np.empty(radius.shape)
     result[r_valid] = normalisation_constant * (reduced_r_values - a) ** 2
     result[r_invalid] = 0
 
     return result
 
 
-def king_number_density(r, r_core, r_tidal, k=1, cumulative=False):
-    """Calculates the King1962 number density (eqn 18 in the paper.)
+def king_number_density(
+    radius: float | np.ndarray,
+    r_core: float | np.ndarray,
+    r_tidal: float | np.ndarray,
+    k: float | np.ndarray = 1,
+    cumulative=False,
+) -> np.ndarray:
+    """Calculates the King1962 number density (Eqn. 18 in the paper.)
 
     Unnormalised by default (i.e. k=1.)
 
     Returns cumulative distribution function for cumulative=True.
+
+
+    Parameters
+    ----------
+    radius : float | np.ndarray
+        Radius values to compute the surface density at.
+    r_core : float | np.ndarray
+        Cluster core radius. Must be positive and less than r_tidal.
+    r_tidal : float | np.ndarray
+        Cluster tidal radius. Must be positive and greater than r_core.
+    k : float | np.ndarray, optional
+        Normalization constant. Default: 1.0
+    cumulative : bool, optional
+        Whether or not to return the cumulative number density. Doing so means that
+        this function will instead estimate the cumulative density function of the
+        King number density. Default: False.
+
+    Returns
+    -------
+    np.ndarray
+        Number density values at the requested radius/r_core/r_tidal values. If
+        cumulative is True, this will instead be an array of estimates of the CDF of the
+        cluster's number density at a given radius.
     """
-    x = (r / r_core) ** 2
+    _check_inputs(radius, r_core, r_tidal, k)
+    radius = np.atleast_1d(radius)
+    x = (radius / r_core) ** 2
     x_t = (r_tidal / r_core) ** 2
 
     term_1 = np.log(1 + x)
@@ -220,14 +258,22 @@ def king_number_density(r, r_core, r_tidal, k=1, cumulative=False):
     return result
 
 
-def _check_r_values(r_values):
+def _check_inputs(radius: float, r_core: float, r_tidal: float, k: float | None = None):
+    """Checks that inputs to standard King functions are correct."""
+    _check_core_and_tidal_radii(r_core, r_tidal)
+    _check_values(radius)
+    if k is not None:
+        _check_values(k, name="k")
+
+
+def _check_values(values, name="radius"):
     # Convert to a np array that's at least 1d, and check that it isn't bad
-    r_values = np.atleast_1d(r_values)
-    if not np.isfinite(r_values).all():
-        raise ValueError("invalid r_values (e.g. nan or inf) are not allowed!")
-    if np.any(r_values < 0):
-        raise ValueError("all r_values must be positive or zero.")
-    return r_values
+    values = np.atleast_1d(values)
+    if not np.isfinite(values).all():
+        raise ValueError(f"invalid {name} values (e.g. nan or inf) are not allowed!")
+    if np.any(values < 0):
+        raise ValueError(f"all {name} values must be positive or zero.")
+    return values
 
 
 def _check_core_and_tidal_radii(r_core, r_tidal):
@@ -241,28 +287,38 @@ def sample_2d_king_profile(
     r_core: float,
     r_tidal: float,
     n_samples: int,
-    seed=None,
+    seed: None | int | np.random.Generator = None,
     return_generator: bool = False,
     resolution: int = 500,
-):
+) -> np.ndarray:
     """Samples a 2D King profile to return n_samples sample radii.
 
-    Valid only for:
-        0 < r_core < r_tidal
+    Parameters
+    ----------
+    r_core : float | np.ndarray
+        Cluster core radius. Must be positive and less than r_tidal.
+    r_tidal : float | np.ndarray
+        Cluster tidal radius. Must be positive and greater than r_core.
+    n_samples : int
+        Number of samples to return.
+    seed : None | int | np.random.Generator, optional
+        Seed for the random generator, or a np.random.generator to use for sampling.
+        Default: None
+    resolution : int, optional
+        Resolution of the internal estimate of the percentile point function of the
+        cluster's number density function. (Wow - that's a mouthful.). Default: 500,
+        which should be high enough to be accurate in all cases.
 
-    Args:
-        r_core (float): the core radius of the cluster.
-        r_tidal (float): the tidal radius of the cluster.
-        n_samples (int): the number of samples to generate.
-        seed (int, optional): the seed of the random number generator. Default: None.
-        oversampling_factor (float): how many times n_samples to generate each step, which helps to make sure that
-            enough samples are quickly generated in just one or two loops. Default: 10.
-        return_generator (bool): whether or not to return the numpy random number generator created. Default: False
+    Returns
+    -------
+    np.ndarray
+        Radius samples.
 
-    Returns:
-        an array of sample radii of size n_samples, plus the random generator if return_generator==True.
+    Notes
+    -----
+    To turn these radii into 2D random coordinates, assign each radius a random angle
+    between 0 and 2 pi.
     """
-    _check_core_and_tidal_radii(r_core, r_tidal)
     generator = np.random.default_rng(seed=seed)
 
     r_values = np.linspace(0, r_tidal, num=resolution)
@@ -273,24 +329,34 @@ def sample_2d_king_profile(
 
     r_samples = percentile_point_function(generator.uniform(size=n_samples))
 
-    if return_generator:
-        return r_samples, generator
     return r_samples
 
 
-def king_spatial_density(radius_values, r_core, r_tidal, k=1):
-    out = np.zeros_like(radius_values)
-    good_radius = radius_values <= r_tidal
+def king_spatial_density(
+    radius: float | np.ndarray,
+    r_core: float | np.ndarray,
+    r_tidal: float | np.ndarray,
+    k: float | np.ndarray = 1,
+):
+    _check_values(radius)
+    _check_core_and_tidal_radii(r_core, r_tidal)
+    out = np.zeros_like(radius)
+    good_radius = radius <= r_tidal
     out[good_radius] = _king_spatial_density_inner(
-        radius_values[good_radius], r_core, r_tidal, k=k
+        radius[good_radius], r_core, r_tidal, k
     )
     return out
 
 
 @jit(nopython=True, cache=True)
-def _king_spatial_density_inner(radius_values, r_core, r_tidal, k=1):
+def _king_spatial_density_inner(
+    radius: float | np.ndarray,
+    r_core: float | np.ndarray,
+    r_tidal: float | np.ndarray,
+    k: float | np.ndarray = 1.0,
+):
     rt_rc = 1 + (r_tidal / r_core) ** 2
-    z = ((1 + (radius_values / r_core) ** 2) / rt_rc) ** (1 / 2)
+    z = ((1 + (radius / r_core) ** 2) / rt_rc) ** (1 / 2)
 
     part_1 = k / (np.pi * r_core * rt_rc ** (3 / 2))
     part_2 = 1 / z**2
@@ -300,37 +366,49 @@ def _king_spatial_density_inner(radius_values, r_core, r_tidal, k=1):
 
 
 @jit(nopython=True, cache=True)
-def _king_spatial_density_one_val_numba(radius: float, r_core: float, r_tidal: float):
+def _king_spatial_density_one_val_numba(
+    radius: float, r_core: float, r_tidal: float, k: float = 1.0
+):
     if radius > r_tidal:
         return 0.0
-    return _king_spatial_density_inner(radius, r_core, r_tidal, k=1)
+    return _king_spatial_density_inner(radius, r_core, r_tidal, k=k)
 
 
 def sample_3d_king_profile(
     r_core: float,
     r_tidal: float,
     n_samples: int,
-    seed: int = None,
+    seed: None | int | np.random.Generator = None,
 ):
-    """Samples a 2D King profile to return n_samples sample radii.
+    """Sample random star locations in a King1962 model and return them in 3D Cartesian
+    coordinates.
 
-    Valid only for:
-        0 < r_core < r_tidal
+    This method uses rejection sampling, and is a bit slower than sampling in 2D. If you
+    only need 2D positions, then it's easier to use sample_2d_king_profile.
 
-    Args:
-        r_core (float): the core radius of the cluster.
-        r_tidal (float): the tidal radius of the cluster.
-        n_samples (int): the number of samples to generate.
-        seed (int, optional): the seed of the random number generator. Default: None.
-        return_generator (bool): whether or not to return the numpy random number generator created. Default: False
+    Parameters
+    ----------
+    r_core : float | np.ndarray
+        Cluster core radius. Must be positive and less than r_tidal.
+    r_tidal : float | np.ndarray
+        Cluster tidal radius. Must be positive and greater than r_core.
+    n_samples : int
+        Number of samples to return.
+    seed : None | int | np.random.Generator, optional
+        Seed for the random generator, or a np.random.generator to use for sampling.
+        Default: None
 
-    Returns:
-        an array of sample radii of size n_samples, plus the random generator if return_generator==True.
+    Returns
+    -------
+    np.ndarray
+        An array of cluster location samples with shape (n_samples, 3).
     """
     _check_core_and_tidal_radii(r_core, r_tidal)
 
     if seed is None:
         seed = np.random.default_rng().integers(2**32 - 1)
+    if isinstance(seed, np.random.Generator):
+        seed = seed.integers(2**32 - 1)
 
     return _sample_king_spatial_density_numba(r_core, r_tidal, n_samples, seed)
 
@@ -340,7 +418,7 @@ def _sample_king_spatial_density_numba(
     r_core: float, r_tidal: float, n_samples: int, seed: int
 ):
     """Optimized rejection sampling to sample 3D spatial coordiantes of a King62 model."""
-    # Set seed
+    # Set seed (this is numba-only)
     np.random.seed(seed)
 
     # Calculate max value
@@ -350,9 +428,7 @@ def _sample_king_spatial_density_numba(
     out = np.empty((n_samples, 3))
     i = 0
     while i < n_samples:
-        random_coordinates = np.random.uniform(
-            low=-r_tidal, high=r_tidal, size=3
-        )
+        random_coordinates = np.random.uniform(low=-r_tidal, high=r_tidal, size=3)
         random_radius = (
             random_coordinates[0] ** 2
             + random_coordinates[1] ** 2
