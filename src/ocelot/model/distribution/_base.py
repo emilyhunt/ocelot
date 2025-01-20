@@ -48,7 +48,9 @@ class BaseClusterDistributionModel(ABC):
             return result[0]
         return result
 
-    def rvs(self, size: int | np.int_ = 1, seed=None) -> np.ndarray | float:
+    def rvs(
+        self, size: int | np.int_ = 1, seed: None | int | np.random.Generator = None
+    ) -> np.ndarray | float:
         """Sample a random variate from the model. Returns an array of shape
         (n_stars, n_dims), or a single float if size is 1.
         """
