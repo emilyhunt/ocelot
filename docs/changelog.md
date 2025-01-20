@@ -1,3 +1,8 @@
+## v0.4.1 - Move IMF to optional dependency
+
+The imf library has been moved to be an optional dependency to try and fix issues with PyPI upload failing.
+
+
 ## v0.4.0 - Addition of cluster simulation code and models
 
 This release brings a brand new, sophisticated API for cluster simulation, in addition to optimized models covering a number of different aspects of star cluster science. Additions include:
