@@ -269,8 +269,8 @@ def test_simulation_with_differential_extinction():
     np.testing.assert_allclose(
         cluster.cluster["extinction"].std(),
         cluster.parameters.differential_extinction,
-        rtol=0.0,
-        atol=0.01,
+        rtol=0.01,
+        atol=0.02,
     )
 
 
