@@ -666,18 +666,6 @@ wheels = [
 ]
 
 [[package]]
-name = "ezpadova"
-version = "2.0"
-source = { git = "https://github.com/mfouesneau/ezpadova#7a27f02454798540df56673500a3744b3f1c6c4b" }
-dependencies = [
-    { name = "beautifulsoup4" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "requests" },
-    { name = "scipy" },
-]
-
-[[package]]
 name = "fastjsonschema"
 version = "2.20.0"
 source = { registry = "https://pypi.org/simple" }
@@ -929,15 +917,6 @@ wheels = [
 ]
 
 [[package]]
-name = "imf"
-version = "2021.2.5.dev85+gcf213e1"
-source = { git = "https://github.com/keflavich/imf#cf213e10e118e7e9e95ece3e64855837118d412e" }
-dependencies = [
-    { name = "astropy" },
-    { name = "scipy" },
-]
-
-[[package]]
 name = "importlib-metadata"
 version = "8.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -957,6 +936,17 @@ sdist = { url = "https://files.pythonhosted.org/packages/d7/4b/cbd8e699e64a6f16c
 wheels = [
     { url = "https://files.pythonhosted.org/packages/ef/a6/62565a6e1cf69e10f5727360368e451d4b7f58beeac6173dc9db836a5b46/iniconfig-2.0.0-py3-none-any.whl", hash = "sha256:b6a85871a79d2e3b22d2d1b94ac2824226a63c6b741c88f7ae975f18b6778374", size = 5892 },
 ]
+
+[[package]]
+name = "initial-mass-function"
+version = "2025.1.20"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "astropy" },
+    { name = "numpy" },
+    { name = "scipy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/0d/e8eea43c92e837514474d1a74b7d8251c4eecf2ae26cc2d8888c76c161f1/initial_mass_function-2025.1.20.tar.gz", hash = "sha256:a1b27ae9dd60bb85be7781bf1a374296f110ffc4028261429cd08018493b337c", size = 1883064 }
 
 [[package]]
 name = "ipykernel"
@@ -2003,7 +1993,7 @@ wheels = [
 
 [[package]]
 name = "ocelot"
-version = "0.4.0"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "astropy" },
@@ -2011,7 +2001,7 @@ dependencies = [
     { name = "gaiaunlimited" },
     { name = "galpy" },
     { name = "healpy" },
-    { name = "imf" },
+    { name = "initial-mass-function" },
     { name = "kepler-py" },
     { name = "matplotlib" },
     { name = "numba" },
@@ -2025,7 +2015,6 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "check-manifest" },
-    { name = "ezpadova" },
     { name = "jupyter" },
     { name = "mkdocs-jupyter" },
     { name = "mkdocs-material", extra = ["imaging"] },
@@ -2047,11 +2036,10 @@ requires-dist = [
     { name = "astropy", specifier = ">=6.0.0,<7.0" },
     { name = "check-manifest", marker = "extra == 'dev'" },
     { name = "dustmaps" },
-    { name = "ezpadova", marker = "extra == 'dev'", git = "https://github.com/mfouesneau/ezpadova" },
     { name = "gaiaunlimited" },
     { name = "galpy", specifier = ">1.9,<2.0" },
     { name = "healpy", specifier = ">1.13.0,<2.0" },
-    { name = "imf", git = "https://github.com/keflavich/imf" },
+    { name = "initial-mass-function", specifier = "==2025.1.20" },
     { name = "jupyter", marker = "extra == 'dev'" },
     { name = "kepler-py" },
     { name = "matplotlib", specifier = ">3.4.0,<4.0" },

@@ -22,14 +22,6 @@ Install from PyPI with:
 pip install ocelot
 ```
 
-To install dependencies required for cluster simulation, you'll need to do
-
-```bash
-pip install ocelot[simulate]
-```
-
-due to a separate issue that's currently being resolved in one of our dependencies.
-
 Currently, using `ocelot.simulate` also requires manually downloading data from [here](https://drive.google.com/file/d/1wMXymFHo-K5jdIGoJi5oGuHeXSa3JVmu/view?usp=sharing). Place it at a directory of your choosing, and set the environment variable `OCELOT_DATA` to this location. 
 
 If you're just working with a local dev copy of ocelot (i.e. you installed it via git clone), then you could put the data at the default location - /data in this folder.
@@ -52,7 +44,7 @@ git clone https://github.com/emilyhunt/ocelot
 uv sync --all-extras
 ```
 
-After installing development dependencies, you can also make and view edits to the package's documentation. To view a local copy of the documentation, do `mkdocs serve`. You can do a test build with `mkdocs build`.
+After installing development dependencies, you can also locally view edits to the package's documentation. To view a local copy of the documentation, do `mkdocs serve`. You can do a test build with `mkdocs build`.
 
 
 ## Citation

@@ -36,13 +36,11 @@ dependencies = [
   "dustmaps",  # Todo is this needed?
   "gaiaunlimited",  # Todo make optional?
   "kepler.py",  # For advanced calculations of the separations of binary stars
+  "initial_mass_function==2025.1.20",   # N.B. imports as 'imf'
 ]
 
 
 [project.optional-dependencies]
-simulate = [
-  "imf @ git+https://github.com/keflavich/imf",
-]
 dev = [
   "mkdocs-material[imaging]",
   "mkdocstrings[python]>=0.18",
@@ -51,7 +49,7 @@ dev = [
   "check-manifest",
   "pytest",
   "ruff",
-  "ezpadova @ git+https://github.com/mfouesneau/ezpadova",  # PARSEC isochrone download
+  # "ezpadova @ git+https://github.com/mfouesneau/ezpadova",  # PARSEC isochrone download  # Todo get it on a release schedule / link to github .zip file
 ]
 docs = [
   "mkdocs-material[imaging]",

@@ -84,15 +84,15 @@ nav:
     - Getting Started: 
         - Overview: 'index.md'
         - Installation: 'installation.md'
-        - ocelot's best bits: 'features.md'
+        - Features: 'features.md'
         # - Configuration: 'wip.md'
-        - Citing ocelot: 'wip.md'
+        - Citing ocelot: 'citation.md'
         # - Further reading: 'wip.md'
         - Technical Stuff:
             - Changelog: 'changelog.md'
-            - Report an issue: 'wip.md'
+            - Report an issue: 'issue.md'
 
-    - Examples:
+    - Tutorials:
         # - Star clusters in Gaia data:
         #     - Detect a star cluster in Gaia data: 'wip.md'
         #     - Crossmatching catalogues: 'wip.md'
