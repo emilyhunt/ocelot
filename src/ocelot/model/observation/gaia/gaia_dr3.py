@@ -1,7 +1,11 @@
 """Main class defining an observation made with Gaia DR3."""
 
 from __future__ import annotations
-from ocelot.model.observation._base import BaseObservation, BaseSelectionFunction
+from ocelot.model.observation._base import (
+    BaseObservation,
+    BaseSelectionFunction,
+    # CustomPhotometricMethodObservation,
+)
 import ocelot.simulate.cluster
 from scipy.interpolate import interp1d
 from gaiaunlimited.selectionfunctions import DR3SelectionFunctionTCG
@@ -75,34 +79,41 @@ class GaiaDR3ObservationModel(BaseObservation):
     def calculate_photometric_errors(
         self, cluster: ocelot.simulate.cluster.SimulatedCluster
     ):
-        """Apply photometric errors to a simulated cluster."""
+        """Calculate photometric errors for a simulated cluster."""
         self._assert_simulated_cluster_not_reused(cluster)
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
                 cluster.observations["gaia_dr3"], self.representative_stars
             )
-        observation = cluster.observations["gaia_dr3"]
 
         for band in ("g", "bp", "rp"):
-            observation.loc[self.stars_to_assign, f"gaia_dr3_{band}_flux_error"] = (
-                self.matching_stars[f"phot_{band}_mean_flux_error"].to_numpy()
-            )
+            cluster.observations["gaia_dr3"].loc[
+                self.stars_to_assign, f"gaia_dr3_{band}_flux_error"
+            ] = self.matching_stars[f"phot_{band}_mean_flux_error"].to_numpy()
+
+    def apply_photometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
+        """Custom method to apply photometric errors to a simulated cluster.
+
+        Method incorporates the underestimated BP and RP flux measurement issue in DR3.
+        """
+        raise NotImplementedError()
 
     def calculate_astrometric_errors(
         self, cluster: ocelot.simulate.cluster.SimulatedCluster
     ):
-        """Apply astrometric errors to a simulated cluster."""
+        """Calculate astrometric errors for a simulated cluster."""
         self._assert_simulated_cluster_not_reused(cluster)
         if self.matching_stars is None:
             self.matching_stars, self.stars_to_assign = _closest_gaia_star(
                 cluster.observations["gaia_dr3"], self.representative_stars
             )
-        observation = cluster.observations["gaia_dr3"]
 
         for column in ("pmra_error", "pmdec_error", "parallax_error"):
-            observation.loc[self.stars_to_assign, column] = self.matching_stars[
-                column
-            ].to_numpy()
+            cluster.observations["gaia_dr3"].loc[self.stars_to_assign, column] = (
+                self.matching_stars[column].to_numpy()
+            )
 
     def get_selection_functions(
         self, cluster: ocelot.simulate.cluster.SimulatedCluster
@@ -127,7 +138,7 @@ class GaiaDR3ObservationModel(BaseObservation):
                 observation["extinction"], observation["temperature"]
             )
 
-    def _calculate_resolving_power(
+    def calculate_resolving_power(
         self,
         primary: pd.DataFrame,
         secondary: pd.DataFrame,
@@ -171,6 +182,7 @@ class GaiaDR3ObservationModel(BaseObservation):
     def _assert_simulated_cluster_not_reused(
         self, cluster: ocelot.simulate.cluster.SimulatedCluster
     ):
+        # Todo this is bad and should be improved lol - model should be cluster-agnostic
         if self.simulated_cluster is None:
             self.simulated_cluster = cluster
             return

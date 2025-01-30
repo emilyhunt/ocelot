@@ -1,9 +1,18 @@
 """Helpers for working with observation models and simulating a cluster observation."""
 
 from __future__ import annotations
-from ocelot.model.observation import BaseObservation
-import ocelot.simulate.cluster
+from ocelot.model.observation import (
+    BaseObservation,
+    CustomAstrometricMethodObservation,
+    CustomPhotometricMethodObservation,
+)
+from ocelot.model.observation.common import (
+    calculate_separation,
+    apply_astrometric_errors_simple_gaussian,
+    apply_photometric_errors_simple_gaussian,
+)
 from ocelot.util.magnitudes import add_two_magnitudes
+import ocelot.simulate.cluster
 
 
 def apply_extinction_to_photometry(
@@ -23,6 +32,7 @@ def make_unresolved_stars(
 ):
     """Combines stars that are close to one another into single sources."""
     # Todo improve to be able to consider any stars in a dataset, not just binaries
+    # Todo this function is too long and complicated
     if not cluster.features.binary_stars:
         return
     observation = cluster.observations[model.name]
@@ -37,7 +47,12 @@ def make_unresolved_stars(
     )
 
     # Calculate the probability that they're resolved separately
-    probability_separate = model.calculate_resolving_power(primary, secondary)
+    separations = calculate_separation(primary, secondary)
+    probability_separate = model.calculate_resolving_power(
+        primary, secondary, separations
+    )
+
+    # Randomly decide which ones need blending
     samples = cluster.random_generator.uniform(low=0.0, high=1.0, size=len(secondary))
     needs_blending = probability_separate < samples
     primary_indices_blend = primary_indices[needs_blending]
@@ -46,7 +61,7 @@ def make_unresolved_stars(
     # Add magnitudes
     # Todo can this be sped up? May be hard as each star comes one after another
     bands = model.photometric_band_names
-    observation['unresolved_companions'] = 0
+    observation["unresolved_companions"] = 0
     for primary_index, secondary_index in zip(
         primary_indices_blend, secondary_indices_blend
     ):
@@ -54,7 +69,7 @@ def make_unresolved_stars(
             observation.loc[primary_index, bands].to_numpy().astype(float),
             observation.loc[secondary_index, bands].to_numpy().astype(float),
         )
-        observation.loc[primary_index, 'unresolved_companions'] += 1
+        observation.loc[primary_index, "unresolved_companions"] += 1
 
     # Drop blended stars
     cluster.observations[model.name] = observation.drop(
@@ -68,15 +83,13 @@ def apply_photometric_errors(
     """Propagates errors into the cluster's photometry."""
     if not cluster.features.photometric_uncertainties:
         return
-    observation = cluster.observations[model.name]
 
     model.calculate_photometric_errors(cluster)
-    for band in model.photometric_band_names:
-        new_fluxes = cluster.random_generator.normal(
-            loc=model.mag_to_flux(observation[band].to_numpy(), band),
-            scale=observation[f"{band}_flux_error"].to_numpy(),
-        )
-        observation[band] = model.flux_to_mag(new_fluxes, band)
+
+    if isinstance(model, CustomPhotometricMethodObservation):
+        model.apply_photometric_errors(cluster)
+    else:
+        apply_photometric_errors_simple_gaussian(cluster, model)
 
 
 def apply_astrometric_errors(
@@ -85,22 +98,15 @@ def apply_astrometric_errors(
     """Propagates errors into the cluster's astrometry."""
     if not cluster.features.astrometric_uncertainties:
         return
-
-    astrometric_columns_with_error = []
-    if model.has_parallaxes:
-        astrometric_columns_with_error.append("parallax")
-    if model.has_proper_motions:
-        astrometric_columns_with_error.extend(["pmra", "pmdec"])
-    if len(astrometric_columns_with_error) == 0:
+    if not (model.has_parallaxes or model.has_proper_motions):
         return
-
-    observation = cluster.observations[model.name]
+    
     model.calculate_astrometric_errors(cluster)
-    for column in astrometric_columns_with_error:
-        observation[column] = cluster.random_generator.normal(
-            loc=observation[column].to_numpy(),
-            scale=observation[f"{column}_error"].to_numpy(),
-        )
+
+    if isinstance(model, CustomAstrometricMethodObservation):
+        model.apply_astrometric_errors(cluster)
+    else:
+        apply_astrometric_errors_simple_gaussian(cluster, model)
 
 
 def apply_selection_function(

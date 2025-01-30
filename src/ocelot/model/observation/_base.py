@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
-from astropy.coordinates import SkyCoord
 from astropy.units import Quantity
 
 
@@ -65,40 +64,8 @@ class BaseObservation(ABC):
         """Fetch all selection functions associated with this observation."""
         pass
 
-    def calculate_resolving_power(
-        self,
-        primary: pd.DataFrame,
-        secondary: pd.DataFrame,
-        separation: Quantity | None = None,
-    ) -> np.ndarray:
-        """Calculates the probability that a given pair of stars would be separately
-        resolved."""
-        # Calculate separation manually if not specified
-        if separation is None:
-            if "ra" not in primary.columns or "dec" not in primary.columns:
-                raise ValueError(
-                    "separation not specified, and will instead be calculated manually;"
-                    " however, required columns 'ra' and 'dec' are not in the columns "
-                    "of 'primary'."
-                )
-            if "ra" not in secondary.columns or "dec" not in secondary.columns:
-                raise ValueError(
-                    "separation not specified, and will instead be calculated manually;"
-                    " however, required columns 'ra' and 'dec' are not in the columns "
-                    "of 'secondary'."
-                )
-            coord_primary = SkyCoord(
-                primary["ra"].to_numpy(), primary["dec"].to_numpy(), unit="deg"
-            )
-            coord_secondary = SkyCoord(
-                secondary["ra"].to_numpy(), secondary["dec"].to_numpy(), unit="deg"
-            )
-            separation = coord_primary.separation(coord_secondary)
-
-        return self._calculate_resolving_power(primary, secondary, separation)
-
     @abstractmethod
-    def _calculate_resolving_power(
+    def calculate_resolving_power(
         self,
         primary: pd.DataFrame,
         secondary: pd.DataFrame,
@@ -157,4 +124,32 @@ class BaseSelectionFunction(ABC):
         """Query a selection function. Returns a numpy array containing the probability
         of detecting a given star.
         """
+        pass
+
+
+class CustomPhotometricMethodObservation(ABC):
+    """Stub abstract base class defining an observation model that implements its own
+    photometric calculation method. This allows for observations to do more complicated
+    things than simply defining Gaussian uncertainties on fluxes, for instance.
+    """
+
+    @abstractmethod
+    def apply_photometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
+        """Apply photometric errors and save them to the observation."""
+        pass
+
+
+class CustomAstrometricMethodObservation(ABC):
+    """Stub abstract base class defining an observation model that implements its own
+    astrometric calculation method. This allows for observations to do more complicated
+    things than simply defining Gaussian uncertainties on astrometry, for instance.
+    """
+
+    @abstractmethod
+    def apply_astrometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
+        """Apply photometric errors and save them to the observation."""
         pass
