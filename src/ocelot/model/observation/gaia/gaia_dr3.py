@@ -4,11 +4,9 @@ from __future__ import annotations
 from ocelot.model.observation._base import (
     BaseObservation,
     BaseSelectionFunction,
-    CustomPhotometricMethodObservation,
 )
 import ocelot.simulate.cluster
 from scipy.interpolate import interp1d
-from scipy.stats import poisson
 from gaiaunlimited.selectionfunctions import DR3SelectionFunctionTCG
 import numpy as np
 import pandas as pd
@@ -19,19 +17,16 @@ from astropy.units import Quantity
 from astropy import units as u
 
 
-class GaiaDR3ObservationModel(BaseObservation, CustomPhotometricMethodObservation):
+class GaiaDR3ObservationModel(BaseObservation):
     # Zeropoints in the Vegamag system (see documentation table 5.2)
     # These are for Gaia DR3!
     ZEROPOINTS = dict(gaia_dr3_g=25.6874, gaia_dr3_bp=25.3385, gaia_dr3_rp=24.7479)
-
-    # Typical crossing time across a CCD
-    GAIA_TRANSIT_TIME = 4.4
 
     def __init__(
         self,
         representative_stars: pd.DataFrame | None = None,
         subsample_selection_functions: tuple[BaseSelectionFunction] = tuple(),
-        overestimate_bp_rp_fluxes: bool = True
+        overestimate_bp_rp_fluxes: bool = True,
     ):
         """A model for an observation made with Gaia DR3."""
         self.representative_stars = representative_stars
@@ -117,12 +112,9 @@ class GaiaDR3ObservationModel(BaseObservation, CustomPhotometricMethodObservatio
         # For BP and RP, count how many times Gaia would have observed the star, and
         # then reverse-apply the flux calculation mistake in Gaia DR3
         if self.overestimate_bp_rp_fluxes:
-            for band, obs_count_column_name in zip(
-                ["gaia_dr3_bp", "gaia_dr3_rp"],
-                ["phot_bp_n_obs", "phot_rp_n_obs"],
-            ):
+            for band in ["gaia_dr3_bp", "gaia_dr3_rp"]:
                 fluxes = self._apply_incorrect_flux_summing_to_flux(
-                    observation, fluxes, band, obs_count_column_name
+                    observation, fluxes, band
                 )
 
         # Now, finally, we can apply photometric errors from other sources & move on!
@@ -133,54 +125,34 @@ class GaiaDR3ObservationModel(BaseObservation, CustomPhotometricMethodObservatio
             )
             observation[band] = self.flux_to_mag(new_fluxes, band)
 
-    def _apply_incorrect_flux_summing_to_flux(
-        self, observation, fluxes, band, obs_count
-    ):
+    def _apply_incorrect_flux_summing_to_flux(self, observation, fluxes, band):
         """Method incorporates the underestimated BP and RP flux measurement issue in
-        DR3. Follows things discussed in Riello+21, section 8.1.
+        DR3. Follows things discussed in Riello+21, section 8.1, using values in
+        Table 4.
         """
-        faint_stars_with_potential_issue = (observation[band] >= 17.5).to_numpy()
+        faint_stars_with_potential_issue = np.logical_and(
+            observation[band].to_numpy() >= 19, np.isfinite(fluxes[band])
+        )
         if faint_stars_with_potential_issue.sum() == 0:
-            return
-        counts = self.matching_stars.loc[
-            faint_stars_with_potential_issue[self.stars_to_assign], obs_count
-        ]
+            return fluxes
 
-        new_flux = fluxes[band][faint_stars_with_potential_issue]
-        flux_in_transit = new_flux * self.GAIA_TRANSIT_TIME
+        # Riello+21 Table 4
+        # First values are calculated - last values are a guess lol
+        _true_flux = np.asarray([343.08, 139.90, 56.28, 23.34, 10.15, 5.60, 1.0])
+        _wrong_flux = np.asarray([343.08, 140.74, 62.36, 40.02, 34.70, 31.25, 29.5])
 
-        for i, (flux, count) in enumerate(zip(flux_in_transit, counts)):
-            measurements = poisson.rvs(flux, size=count) / self.GAIA_TRANSIT_TIME
-            kept_measurements = measurements >= 1
+        # Update fluxes with interpolated values
+        interpolator = interp1d(
+            _true_flux,
+            _wrong_flux,
+            kind="cubic",
+            bounds_error=False,
+            fill_value=(_wrong_flux[-1], _wrong_flux[0]),
+        )
+        fluxes[band][faint_stars_with_potential_issue] = interpolator(
+            fluxes[band][faint_stars_with_potential_issue]
+        )
 
-            # If there are no good fluxes, then we skip doing anything for this star
-            # and it will get the default -1e10 flux value (i.e. it will have an
-            # unmeasured magnitude in this band once all is said and done)
-            if not np.any(kept_measurements):
-                new_flux[i] = -1e10
-                continue
-
-            # Alternatively, if every measurement is good, then we can skip this star
-            if np.all(kept_measurements):
-                continue
-
-            # OTHERWISE, calculate an updated ratio between the correct flux & the
-            # wrong flux. N.B.: By doing this as a ratio (instead of calculating a
-            # new flux), this means that we aren't accidentally applying photometric
-            # errors twice to faint stars (i.e. once with Poisson sampling, and then
-            # once with the Gaia uncertainty later)
-            new_flux[i] = (
-                new_flux[i]
-                * np.mean(measurements[kept_measurements])
-                / np.mean(measurements)
-            )
-
-        # import matplotlib.pyplot as plt
-        # _, bins, __ = plt.hist(fluxes[band][faint_stars_with_potential_issue], bins=20)
-        # plt.hist(new_flux, bins=bins)
-        # plt.show()
-
-        fluxes[band][faint_stars_with_potential_issue] = new_flux
         return fluxes
 
     def calculate_astrometric_errors(
