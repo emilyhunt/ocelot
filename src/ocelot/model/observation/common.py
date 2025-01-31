@@ -4,7 +4,7 @@ from __future__ import annotations
 import pandas as pd
 from astropy.coordinates import SkyCoord
 from astropy.units import Quantity
-from ocelot.model.observation import BaseObservation
+import ocelot.model.observation
 import ocelot.simulate.cluster
 
 
@@ -63,7 +63,7 @@ def calculate_separation(primary: pd.DataFrame, secondary: pd.DataFrame) -> Quan
 
 def apply_astrometric_errors_simple_gaussian(
     cluster: ocelot.simulate.cluster.SimulatedCluster,
-    model: BaseObservation,
+    model: ocelot.model.observation.BaseObservation,
     columns: None | list[str] | tuple[str] = None,
 ):
     """Calculates astrometry sampled from a Gaussian error distribution and adds it
@@ -97,7 +97,7 @@ def apply_astrometric_errors_simple_gaussian(
 
 def apply_photometric_errors_simple_gaussian(
     cluster: ocelot.simulate.cluster.SimulatedCluster,
-    model: BaseObservation,
+    model: ocelot.model.observation.BaseObservation,
     bands: None | list[str] | tuple[str] = None,
 ):
     """Calculates photometry sampled from a Gaussian error distribution and adds it
