@@ -1,5 +1,9 @@
 from __future__ import annotations  # Necessary to not get circular import on type hints
 import ocelot.simulate.cluster
+from ocelot.model.observation.common import (
+    apply_astrometric_errors_simple_gaussian,
+    apply_photometric_errors_simple_gaussian,
+)
 
 from abc import ABC, abstractmethod
 import numpy as np
@@ -56,6 +60,37 @@ class BaseObservation(ABC):
     ):
         """Calculate astrometric errors and save them to the observation."""
         pass
+
+    def apply_photometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
+        """Apply photometric errors to the cluster and save observed photometry to the
+        cluster. 
+        
+        calculate_photometric_errors should be called before this method.
+        
+        By default, this is just a simple Gaussian; it may be overwritten if desired.
+        """
+        apply_photometric_errors_simple_gaussian(
+            cluster, self, self.photometric_band_names
+        )
+
+    def apply_astrometric_errors(
+        self, cluster: ocelot.simulate.cluster.SimulatedCluster
+    ):
+        """Apply astrometric errors to the cluster and save observed astrometry to the
+        cluster. 
+        
+        calculate_astrometric_errors should be called before this method.
+        
+        By default, this is just a simple UNCORRELATED Gaussian; it may be overwritten 
+        if desired. In addition, this method only works on proper motions and
+        parallaxes; if you're writing an observation class that also needs to simulate
+        positional errors, then you should overwrite this function.
+        """
+        apply_astrometric_errors_simple_gaussian(
+            cluster, self, self.photometric_band_names
+        )
 
     @abstractmethod
     def get_selection_functions(
@@ -124,32 +159,4 @@ class BaseSelectionFunction(ABC):
         """Query a selection function. Returns a numpy array containing the probability
         of detecting a given star.
         """
-        pass
-
-
-class CustomPhotometricMethodObservation(ABC):
-    """Stub abstract base class defining an observation model that implements its own
-    photometric calculation method. This allows for observations to do more complicated
-    things than simply defining Gaussian uncertainties on fluxes, for instance.
-    """
-
-    @abstractmethod
-    def apply_photometric_errors(
-        self, cluster: ocelot.simulate.cluster.SimulatedCluster
-    ):
-        """Apply photometric errors and save them to the observation."""
-        pass
-
-
-class CustomAstrometricMethodObservation(ABC):
-    """Stub abstract base class defining an observation model that implements its own
-    astrometric calculation method. This allows for observations to do more complicated
-    things than simply defining Gaussian uncertainties on astrometry, for instance.
-    """
-
-    @abstractmethod
-    def apply_astrometric_errors(
-        self, cluster: ocelot.simulate.cluster.SimulatedCluster
-    ):
-        """Apply photometric errors and save them to the observation."""
         pass

@@ -1,16 +1,8 @@
 """Helpers for working with observation models and simulating a cluster observation."""
 
 from __future__ import annotations
-from ocelot.model.observation import (
-    BaseObservation,
-    CustomAstrometricMethodObservation,
-    CustomPhotometricMethodObservation,
-)
-from ocelot.model.observation.common import (
-    calculate_separation,
-    apply_astrometric_errors_simple_gaussian,
-    apply_photometric_errors_simple_gaussian,
-)
+from ocelot.model.observation import BaseObservation
+from ocelot.model.observation.common import calculate_separation
 from ocelot.util.magnitudes import add_two_magnitudes
 import ocelot.simulate.cluster
 
@@ -85,11 +77,7 @@ def apply_photometric_errors(
         return
 
     model.calculate_photometric_errors(cluster)
-
-    if isinstance(model, CustomPhotometricMethodObservation):
-        model.apply_photometric_errors(cluster)
-    else:
-        apply_photometric_errors_simple_gaussian(cluster, model)
+    model.apply_photometric_errors(cluster)
 
 
 def apply_astrometric_errors(
@@ -100,13 +88,9 @@ def apply_astrometric_errors(
         return
     if not (model.has_parallaxes or model.has_proper_motions):
         return
-    
-    model.calculate_astrometric_errors(cluster)
 
-    if isinstance(model, CustomAstrometricMethodObservation):
-        model.apply_astrometric_errors(cluster)
-    else:
-        apply_astrometric_errors_simple_gaussian(cluster, model)
+    model.calculate_astrometric_errors(cluster)
+    model.apply_astrometric_errors(cluster)
 
 
 def apply_selection_function(
