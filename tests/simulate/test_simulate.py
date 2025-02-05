@@ -3,6 +3,7 @@ from ocelot.simulate import (
     SimulatedClusterParameters,
 )
 from ocelot.simulate.cluster import SimulatedClusterFeatures
+from ocelot.simulate.errors import NotEnoughStarsError
 from astropy.coordinates import SkyCoord
 from astropy import units as u
 import pandas as pd
@@ -302,5 +303,5 @@ def test_cluster_with_no_stars():
     cluster = SimulatedCluster(parameters=parameters, random_seed=42)
 
     # This should raise a runtime error as we don't have any stars
-    with pytest.raises(RuntimeError, match="Generated cluster contains zero stars"):
+    with pytest.raises(NotEnoughStarsError, match="Generated cluster contains zero stars"):
         cluster.make()
