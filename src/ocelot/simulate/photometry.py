@@ -11,6 +11,7 @@ from scipy.interpolate import interp1d
 import imf
 from ocelot import DATA_PATH
 from astropy.coordinates import SkyCoord
+from .errors import NotEnoughStarsError
 
 
 IMF = imf.Kroupa
@@ -88,7 +89,7 @@ def create_population(
         cluster.parameters.mass, massfunc=selected_imf, silent=True
     )
     if len(masses) == 0:
-        raise RuntimeError(
+        raise NotEnoughStarsError(
             "Generated cluster contains zero stars! Consider increasing the mass of "
             "your cluster."
         )
@@ -136,6 +137,9 @@ def create_population(
         cluster.cluster = cluster.cluster.query(
             cluster.prune_simulated_cluster
         ).reset_index(drop=True)
+        
+        if len(cluster.cluster) == 0:
+            raise NotEnoughStarsError("After pruning, the cluster contains no stars!")
 
 
 def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
