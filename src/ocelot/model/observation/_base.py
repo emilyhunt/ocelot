@@ -89,7 +89,7 @@ class BaseObservation(ABC):
         positional errors, then you should overwrite this function.
         """
         apply_astrometric_errors_simple_gaussian(
-            cluster, self, self.photometric_band_names
+            cluster, self
         )
 
     @abstractmethod
