@@ -1,3 +1,11 @@
+## v0.4.4: Bugfix for cluster simulation when zero stars simulated
+
+Two changes to how simulated clusters handle having zero stars were made.
+
+- When zero stars are simulated, `ocelot.simulate.SimulatedCluster` now raises a `NotEnoughStarsError` (defined in `ocelot.simulate.errors`), making it easier to catch when no stars were simulated.
+- When cluster pre-pruning causes zero stars to be simulated, `ocelot.simulate.SimulatedCluster` now also raises a `NotEnoughStarsError` (previously, this behaviour was undefined.)
+
+
 ## v0.4.3: Improvements to (Gaia) cluster simulation
 
 A couple of improvements were made to cluster simulation:
