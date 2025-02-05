@@ -1,3 +1,10 @@
+## v0.4.5: Bugfix to cluster simulation
+
+Fixes a regression added in a previous release that prevented simulation of clusters observed with Gaia. 
+
+... remember: _always_ run your unit tests! 🥴
+
+
 ## v0.4.4: Bugfix for cluster simulation when zero stars simulated
 
 Two changes to how simulated clusters handle having zero stars were made.
