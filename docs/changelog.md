@@ -1,3 +1,8 @@
+## v0.4.6: Relax version constraints
+
+Bugfix release that relaxes some version constraints, including allowing for support of e.g. astropy 7.0.
+
+
 ## v0.4.5: Bugfix to cluster simulation
 
 Fixes a regression added in a previous release that prevented simulation of clusters observed with Gaia. 
