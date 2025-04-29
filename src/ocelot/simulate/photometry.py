@@ -140,6 +140,10 @@ def create_population(
         
         if len(cluster.cluster) == 0:
             raise NotEnoughStarsError("After pruning, the cluster contains no stars!")
+    
+    # Ensure that we assign the isochrone to the cluster
+    # Todo: this could become a model in the cluster eventually
+    cluster.isochrone = isochrone
 
 
 def apply_extinction(cluster: ocelot.simulate.cluster.SimulatedCluster):
