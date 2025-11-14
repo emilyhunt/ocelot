@@ -1,3 +1,7 @@
+## v0.4.7: Relax numba version constraints
+
+Maintenance release that allows for higher numba versions that previously, thanks to a bugfix now in numba.
+
 ## v0.4.6: Relax version constraints
 
 Bugfix release that relaxes some version constraints, including allowing for support of e.g. astropy 7.0.
