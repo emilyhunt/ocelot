@@ -1,3 +1,7 @@
+## v0.4.8: Remove Python version upper bound
+
+Removes an erroneous upper bound limit on Python version (was previously <3.13, which is super restrictive.)
+
 ## v0.4.7: Relax numba version constraints
 
 Maintenance release that allows for higher numba versions that previously, thanks to a bugfix now in numba.
