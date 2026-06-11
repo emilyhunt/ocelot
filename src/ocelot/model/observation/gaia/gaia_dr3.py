@@ -7,7 +7,6 @@ from ocelot.model.observation._base import (
 )
 import ocelot.simulate.cluster
 from scipy.interpolate import interp1d
-from gaiaunlimited.selectionfunctions import DR3SelectionFunctionTCG
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
@@ -295,6 +294,10 @@ class GaiaDR3SelectionFunction(BaseSelectionFunction):
         g_range : tuple or list, optional
             Range of values in G magnitude to sample, from min to max. Default: (2, 22).
         """
+        # This import lives here, as it can take a LONG time due to astroquery.
+        from gaiaunlimited.selectionfunctions import DR3SelectionFunctionTCG
+
+
         self._selection_function = DR3SelectionFunctionTCG()
         self._coodinate = coordinate
         if coordinate.size > 1:
