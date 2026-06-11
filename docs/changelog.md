@@ -1,3 +1,13 @@
+## v0.4.10: Drop numpy < 2.0 support
+Minor maintenance release, including:
+
+* Drop support for numpy versions below 2.0
+* Improve import time of ocelot.model.observation.gaia.gaia_dr3, which was slow due to astroquery. Simulating clusters observed by Gaia may still be slow due to astroquery.
+
+## v0.4.9: Relax Python constrains
+
+Maintenance release that should make ocelot easier to install alongside other packages.
+
 ## v0.4.8: Remove Python version upper bound
 
 Removes an erroneous upper bound limit on Python version (was previously <3.13, which is super restrictive.)
