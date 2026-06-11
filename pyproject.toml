@@ -23,7 +23,7 @@ classifiers = [ # Optional
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-  "numpy>=1.21.0",
+  "numpy>=2.0.0",
   "numba>=0.50",
   "matplotlib>=3.4.0",
   "scikit-learn>=1.0",

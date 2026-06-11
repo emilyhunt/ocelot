@@ -201,10 +201,10 @@ def _summed_kth_nn_distribution_one_cluster(
 
     # Calculate cumulatively summed (and normalised) distributions for both the field and the cluster
     y_field = np.cumsum(kth_nn_distribution(r_range, parameters[0], parameters[1], k))
-    normalisation_field = np.trapz(y_field, x=r_range) / (1 - parameters[4])
+    normalisation_field = np.trapezoid(y_field, x=r_range) / (1 - parameters[4])
 
     y_cluster = np.cumsum(kth_nn_distribution(r_range, parameters[2], parameters[3], k))
-    normalisation_cluster = np.trapz(y_cluster, x=r_range) / parameters[4]
+    normalisation_cluster = np.trapezoid(y_cluster, x=r_range) / parameters[4]
 
     y_field /= normalisation_field
     y_cluster /= normalisation_cluster
@@ -278,12 +278,12 @@ class _SummedKNNOneClusterCurveFit:
         y_field = np.cumsum(
             kth_nn_distribution(r_range, a_field, parameters[0], self.k)
         )
-        normalisation_field = np.trapz(y_field, x=r_range) / (1 - parameters[3])
+        normalisation_field = np.trapezoid(y_field, x=r_range) / (1 - parameters[3])
 
         y_cluster = np.cumsum(
             kth_nn_distribution(r_range, a_cluster, parameters[2], self.k)
         )
-        normalisation_cluster = np.trapz(y_cluster, x=r_range) / parameters[3]
+        normalisation_cluster = np.trapezoid(y_cluster, x=r_range) / parameters[3]
 
         y_field /= normalisation_field
         y_cluster /= normalisation_cluster
@@ -486,7 +486,7 @@ def _find_sign_change_epsilons(
         id_0 = sign_change_ids[i]
         id_1 = sign_change_ids[i + 1]
 
-        area = np.trapz(clipped_d2_y_range[id_0 : id_1 + 1], x=x_range[id_0 : id_1 + 1])
+        area = np.trapezoid(clipped_d2_y_range[id_0 : id_1 + 1], x=x_range[id_0 : id_1 + 1])
 
         # Save this pair if it's the best
         if area > max_area:
@@ -596,7 +596,7 @@ def field_model(
 
     # Create a normalised log number of points array
     points = np.arange(1, distances.shape[0] + 1)
-    points = points / np.trapz(points, x=distances)
+    points = points / np.trapezoid(points, x=distances)
     points = np.log10(points)
 
     # Interpolate it to ensure the points are linearly sampled and reduce noise

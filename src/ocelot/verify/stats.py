@@ -34,7 +34,7 @@ class KthNNDistributionPDF:
         y_range = kth_nn_distribution(x_range, a, d, k)
 
         # Normalise these values so that the max val is just 1!
-        y_range /= np.trapz(y_range, x=x_range)
+        y_range /= np.trapezoid(y_range, x=x_range)
 
         # Interpolate this and set it to __call__!
         self.pdf_function = interp1d(x_range, y_range, kind="linear", fill_value=(0., 0.), bounds_error=False)
@@ -59,7 +59,7 @@ class _CurveToFit:
 
         """
         y_func = np.cumsum(kth_nn_distribution(x_range, params[0], params[1], self.k))
-        y_func /= np.trapz(y_func, x=x_range)
+        y_func /= np.trapezoid(y_func, x=x_range)
 
         return y_func
 
@@ -84,7 +84,7 @@ def _fit_kth_nn_distribution(nn_distances: dict, min_samples: int, resolution: i
         y_range = y_interpolator(x_range)
 
         # Normalise
-        y_range /= np.trapz(y_range, x=x_range)
+        y_range /= np.trapezoid(y_range, x=x_range)
 
         # Fit a function!
         # Get starting guesses

@@ -206,7 +206,7 @@ def _get_period_pdf(
     values = _period_interpolator(points).reshape(n_masses, n_periods)
 
     # Normalize to unit area
-    values = values / np.trapz(values, np.tile(periods, (n_masses, 1)), axis=1).reshape(
+    values = values / np.trapezoid(values, np.tile(periods, (n_masses, 1)), axis=1).reshape(
         n_masses, 1
     )
 

@@ -70,7 +70,7 @@ def calculate_alpha(fig, ax, n_points: int, marker_size: float, desired_max_dens
 
 
 def normalise_a_curve(x_values: np.ndarray, y_values: np.ndarray, normalisation_constant: Union[int, float]):
-    """Wrapper for np.trapz intended for use with ocelot.plot.axis.nn_statistics.point_number_vs_nn_distance.
+    """Wrapper for np.trapezoid intended for use with ocelot.plot.axis.nn_statistics.point_number_vs_nn_distance.
 
     Args:
         x_values (np.ndarray): x values of the curve.
@@ -84,7 +84,7 @@ def normalise_a_curve(x_values: np.ndarray, y_values: np.ndarray, normalisation_
     if normalisation_constant == 0:
         return y_values
     else:
-        return y_values * normalisation_constant / np.trapz(y_values, x=x_values)
+        return y_values * normalisation_constant / np.trapezoid(y_values, x=x_values)
 
 
 def _good_points_plot_limits(target_points: np.ndarray, constraint_points: np.ndarray, constraint_limits: np.ndarray):

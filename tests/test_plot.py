@@ -27,11 +27,11 @@ def test_curve_normalisation():
     y_range = np.sin(x_range)
 
     # Calculate some areas
-    true_area = np.trapz(y_range, x=x_range)
-    normalised_area = np.trapz(
+    true_area = np.trapezoid(y_range, x=x_range)
+    normalised_area = np.trapezoid(
         plot.utilities.normalise_a_curve(x_range, y_range, 2.5), x=x_range
     )
-    unnormalised_area = np.trapz(
+    unnormalised_area = np.trapezoid(
         plot.utilities.normalise_a_curve(x_range, y_range, 0.0), x=x_range
     )
 

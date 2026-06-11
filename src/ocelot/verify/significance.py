@@ -76,13 +76,13 @@ def _plot_cluster_probability_distributions(ax, nn_distances, fit_params, cluste
     # For the cluster...
     if fit_params[0] is not None:
         y_cluster = kth_nn_distribution(x_range, *fit_params[0][cluster_number])
-        y_cluster /= np.trapz(y_cluster, x=x_range)
+        y_cluster /= np.trapezoid(y_cluster, x=x_range)
         ax.plot(x_range, y_cluster, "r:", lw=2, label="cluster fit")
 
     # ... and the field!
     if fit_params[1] is not None:
         y_field = kth_nn_distribution(x_range, *fit_params[1][cluster_number])
-        y_field /= np.trapz(y_field, x=x_range)
+        y_field /= np.trapezoid(y_field, x=x_range)
         ax.plot(x_range, y_field, "b:", lw=2, label="l. field fit")
 
     # Beautify and return
