@@ -69,7 +69,7 @@ def test_simulation_no_features():
             "radial_velocity_true",
             "extinction",
         ],
-        dtype="object",
+        dtype="str",
     )
 
     # Check that we aren't missing any expected columns
@@ -188,6 +188,15 @@ def test_simulation_with_binaries():
             "period",
             "eccentricity",
             "simulated_id_primary",
+            "semimajor_axis",
+            "semimajor_axis_primary",
+            "semimajor_axis_secondary",
+            "orbit_radius_primary",
+            "orbit_radius_secondary",
+            "orbit_mean_anomaly",
+            "orbit_eccentric_anomaly",
+            "orbit_true_anomaly",
+            "orbit_time_periapsis",
             "ra",
             "dec",
             "l",
@@ -201,7 +210,7 @@ def test_simulation_with_binaries():
             "radial_velocity_true",
             "extinction",
         ],
-        dtype="object",
+        dtype="str",
     )
 
     # Check that we aren't missing any expected columns
@@ -303,5 +312,7 @@ def test_cluster_with_no_stars():
     cluster = SimulatedCluster(parameters=parameters, random_seed=42)
 
     # This should raise a runtime error as we don't have any stars
-    with pytest.raises(NotEnoughStarsError, match="Generated cluster contains zero stars"):
+    with pytest.raises(
+        NotEnoughStarsError, match="Generated cluster contains zero stars"
+    ):
         cluster.make()

@@ -51,7 +51,7 @@ def test_compute_semimajor_axes():
     """
     mass_ratio = charon_mass / pluto_mass
 
-    primary, secondary = astrometry._compute_semimajor_axes(
+    primary, secondary, _ = astrometry._compute_semimajor_axes(
         charon_mass, mass_ratio, charon_period
     )
     np.testing.assert_allclose(
@@ -77,7 +77,8 @@ def test_compute_separation():
         pluto_orbital_period,
         pluto_orbital_eccentricity,
         rng,
-    )
+    )[:2]
+    samples = np.sum(samples, axis=0)
     assert isinstance(samples, np.ndarray)
     assert samples.shape == (n_samples,)
     np.testing.assert_allclose(

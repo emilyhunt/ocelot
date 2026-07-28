@@ -19,9 +19,9 @@ def generate_star_positions(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """
     # Also handle binary star positions
     if cluster.features.binary_stars:
-        return CartesianRepresentation(
-            *generate_star_positions_with_binaries(cluster), unit=u.pc
-        )
+        x, y, z = generate_star_positions_with_binaries(cluster)
+        return CartesianRepresentation(x, y, z, unit=u.pc)
+
     return CartesianRepresentation(
         *cluster.models.distribution.rvs(
             len(cluster.cluster), seed=cluster.random_generator
@@ -36,6 +36,7 @@ def generate_star_positions_with_binaries(
 
     Uses some help from https://space.stackexchange.com/questions/8911/determining-orbital-position-at-a-future-point-in-time
     As well as diagram from https://physics.stackexchange.com/questions/61116/semi-major-axis-and-ellipticity-of-a-binary-system
+    And coordinate transforms from https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
     """
     # Firstly, let's make a temporary dataframe to store parameters in. This is easier
     # as we need to do a LOT of indexing.
@@ -81,17 +82,9 @@ def generate_star_positions_with_binaries(
     ) = _compute_separation(
         secondary_mass, mass_ratio, period, eccentricity, cluster.random_generator
     )
-    total_separation = primary_radius + secondary_radius
 
     # Secondly - while we're here - we can also grab current orbital speeds at these
     # positions, which may be used later to calculate other things
-    total_mass = secondary_mass / mass_ratio + secondary_mass
-    primary_speed = _current_orbital_velocity(
-        total_mass, primary_semimajor_axis, primary_radius
-    )
-    secondary_speed = _current_orbital_velocity(
-        total_mass, secondary_semimajor_axis, secondary_radius
-    )
 
     # Project the separation into a random direction
     rotation_matrices = rotation_matrix(n_secondaries, seed=cluster.random_generator)
@@ -100,13 +93,18 @@ def generate_star_positions_with_binaries(
     barycenter_location = np.asarray([host_x, host_y, host_z]).T
     z = np.zeros_like(cos_true_anomaly)
     primary_2d = (
-        primary_radius * np.asarray([-cos_true_anomaly, -sin_true_anomaly, z]).T
+        -1
+        * primary_radius.reshape(-1, 1)
+        * np.asarray([cos_true_anomaly, sin_true_anomaly, z]).T
     )
     secondary_2d = (
-        secondary_radius * np.asarray([cos_true_anomaly, sin_true_anomaly, z]).T
+        secondary_radius.reshape(-1, 1)
+        * np.asarray([cos_true_anomaly, sin_true_anomaly, z]).T
     )
-    primary_location = rotation_matrices @ primary_2d
-    secondary_location = rotation_matrices @ secondary_2d + barycenter_location
+    primary_location = (rotation_matrices @ primary_2d.reshape(-1, 3, 1)).reshape(-1, 3)
+    secondary_location = (rotation_matrices @ secondary_2d.reshape(-1, 3, 1)).reshape(
+        -1, 3
+    ) + barycenter_location.reshape(-1, 3)
 
     cluster.cluster.loc[secondary, "x"] = secondary_location[:, 0]
     cluster.cluster.loc[secondary, "y"] = secondary_location[:, 1]
@@ -137,12 +135,6 @@ def generate_star_positions_with_binaries(
         cluster.parameters.epoch
         + mean_anomaly / 2 * np.pi * (period * u.day).to(u.yr).value
     )
-    cluster.cluster.loc[secondary, "orbit_unit_vec_x"] = x_unit_vector
-    cluster.cluster.loc[secondary, "orbit_unit_vec_y"] = y_unit_vector
-    cluster.cluster.loc[secondary, "orbit_unit_vec_z"] = z_unit_vector
-
-    cluster.cluster.loc[secondary, "orbit_speed_primary"] = primary_speed
-    cluster.cluster.loc[secondary, "orbit_speed_secondary"] = secondary_speed
     # cluster.cluster.loc[secondary, 'orbit_separation'] = separation
 
     # Remove x/y/z columns else they'll just be confusing later! We hijacked the df!!!
@@ -162,8 +154,8 @@ def _compute_separation(secondary_mass, mass_ratio, period, eccentricity, rng):
     )
 
     # Sample a mean anomaly & compute true anomaly
-    eccentric_anomaly, cosine_of_true_anomaly, mean_anomaly = _sample_true_anomaly(
-        secondary_mass, eccentricity, rng
+    eccentric_anomaly, cosine_of_true_anomaly, sine_of_true_anomaly, mean_anomaly = (
+        _sample_true_anomaly(secondary_mass, eccentricity, rng)
     )
 
     # Calculate current positions of stars
@@ -253,19 +245,35 @@ def _current_orbital_velocity(
         * total_mass
         * u.Msun
         * (2 / (current_radius * u.pc) - 1 / (semimajor_axis * u.pc))
-    )
+    ).to(u.m / u.s)
 
 
-def generate_star_velocities(cluster: ocelot.simulate.cluster.SimulatedCluster):
-    """Generates the velocities of stars in a cluster."""
+def generate_star_velocities(
+    cluster: ocelot.simulate.cluster.SimulatedCluster
+):
+    """Generates the velocities of stars in a cluster.
+
+    Uses coordinate transforms from https://downloads.rene-schwarz.com/download/M001-Keplerian_Orbit_Elements_to_Cartesian_State_Vectors.pdf
+    """
+    if cluster.features.binary_stars:
+        single_or_primary = (cluster.cluster["index_primary"] == -1).to_numpy()
+    else:
+        single_or_primary = np.ones(len(cluster.cluster), dtype=bool)
+
+    n_stars = len(cluster.cluster)
+    n_primaries = single_or_primary.sum()
+    n_secondaries = n_stars - n_primaries
+
     # Todo should get velocities from the distribution object eventually
     distribution = multivariate_normal(
         mean=np.zeros(3),
         cov=cluster.parameters.velocity_dispersion_1d**2,
         seed=cluster.random_generator,
     )
-    v_x, v_y, v_z = distribution.rvs(len(cluster.cluster)).T.reshape(
-        3, -1
+
+    v_x, v_y, v_z = np.zeros(n_stars), np.zeros(n_stars), np.zeros(n_stars)
+    v_x[single_or_primary], v_y[single_or_primary], v_z[single_or_primary] = (
+        distribution.rvs(n_primaries).T.reshape(3, -1)
     )  # We also reshape to make sure a size-1 cluster is handled correctly
 
     # Leave early if we don't have binaries
@@ -273,8 +281,58 @@ def generate_star_velocities(cluster: ocelot.simulate.cluster.SimulatedCluster):
         return CartesianDifferential(d_x=v_x, d_y=v_y, d_z=v_z, unit=u.m / u.s)
 
     # Otherwise, get to work making velocities that are offset
-    secondary = (cluster.cluster["index_primary"] != -1).to_numpy()
+    secondary = np.invert(single_or_primary)
     index_primaries = cluster.cluster.loc[secondary, "index_primary"].to_numpy()
+    v_x[secondary], v_y[secondary], v_z[secondary] = (
+        v_x[index_primaries],
+        v_y[index_primaries],
+        v_z[index_primaries],
+    )
+
+    # eccentricity = cluster.cluster.loc[secondary, "eccentricity"].to_numpy()
+    # eccentric_anomaly = cluster.cluster.loc[
+    #     secondary, "orbit_eccentric_anomaly"
+    # ].to_numpy()
+    # primary_speed = cluster.cluster.loc[secondary, "orbit_speed_primary"].to_numpy()
+    # secondary_speed = cluster.cluster.loc[secondary, "orbit_speed_secondary"].to_numpy()
+
+    # # Then, use the coordinate relations to calculate new velocity values
+    # sin_e = np.sin(eccentric_anomaly)
+    # cos_e = np.cos(eccentric_anomaly)
+    # e_term = np.sqrt(1 - eccentricity**2)
+
+    # non_binary_motion = np.asarray(
+    #     [v_x[index_primaries], v_y[index_primaries], v_z[index_primaries]]
+    # ).T
+    # velocity_primary_2d = (
+    #     -1
+    #     * primary_speed.reshape(-1, 1)
+    #     * np.asarray([-sin_e, e_term * cos_e, np.zeros(n_secondaries)]).T
+    # )
+    # velocity_secondary_2d = (
+    #     secondary_speed.reshape(-1, 1)
+    #     * np.asarray([-sin_e, e_term * cos_e, np.zeros(n_secondaries)]).T
+    # )
+    # velocity_primary = (
+    #     rotation_matrices @ velocity_primary_2d.reshape(-1, 3, 1)
+    # ).reshape(-1, 3) + non_binary_motion
+    # velocity_secondary = (
+    #     rotation_matrices @ velocity_secondary_2d.reshape(-1, 3, 1)
+    # ).reshape(-1, 3) + non_binary_motion
+
+    # v_x[index_primaries], v_y[index_primaries], v_z[index_primaries] = velocity_primary.T
+    # v_x[secondary], v_y[secondary], v_z[secondary] = velocity_secondary.T
+
+    if (
+        not np.all(np.isfinite(v_x))
+        and not np.all(np.isfinite(v_y))
+        and not np.all(np.isfinite(v_z))
+    ):
+        raise RuntimeError(
+            "Something went wrong! At least one star has a non-finite velocity."
+        )
+
+    return CartesianDifferential(d_x=v_x, d_y=v_y, d_z=v_z, unit=u.m / u.s)
 
 
 def generate_true_star_astrometry(cluster: ocelot.simulate.cluster.SimulatedCluster):
