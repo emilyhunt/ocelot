@@ -59,6 +59,42 @@ def unit_vectors(size: int, seed=None):
     return np.vstack((x, y, z)).T
 
 
+def rotation_matrix(number: int, seed=None):
+    """Creates random 3D rotation matrices. This is actually quite hard in practice,
+    but is solved here with a QR decomposition of matrices of normal vectors.
+
+    Parameters
+    ----------
+    size : int
+            Number of rotation matrices to return.
+    seed : _type_, optional
+        Seed for the numpy random generator. Default: None
+
+    Returns
+    -------
+        An array of shape (size, 3, 3) of rotation matrices.
+
+    Notes
+    -----
+    Taken from the following: https://math.stackexchange.com/a/4832876
+
+    See also:
+    https://math.stackexchange.com/questions/442418/random-generation-of-rotation-matrices/1602779#1602779
+    http://home.lu.lv/~sd20008/papers/essays/Random%20unitary%20[paper].pdf
+    https://github.com/alecjacobson/gptoolbox/blob/master/matrix/rand_rotation.m
+    """
+    # TODO requires unit test
+    rng = np.random.default_rng(seed=seed)
+
+    z = rng.normal(size=(number, 3, 3))
+    q, r = np.linalg.qr(z)
+    sign = 2 * (np.diagonal(r, axis1=-2, axis2=-1) >= 0) - 1
+    rot = q
+    rot *= sign[..., None, :]
+    rot[:, 0, :] *= np.linalg.det(rot)[..., None]
+    return rot
+
+
 def fractal_noise_2d(resolution: int, seed: None):
     """Creates 2d fractal (pink) noise.
 

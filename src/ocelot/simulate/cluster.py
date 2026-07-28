@@ -94,6 +94,7 @@ class SimulatedClusterParameters:
     virial_ratio: float = 0.5
     eta_virial_ratio: float = 10.0
     id: int = 0
+    epoch: int = 2016  # Current epoch of simulated stars. Important for repeatability of instantaneous binary star orbits.
 
     # The following fields are calculated in __post_init__, as they depend on initial
     # values:
@@ -285,7 +286,7 @@ class SimulatedClusterFeatures:
 class SimulatedCluster:
     """A class for simulating and keeping track of a simulated cluster - including its
     original membership list and any observations simulated from it.
-    
+
     This class is the main entry point in ocelot for simulating star clusters.
 
     Parameters
@@ -402,7 +403,7 @@ class SimulatedCluster:
         """Makes entire cluster according to specification set at initialization.
 
         This is the main function that should be used to simulate a cluster.
-        
+
         Returns
         -------
         SimulatedCluster
@@ -416,7 +417,7 @@ class SimulatedCluster:
         """Creates the true stars and positions in a cluster.
 
         In general, just calling .make() is the recommended method for most users.
-        
+
         Returns
         -------
         SimulatedCluster
@@ -463,11 +464,11 @@ class SimulatedCluster:
             by all cluster observation models. Default: None, meaning that the current
             cluster random number generator generated from the seed specified during
             class initialization is used.
-        
+
         Returns
         -------
         pd.DataFrame
-            The simulated cluster observation made by this method. 
+            The simulated cluster observation made by this method.
         """
         if not self._true_cluster_generated:
             raise RuntimeError(

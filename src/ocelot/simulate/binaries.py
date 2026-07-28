@@ -1,13 +1,15 @@
 """Methods to pair stars randomly picked from the IMF into binaries."""
 
 from __future__ import annotations
+
 import numpy as np
-from ocelot.model.binaries import (
-    BaseBinaryStarModelWithPeriods,
-    BaseBinaryStarModelWithEccentricities,
-)
-import ocelot.simulate.cluster
 from numba import jit
+
+import ocelot.simulate.cluster
+from ocelot.model.binaries import (
+    BaseBinaryStarModelWithEccentricities,
+    BaseBinaryStarModelWithPeriods,
+)
 
 
 def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
@@ -23,10 +25,10 @@ def make_binaries(cluster: ocelot.simulate.cluster.SimulatedCluster):
 
 def _assign_number_of_companions(cluster: ocelot.simulate.cluster.SimulatedCluster):
     """Assigns a number of companions to each star probabilistically."""
-    expected_companions = cluster.models.binaries.companion_star_frequency(
+    expected_companions = cluster.models.binaries.companion_star_frequency(  # ty: ignore[unresolved-attribute]
         cluster.cluster["mass"]
     )
-    expected_multiplicity = cluster.models.binaries.multiplicity_fraction(
+    expected_multiplicity = cluster.models.binaries.multiplicity_fraction(    # ty: ignore[unresolved-attribute]
         cluster.cluster["mass"]
     )
     n_stars = len(cluster.cluster)
@@ -146,7 +148,7 @@ def _get_binary_parameters(
         return mass_ratios, periods, eccentricities
 
     periods = np.zeros_like(masses)
-    mass_ratios = cluster.models.binaries.random_mass_ratio(
+    mass_ratios = cluster.models.binaries.random_mass_ratio(  # ty: ignore[unresolved-attribute]
         masses, seed=cluster.random_seed
     )
     return mass_ratios, periods, eccentricities
