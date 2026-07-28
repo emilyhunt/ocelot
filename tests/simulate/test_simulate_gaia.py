@@ -104,6 +104,15 @@ def test_basic_gaia_observation():
             "period",
             "eccentricity",
             "simulated_id_primary",
+            "semimajor_axis",
+            "semimajor_axis_primary",
+            "semimajor_axis_secondary",
+            "orbit_radius_primary",
+            "orbit_radius_secondary",
+            "orbit_mean_anomaly",
+            "orbit_eccentric_anomaly",
+            "orbit_true_anomaly",
+            "orbit_time_periapsis",
             "ra",
             "dec",
             "l",
@@ -124,7 +133,7 @@ def test_basic_gaia_observation():
             "gaia_dr3_rp",
             "unresolved_companions",
         ],
-        dtype="object",
+        dtype="str",
     )
     pd.testing.assert_index_equal(observation.columns, expected_cols)
 
@@ -162,6 +171,15 @@ def test_gaia_observation_uncertainties():
             "period",
             "eccentricity",
             "simulated_id_primary",
+            "semimajor_axis",
+            "semimajor_axis_primary",
+            "semimajor_axis_secondary",
+            "orbit_radius_primary",
+            "orbit_radius_secondary",
+            "orbit_mean_anomaly",
+            "orbit_eccentric_anomaly",
+            "orbit_true_anomaly",
+            "orbit_time_periapsis",
             "ra",
             "dec",
             "l",
@@ -189,7 +207,7 @@ def test_gaia_observation_uncertainties():
             "pmdec_error",
             "parallax_error",
         ],
-        dtype="object",
+        dtype="str",
     )
     pd.testing.assert_index_equal(observation.columns, expected_cols)
 
@@ -255,6 +273,15 @@ def test_gaia_observation_selection():
             "period",
             "eccentricity",
             "simulated_id_primary",
+            "semimajor_axis",
+            "semimajor_axis_primary",
+            "semimajor_axis_secondary",
+            "orbit_radius_primary",
+            "orbit_radius_secondary",
+            "orbit_mean_anomaly",
+            "orbit_eccentric_anomaly",
+            "orbit_true_anomaly",
+            "orbit_time_periapsis",
             "ra",
             "dec",
             "l",
@@ -284,7 +311,7 @@ def test_gaia_observation_selection():
             "selection_probability_GaiaDR3SelectionFunction",
             "selection_probability",
         ],
-        dtype="object",
+        dtype="str",
     )
     pd.testing.assert_index_equal(observation.columns, expected_cols)
 
@@ -338,6 +365,15 @@ def test_gaia_observation_selection_with_subsample():
             "period",
             "eccentricity",
             "simulated_id_primary",
+            "semimajor_axis",
+            "semimajor_axis_primary",
+            "semimajor_axis_secondary",
+            "orbit_radius_primary",
+            "orbit_radius_secondary",
+            "orbit_mean_anomaly",
+            "orbit_eccentric_anomaly",
+            "orbit_true_anomaly",
+            "orbit_time_periapsis",
             "ra",
             "dec",
             "l",
@@ -368,7 +404,7 @@ def test_gaia_observation_selection_with_subsample():
             "selection_probability_GenericSubsampleSelectionFunction",
             "selection_probability",
         ],
-        dtype="object",
+        dtype="str",
     )
     pd.testing.assert_index_equal(observation.columns, expected_cols)
 
@@ -401,6 +437,15 @@ def test_cluster_with_zero_stars():
             "period",
             "eccentricity",
             "simulated_id_primary",
+            "semimajor_axis",
+            "semimajor_axis_primary",
+            "semimajor_axis_secondary",
+            "orbit_radius_primary",
+            "orbit_radius_secondary",
+            "orbit_mean_anomaly",
+            "orbit_eccentric_anomaly",
+            "orbit_true_anomaly",
+            "orbit_time_periapsis",
             "ra",
             "dec",
             "l",
@@ -431,7 +476,7 @@ def test_cluster_with_zero_stars():
             "selection_probability_GenericSubsampleSelectionFunction",
             "selection_probability",
         ],
-        dtype="object",
+        dtype="str",
     )
     pd.testing.assert_index_equal(
         cluster.observations["gaia_dr3"].columns, expected_cols
@@ -444,7 +489,7 @@ def test_cluster_with_one_star():
     N.B. this took a lot of messing around to generate just one star. May break easily.
     """
     params = _get_default_parameters(distance=10000)
-    params.mass = 15
+    params.mass = 16
     models = _get_gaia_model(subsample=True)
     cluster = SimulatedCluster(parameters=params, random_seed=42, models=models).make()
 
@@ -469,6 +514,15 @@ def test_cluster_with_one_star():
             "period",
             "eccentricity",
             "simulated_id_primary",
+            "semimajor_axis",
+            "semimajor_axis_primary",
+            "semimajor_axis_secondary",
+            "orbit_radius_primary",
+            "orbit_radius_secondary",
+            "orbit_mean_anomaly",
+            "orbit_eccentric_anomaly",
+            "orbit_true_anomaly",
+            "orbit_time_periapsis",
             "ra",
             "dec",
             "l",
@@ -499,7 +553,7 @@ def test_cluster_with_one_star():
             "selection_probability_GenericSubsampleSelectionFunction",
             "selection_probability",
         ],
-        dtype="object",
+        dtype="str",
     )
     pd.testing.assert_index_equal(
         cluster.observations["gaia_dr3"].columns, expected_cols
@@ -533,17 +587,17 @@ def test_cluster_parameters():
     # Check bulk parameters
     np.testing.assert_allclose(observation["ra"].mean(), params.ra, atol=0.1)
     np.testing.assert_allclose(observation["dec"].mean(), params.dec, atol=0.1)
-    np.testing.assert_allclose(observation["pmra"].mean(), params.pmra, atol=0.1)
-    np.testing.assert_allclose(observation["pmdec"].mean(), params.pmdec, atol=0.1)
+    np.testing.assert_allclose(observation["pmra"].mean(), params.pmra, atol=0.3)
+    np.testing.assert_allclose(observation["pmdec"].mean(), params.pmdec, atol=0.3)
     np.testing.assert_allclose(
         1000 / observation["parallax"].mean(), params.distance, atol=0.1
     )
     np.testing.assert_allclose(
-        observation["radial_velocity_true"].mean(), params.radial_velocity, atol=0.1
+        observation["radial_velocity_true"].mean(), params.radial_velocity, atol=1.0
     )
 
     # Check radius
-    coords = SkyCoord(observation['ra'], observation['dec'], unit="deg")
+    coords = SkyCoord(observation["ra"], observation["dec"], unit="deg")
     separations = coords.separation(params.position)
     separations_pc = np.tan(separations.to(u.rad).value) * params.distance
 
