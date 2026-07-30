@@ -8,22 +8,34 @@ from ocelot.util.coordinates import spherical_to_cartesian
 def points_on_sphere(
     shape: int, radians: bool = True, phi_symmetric=True, seed=None
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """To draw random points on a sphere, one cannot simply use uniform deviates based on theta and phi! For a good
-    explanation, see: http://mathworld.wolfram.com/SpherePointPicking.html
+    """Draws random points on the surface of a unit sphere.
 
-    Args:
-        shape (int): required number of deviates. Should be acceptable by np.random.rand().
-        radians (bool): whether or not to return in radians.
-            Default: True
-        phi_symmetric (bool): whether or not to return a distribution for phi symmetric about zero (so,
-            phi ~ [-pi/2, pi/2]) or whether to return one defined in the mathsy (but less useful for astronomy) way
-            phi ~ [0, pi].
-            Default: True, i.e. phi is immediately usable as galactic latitude b or declination.
+    Parameters
+    ----------
+    shape : int
+        required number of deviates. Should be acceptable by np.random.rand().
+    radians : bool, optional
+        whether or not to return in radians. Default: True
+    phi_symmetric : bool, optional
+         whether or not to return a distribution for phi symmetric about zero (so,
+            phi ~ [-pi/2, pi/2]) or whether to return one defined in the mathsy (but 
+            less useful for astronomy) way phi ~ [0, pi]. Default: True, i.e. phi is 
+            immediately usable as galactic latitude b or declination.
+    seed : optional
+        Seed for the numpy random generator. Default: None
 
-    Returns:
-        two np.ndarray of random spherical deviates, for theta ~ [0, 2pi) and phi ~ [-pi/2, pi/2] (or in degrees if
-            radians=False)
+    Returns
+    -------
+    np.ndarray
+        theta values.
+    np.ndarray
+        phi values.
 
+    Notes
+    -----
+    To draw random points on a sphere, you cannot simply use uniform deviates based on 
+    theta and phi! For a good explanation, see: 
+    http://mathworld.wolfram.com/SpherePointPicking.html
     """
     rng = np.random.default_rng(seed=seed)
     theta = 2 * np.pi * rng.uniform(size=shape)
@@ -45,12 +57,19 @@ def unit_vectors(size: int, seed=None):
     ----------
     size : int
         Number of unit vectors to return.
-    seed : _type_, optional
+    seed : optional
         Seed for the numpy random generator. Default: None
 
     Returns
     -------
-    An array of shape (size, 3) of unit vectors.
+    np.ndarray
+        An array of shape (size, 3) of unit vectors.
+
+    Notes
+    -----
+    To draw random points on a sphere, you cannot simply use uniform deviates based on 
+    theta and phi! For a good explanation, see: 
+    http://mathworld.wolfram.com/SpherePointPicking.html
     """
     theta, phi = points_on_sphere(size, phi_symmetric=False, seed=seed)
     x, y, z = spherical_to_cartesian(
@@ -59,13 +78,25 @@ def unit_vectors(size: int, seed=None):
     return np.vstack((x, y, z)).T
 
 
-def fractal_noise_2d(resolution: int, seed: None):
+def fractal_noise_2d(resolution: int, seed=None):
     """Creates 2d fractal (pink) noise.
 
     Implemented for use in making synthetic (correlated) differential reddening.
 
     This function is completely beyond me. Thanks, StackOverflow!
     https://stackoverflow.com/a/76605642
+
+    Parameters
+    ----------
+    resolution : int
+        Resolution of the noise.
+    seed : optional
+        Seed for the numpy random generator. Default: None
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (resolution, resolution) containing fractal noise.
     """
     rng = np.random.default_rng(seed)
 

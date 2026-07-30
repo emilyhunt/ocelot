@@ -137,7 +137,7 @@ def resample_gaia_astrometry(
 
     # Generate the numpy vectorized instance (only a small speed increase but every little helps, also WHY THE FUCK IS
     # MULTIVARIATE NORMAL NOT ALREADY VECTORISABLE)
-    # Todo: I think I know how to improve this to be vectorizable
+    # 30.06.26 - replaced with new version!
     vectorized_multivariate_normal = np.vectorize(
         _generator.multivariate_normal,
         excluded={"size", "check_valid", "method"},
@@ -177,15 +177,15 @@ def resample_gaia_astrometry(
 
     # Reshape the resampled astrometry into a dict, getting ready to turn it into a dataframe
     if suffixes is None:
-        suffixes = [f"{x}" for x in range(n_resamples)]
+        suffixes = [f"_{x}" for x in range(n_resamples)]
 
     resampled_astrometry_dict = {}
     for i in range(n_resamples):
-        resampled_astrometry_dict[f"pmra_{suffixes[i]}"] = resampled_astrometry[:, i, 0]
-        resampled_astrometry_dict[f"pmdec_{suffixes[i]}"] = resampled_astrometry[
+        resampled_astrometry_dict[f"pmra{suffixes[i]}"] = resampled_astrometry[:, i, 0]
+        resampled_astrometry_dict[f"pmdec{suffixes[i]}"] = resampled_astrometry[
             :, i, 1
         ]
-        resampled_astrometry_dict[f"parallax_{suffixes[i]}"] = resampled_astrometry[
+        resampled_astrometry_dict[f"parallax{suffixes[i]}"] = resampled_astrometry[
             :, i, 2
         ]
 
