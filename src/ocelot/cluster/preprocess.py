@@ -1,6 +1,6 @@
 """A number of functions for pre-processing data before clustering can begin."""
 
-from typing import Optional, Union, Tuple, List
+from typing import Literal
 
 import numpy as np
 import pandas as pd
@@ -14,11 +14,11 @@ from scipy.optimize import minimize
 
 def cut_dataset(
     data_gaia: pd.DataFrame,
-    parameter_cuts: Optional[dict] = None,
-    geometric_cuts: Optional[dict] = None,
+    parameter_cuts: dict | None = None,
+    geometric_cuts: dict | None = None,
     return_cut_stars: bool = False,
     reset_index: bool = True,
-) -> Union[pd.DataFrame, Tuple[pd.DataFrame, pd.DataFrame]]:
+) -> pd.DataFrame | tuple[pd.DataFrame, pd.DataFrame]:
     """A function for cutting a dataset based on certain requirements: either on allowed parameter ranges or based on
     geometric cuts (such as selecting a circle from the data.)
 
@@ -186,14 +186,14 @@ def _get_healpix_frame(pixel_id: int, rotate_frame: bool = True, **user_healpy_k
 
 def recenter_dataset(
     *args,
-    center: Optional[Union[tuple, list, np.ndarray]] = None,
+    center: tuple | list | np.ndarray | None = None,
     center_type: str = "icrs",
-    pixel_id: Optional[int] = None,
+    pixel_id: int | None = None,
     rotate_frame: bool = True,
     proper_motion: bool = True,
     always_return_list: bool = False,
     **user_healpy_kwargs,
-) -> Union[pd.DataFrame, List[pd.DataFrame]]:
+) -> pd.DataFrame | list[pd.DataFrame]:
     """Creates new arbitrary co-ordinate axes centred on centre, allowing for clustering analysis that doesn't get
     affected by distortions. N.B.: currently only able to use ra, dec from data_gaia!
 
@@ -286,9 +286,9 @@ def recenter_dataset(
 def rescale_dataset(
     data_gaia: pd.DataFrame,
     *args,
-    columns_to_rescale: Union[list, tuple] = ("ra", "dec", "pmra", "pmdec", "parallax"),
-    column_weights: Union[list, tuple] = (1.0, 1.0, 1.0, 1.0, 1.0),
-    scaling_type: str = "robust",
+    columns_to_rescale: list | tuple = ("ra", "dec", "pmra", "pmdec", "parallax"),
+    column_weights: list | tuple = (1.0, 1.0, 1.0, 1.0, 1.0),
+    scaling_type: Literal["standard", "robust"] = "robust",
     concatenate: bool = True,
     return_scaler: bool = False,
     **kwargs_for_scaler,
