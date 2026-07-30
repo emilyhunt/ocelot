@@ -105,13 +105,19 @@ nav:
     - API Reference:
         # - Calculate: 'api/calculate.md'
         - Clustering analysis:
-            - ocelot.cluster: 'api/cluster.md'
+            - Data preprocessing: 'api/cluster/preprocess.md'
+            - Data resampling: 'api/cluster/resample.md'
         - Cluster simulation:
-            - ocelot.simulate: 'api/simulate.md'
+            - SimulatedCluster: 'api/simulate.md'
+        - Models:
+            - Binaries: 'api/model/binaries.md'
+            - Differential reddening: 'api/model/differential_reddening.md'
+            - Distribution: 'api/model/distribution.md'
+            - Observation: 'api/model/observation.md'
         - Utilities: 
-            - ocelot.util.coordinates: 'api/util/coordinates.md'
-            - ocelot.util.magnitudes: 'api/util/magnitudes.md'
-            - ocelot.util.random: 'api/util/random.md'
-            - ocelot.util.stats: 'api/util/stats.md'
+            - Coordinates: 'api/util/coordinates.md'
+            - Magnitudes: 'api/util/magnitudes.md'
+            - Random numbers: 'api/util/random.md'
+            - Statistics: 'api/util/stats.md'
     - Contibute to ocelot!: 
         - Why ocelot?: 'developing.md'

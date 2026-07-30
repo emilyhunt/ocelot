@@ -12,17 +12,21 @@ class MoeDiStefanoMultiplicityRelation(BaseBinaryStarModelWithEccentricities):
         pass
 
     def multiplicity_fraction(self, masses: np.ndarray) -> np.ndarray:
+        """Calculate multiplicity fraction."""
         return np.interp(masses, mass, multiplicity_fraction)
 
     def companion_star_frequency(self, masses: np.ndarray) -> np.ndarray:
+        """Calculate companion star frequency."""
         return np.interp(masses, mass, companion_star_frequency)
 
     def random_mass_ratio(self, masses: np.ndarray, seed=None) -> np.ndarray:
+        """Calculate a random mass ratio."""
         return self.random_binary(masses, seed=seed)[0]
 
     def random_binary(
         self, masses: np.ndarray, seed=None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Return random binary star masses, periods, and eccentricities."""
         mass_ratios, log_periods, eccentricities = _sample_binary(masses, seed=seed)
         return mass_ratios, 10**log_periods, eccentricities
 
