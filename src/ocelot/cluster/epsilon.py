@@ -1,5 +1,6 @@
 """A set of functions for calculating optimum DBSCAN/OPTICS epsilon parameters of a field."""
 
+import warnings
 import gc
 from typing import Union, List, Tuple
 
@@ -9,6 +10,11 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from scipy.optimize import curve_fit
 from .nearest_neighbor import precalculate_nn_distances
+
+
+warnings.warn(
+    "This submodule is likely to undergo some deprecations.", DeprecationWarning
+)
 
 
 def castro_ginard(
@@ -486,7 +492,9 @@ def _find_sign_change_epsilons(
         id_0 = sign_change_ids[i]
         id_1 = sign_change_ids[i + 1]
 
-        area = np.trapezoid(clipped_d2_y_range[id_0 : id_1 + 1], x=x_range[id_0 : id_1 + 1])
+        area = np.trapezoid(
+            clipped_d2_y_range[id_0 : id_1 + 1], x=x_range[id_0 : id_1 + 1]
+        )
 
         # Save this pair if it's the best
         if area > max_area:

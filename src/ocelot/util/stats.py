@@ -2,6 +2,8 @@
 
 import numpy as np
 
+from typing import Literal
+
 
 def variable_bin_histogram(values, min, max, minimum_width, minimum_size=5):
     """Computes a variably binned histogram."""
@@ -55,3 +57,98 @@ def variable_bin_histogram(values, min, max, minimum_width, minimum_size=5):
 def calculate_bin_centers(bin_edges):
     """Calculates the centers of a binned histogram."""
     return (bin_edges[:-1] + bin_edges[1:]) / 2
+
+
+def vectorized_multivariate_normal_pdf(
+    values: np.ndarray, means: np.ndarray, covariances: np.ndarray
+) -> np.ndarray:
+    """Calculate the PDF of n_queries different multivariate normal distributions at
+    n_queries different points in a fast and vectorized way. Significantly faster than
+    scipy.stats.multivariate_normal.pdf() when n_queries is large.
+
+    Parameters
+    ----------
+    values : np.ndarray
+        Values to query the PDF at. Must have shape (n_queries, n_dims).
+    means : np.ndarray
+        Means of the distributions. Must have shape (n_queries, n_dims).
+    covariances : np.ndarray
+        Covariances of the distributions. Must have shape (n_queries, n_dims, n_dims).
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape (n_queries,) giving the PDF value of each distribution.
+    """
+    k = means.shape[1]
+
+    # Calculate products from covariances
+    means = means.reshape(-1, k, 1)
+    values = values.reshape(-1, k, 1)
+    covariances = covariances.reshape(-1, k, k)
+    determinants = np.linalg.det(covariances)
+    inverses = np.linalg.inv(covariances)
+
+    diff = values - means
+
+    constant = (2 * np.pi) ** (-k / 2) * determinants ** (-0.5)
+    exponent = -0.5 * (diff.reshape(-1, 1, k) @ inverses @ diff).flatten()
+
+    return constant.flatten() * np.exp(exponent.flatten())
+
+
+def vectorized_multivariate_normal_rvs(
+    means: np.ndarray,
+    covariances: np.ndarray,
+    n_samples: int = 1,
+    seed=None,
+    method: Literal["svd", "eigh" "cholesky"] = "svd",
+) -> np.ndarray:
+    """Sample n_samples samples from arrays of different multivariate normal
+    distributions at n_samples different points in a fast and vectorized way.
+    Significantly faster than scipy.stats.multivariate_normal.rvs() when n_queries is
+    large.
+
+    Parameters
+    ----------
+    means : np.ndarray
+        Means of the distributions. Must have shape (n_dists, n_dims).
+    covariances : np.ndarray
+        Covariances of the distributions. Must have shape (n_dists, n_dims, n_dims).
+    n_samples : int
+        Number of samples to draw from each distribution. Default: 1
+    method : { 'svd', 'eigh', 'cholesky'}, optional
+        Method to use for matrix decompositions. From the numpy docs:
+        "The cov input is used to compute a factor matrix A such that A @ A.T = cov. This
+        argument is used to select the method used to compute the factor matrix A. The
+        default method 'svd' is the slowest, while 'cholesky' is the fastest but less 
+        robust than the slowest method. The method eigh uses eigen decomposition to 
+        compute A and is faster than svd but slower than cholesky." Default: 'svd'
+
+    Returns
+    -------
+    np.ndarray
+        Array of samples of shape (n_samples, n_dists, n_dims).
+    """
+    k = means.shape[1]
+
+    rng = np.random.default_rng(seed)
+
+    # Calculate products from covariances
+    means = means.reshape(-1, k)
+    covariances = covariances.reshape(-1, k, k)
+
+    shape = (n_samples, means.shape[0], k)
+    X = rng.standard_normal(shape + (1,))
+    
+    match method:
+        case "svd":
+            L = np.linalg.svd(covariances)
+        case "eigh":
+            L = np.linalg.eigh(covariances)
+        case "cholesky":
+            L = np.linalg.cholesky(covariances)
+        case _:
+            raise ValueError(f"Specified method '{method}' not supported.")
+
+    return (L @ X).reshape(shape) + means
