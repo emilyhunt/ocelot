@@ -337,7 +337,25 @@ def king_spatial_density(
     r_core: float | np.ndarray,
     r_tidal: float | np.ndarray,
     k: float | np.ndarray = 1,
-):
+) -> float | np.ndarray:
+    """Returns the spatial (3D) surface density of a King62 cluster distribution.
+
+    Parameters
+    ----------
+    radius : float | np.ndarray
+        Radii at which to sample the profile.
+    r_core : float | np.ndarray
+        Cluster core radius. Must be positive and less than r_tidal.
+    r_tidal : float | np.ndarray
+        Cluster tidal radius. Must be positive and greater than r_core.
+    k : float | np.ndarray, optional
+        King density parameter. Default: 1
+
+    Returns
+    -------
+    float | np.ndarray
+        King spatial surface densities.
+    """
     _check_values(radius)
     _check_core_and_tidal_radii(r_core, r_tidal)
     out = np.zeros_like(radius)
