@@ -104,6 +104,8 @@ nav:
             - Simulate a star cluster from scratch: 'tutorials/simulate_a_cluster.ipynb'
     - API Reference:
         # - Calculate: 'api/calculate.md'
+        - Clustering analysis:
+            - ocelot.cluster: 'api/cluster.md'
         - Cluster simulation:
             - ocelot.simulate: 'api/simulate.md'
         - Utilities: 
