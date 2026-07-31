@@ -499,7 +499,7 @@ def test_field_model(show_figure=False):
 
 def test_resample_gaia_astrometry():
     """Very basic integration test of resampling.
-    
+
     TODO: add known test cases
     """
     gaia_data = pd.read_parquet(
@@ -507,11 +507,21 @@ def test_resample_gaia_astrometry():
     )
 
     # Firstly, a quick integration test
-    result = ocelot.cluster.resample_gaia_astrometry(gaia_data, suffixes=[""])
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, suffixes=[""], include_ra_dec=False
+    )
     pd.testing.assert_index_equal(
         result.columns, pd.Index(["pmra", "pmdec", "parallax"], dtype="str")
     )
 
     # Then, check the sampling
-    result = ocelot.cluster.resample_gaia_astrometry(gaia_data, n_resamples=10, seed=42)
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=False
+    )
+    assert len(result.columns) == 30
+
+    # Now with ra dec uncertainties!
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=True
+    )
     assert len(result.columns) == 30
