@@ -525,3 +525,15 @@ def test_resample_gaia_astrometry():
         gaia_data, n_resamples=10, seed=42, include_ra_dec=True
     )
     assert len(result.columns) == 30
+
+    # Eigh version
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=True, method="eigh"
+    )
+    assert len(result.columns) == 30
+
+    # Cholesky (less stable) version
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=True, method="cholesky"
+    )
+    assert len(result.columns) == 30

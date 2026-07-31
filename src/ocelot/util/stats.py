@@ -102,7 +102,7 @@ def vectorized_multivariate_normal_rvs(
     covariances: np.ndarray,
     n_samples: int = 1,
     seed=None,
-    method: Literal["cholesky"] = "cholesky",
+    method: Literal["svd", "eigh", "cholesky"] = "svd",
 ) -> np.ndarray:
     """Sample n_samples samples from arrays of different multivariate normal
     distributions at n_samples different points in a fast and vectorized way.
@@ -122,8 +122,8 @@ def vectorized_multivariate_normal_rvs(
         Method to use for matrix decompositions. From the numpy docs:
         "The cov input is used to compute a factor matrix A such that A @ A.T = cov. This
         argument is used to select the method used to compute the factor matrix A. The
-        default method 'svd' is the slowest, while 'cholesky' is the fastest but less 
-        robust than the slowest method. The method eigh uses eigen decomposition to 
+        default method 'svd' is the slowest, while 'cholesky' is the fastest but less
+        robust than the slowest method. The method eigh uses eigen decomposition to
         compute A and is faster than svd but slower than cholesky." Default: 'svd'
 
     Returns
@@ -141,15 +141,19 @@ def vectorized_multivariate_normal_rvs(
 
     shape = (n_samples, means.shape[0], k)
     X = rng.standard_normal(shape + (1,))
-    
+
+    # Factors taken from
+    # https://github.com/numpy/numpy/blob/3b52211d5818ad73a25377ef5bf5aa5492a88b77/numpy/random/_generator.pyx#L3946
     match method:
-        # case "svd":
-        #     L = np.linalg.svd(covariances)
-        # case "eigh":
-        #     L = np.linalg.eigh(covariances)
+        case "svd":
+            u, s, _ = np.linalg.svd(covariances)
+            factor = u * np.sqrt(s).reshape(-1, k, 1)
+        case "eigh":
+            s, u = np.linalg.eigh(covariances)
+            factor = u * np.sqrt(abs(s)).reshape(-1, k, 1)
         case "cholesky":
-            L = np.linalg.cholesky(covariances)
+            factor = np.linalg.cholesky(covariances)
         case _:
             raise ValueError(f"Specified method '{method}' not supported.")
 
-    return (L @ X).reshape(shape) + means
+    return (factor @ X).reshape(shape) + means

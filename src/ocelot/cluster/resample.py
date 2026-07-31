@@ -10,7 +10,7 @@ def resample_gaia_astrometry(
     data_gaia: pd.DataFrame,
     n_resamples: int = 1,
     suffixes: Sequence[str] | None = None,
-    method: Literal["cholesky"] = "cholesky",
+    method: Literal["svd", "eigh", "cholesky"] = "svd",
     include_ra_dec: bool = False,
     seed=None,
 ) -> pd.DataFrame:
@@ -62,8 +62,8 @@ def resample_gaia_astrometry(
     columns = ["pmra", "pmdec", "parallax"]
     if include_ra_dec:
         start_dim = 2
-        data_gaia['ra_mas'] = data_gaia['ra'] * 60**2 * 1000
-        data_gaia['dec_mas'] = data_gaia['dec'] * 60**2 * 1000
+        data_gaia["ra_mas"] = data_gaia["ra"] * 60**2 * 1000
+        data_gaia["dec_mas"] = data_gaia["dec"] * 60**2 * 1000
 
         columns = ["ra_mas", "dec_mas"] + columns
 
