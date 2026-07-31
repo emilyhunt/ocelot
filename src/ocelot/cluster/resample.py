@@ -24,7 +24,11 @@ def resample_gaia_astrometry(
         'parallax', 'pmra_error', 'pmdec_error', 'parallax_error', 'pmra_pmdec_corr',
         'parallax_pmra_corr', 'parallax_pmdec_corr', 'pseudocolour',
         'pseudocolour_error', 'pmra_pseudocolour_corr', 'pmdec_pseudocolour_corr',
-        'parallax_pseudocolour_corr'
+        'parallax_pseudocolour_corr'.
+        If include_ra_dec=True, then it must also include the keys
+        'ra', 'dec', 'ra_error', 'dec_error', 'ra_dec_corr', 'ra_pmra_corr',
+        'ra_pmdec_corr', 'ra_parallax_corr', 'ra_pseudocolour_corr', 'dec_pmra_corr', 
+        'dec_pmdec_corr', 'dec_parallax_corr', 'dec_pseudocolour_corr'.
     n_resamples : int, optional
         Number of resamples to perform. Default: 1
     suffixes : Iterable[str] | None, optional
