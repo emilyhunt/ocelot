@@ -10,7 +10,8 @@ def resample_gaia_astrometry(
     data_gaia: pd.DataFrame,
     n_resamples: int = 1,
     suffixes: Sequence[str] | None = None,
-    method: Literal["svd", "eigh" "cholesky"] = "svd",
+    method: Literal["cholesky"] = "cholesky",
+    seed=None,
 ) -> pd.DataFrame:
     """Resample Gaia astrometric parameters for pmra, pmdec and parallax, given input
     best estimate means and covariance matrices.
@@ -20,7 +21,7 @@ def resample_gaia_astrometry(
     data_gaia : pd.DataFrame
         data for the field, including keys 'astrometric_params_solved', 'pmra', 'pmdec',
         'parallax', 'pmra_error', 'pmdec_error', 'parallax_error', 'pmra_pmdec_corr',
-        'parallax_pmra_corr', 'parallax_pmdec_corr', 'pseudocolour', 
+        'parallax_pmra_corr', 'parallax_pmdec_corr', 'pseudocolour',
         'pseudocolour_error', 'pmra_pseudocolour_corr', 'pmdec_pseudocolour_corr',
         'parallax_pseudocolour_corr'
     n_resamples : int, optional
@@ -29,12 +30,15 @@ def resample_gaia_astrometry(
         Suffixes to apply in the output dataframe's pmra, pmdec, and parallax columns
         per-resample.
     method : { 'svd', 'eigh', 'cholesky'}, optional
+        TODO: Only Cholesky is supported at this time.
         Method to use for matrix decompositions. From the numpy docs:
         "The cov input is used to compute a factor matrix A such that A @ A.T = cov. This
         argument is used to select the method used to compute the factor matrix A. The
         default method 'svd' is the slowest, while 'cholesky' is the fastest but less
         robust than the slowest method. The method eigh uses eigen decomposition to
         compute A and is faster than svd but slower than cholesky." Default: 'svd'
+    seed : optional
+        Seed for the random number generator. Default: None
 
     Returns
     -------
@@ -69,6 +73,7 @@ def resample_gaia_astrometry(
                 covariances=covariance_matrix_five,
                 n_samples=n_resamples,
                 method=method,
+                seed=seed,
             )
         )
 
@@ -78,7 +83,7 @@ def resample_gaia_astrometry(
             data_gaia_six, six_parameter_sources=True
         )
 
-        resampled_astrometry[six_parameter_astrometry] = (
+        resampled_astrometry[:, six_parameter_astrometry] = (
             vectorized_multivariate_normal_rvs(
                 means=data_gaia_six[
                     ["pmra", "pmdec", "parallax", "pseudocolour"]
@@ -86,6 +91,7 @@ def resample_gaia_astrometry(
                 covariances=covariance_matrix_six,
                 n_samples=n_resamples,
                 method=method,
+                seed=seed,
             )[:, :, :-1]
         )
 
@@ -118,7 +124,7 @@ def generate_gaia_covariance_matrix(
             parallax_pmra_corr, parallax_pmdec_corr
         For resampling for six parameter sources (i.e. six_parameter_sources=True),
         it must also contain:
-            pseudocolour, pseudocolour_error, pmra_pseudocolour_corr, 
+            pseudocolour, pseudocolour_error, pmra_pseudocolour_corr,
             pmdec_pseudocolour_corr, parallax_pseudocolour_corr
         see Gaia release notes for help.
     six_parameter_sources : bool, optional

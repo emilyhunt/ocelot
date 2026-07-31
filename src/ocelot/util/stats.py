@@ -102,7 +102,7 @@ def vectorized_multivariate_normal_rvs(
     covariances: np.ndarray,
     n_samples: int = 1,
     seed=None,
-    method: Literal["svd", "eigh" "cholesky"] = "svd",
+    method: Literal["cholesky"] = "cholesky",
 ) -> np.ndarray:
     """Sample n_samples samples from arrays of different multivariate normal
     distributions at n_samples different points in a fast and vectorized way.
@@ -118,6 +118,7 @@ def vectorized_multivariate_normal_rvs(
     n_samples : int
         Number of samples to draw from each distribution. Default: 1
     method : { 'svd', 'eigh', 'cholesky'}, optional
+        TODO: Only Cholesky is supported at this time.
         Method to use for matrix decompositions. From the numpy docs:
         "The cov input is used to compute a factor matrix A such that A @ A.T = cov. This
         argument is used to select the method used to compute the factor matrix A. The
@@ -142,10 +143,10 @@ def vectorized_multivariate_normal_rvs(
     X = rng.standard_normal(shape + (1,))
     
     match method:
-        case "svd":
-            L = np.linalg.svd(covariances)
-        case "eigh":
-            L = np.linalg.eigh(covariances)
+        # case "svd":
+        #     L = np.linalg.svd(covariances)
+        # case "eigh":
+        #     L = np.linalg.eigh(covariances)
         case "cholesky":
             L = np.linalg.cholesky(covariances)
         case _:
