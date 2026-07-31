@@ -2,14 +2,14 @@
 
 import numpy as np
 import pandas as pd
-from typing import Iterable, Literal
+from typing import Sequence, Literal
 from ocelot.util.stats import vectorized_multivariate_normal_rvs
 
 
 def resample_gaia_astrometry(
     data_gaia: pd.DataFrame,
     n_resamples: int = 1,
-    suffixes: Iterable[str] | None = None,
+    suffixes: Sequence[str] | None = None,
     method: Literal["svd", "eigh" "cholesky"] = "svd",
 ) -> pd.DataFrame:
     """Resample Gaia astrometric parameters for pmra, pmdec and parallax, given input
@@ -67,7 +67,7 @@ def resample_gaia_astrometry(
             vectorized_multivariate_normal_rvs(
                 means=data_gaia_five[["pmra", "pmdec", "parallax"]].to_numpy(),
                 covariances=covariance_matrix_five,
-                size=n_resamples,
+                n_samples=n_resamples,
                 method=method,
             )
         )
@@ -84,7 +84,7 @@ def resample_gaia_astrometry(
                     ["pmra", "pmdec", "parallax", "pseudocolour"]
                 ].to_numpy(),
                 covariances=covariance_matrix_six,
-                size=n_resamples,
+                n_samples=n_resamples,
                 method=method,
             )[:, :, :-1]
         )
