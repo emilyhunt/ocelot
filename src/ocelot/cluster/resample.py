@@ -57,14 +57,7 @@ def resample_gaia_astrometry(
     negative numbers. This is not always the case for Gaia covariance matrices; hence,
     the default method is the slower (but more robust) svd.
     """
-    # TODO: requires a unit test
-    # Firstly, let's identify which solutions are five or six parameter
-    five_parameter_astrometry = data_gaia["astrometric_params_solved"].to_numpy() == 31
-    six_parameter_astrometry = data_gaia["astrometric_params_solved"].to_numpy() == 95
-    data_gaia_five = data_gaia.loc[five_parameter_astrometry]
-    data_gaia_six = data_gaia.loc[six_parameter_astrometry]
-
-    # Then do each solution
+    # Setup for if ra/dec required
     start_dim = 0
     columns = ["pmra", "pmdec", "parallax"]
     if include_ra_dec:
@@ -74,6 +67,13 @@ def resample_gaia_astrometry(
 
         columns = ["ra_mas", "dec_mas"] + columns
 
+    # Firstly, let's identify which solutions are five or six parameter
+    five_parameter_astrometry = data_gaia["astrometric_params_solved"].to_numpy() == 31
+    six_parameter_astrometry = data_gaia["astrometric_params_solved"].to_numpy() == 95
+    data_gaia_five = data_gaia.loc[five_parameter_astrometry]
+    data_gaia_six = data_gaia.loc[six_parameter_astrometry]
+
+    # Then do each solution
     resampled_astrometry = np.full((n_resamples, len(data_gaia), 3), np.nan)
 
     # 5 parameter resampling - "straightforward"
@@ -119,6 +119,9 @@ def resample_gaia_astrometry(
         resampled_astrometry_dict[f"parallax{suffixes[i]}"] = resampled_astrometry[
             i, :, 2
         ]
+
+    if include_ra_dec:
+        data_gaia.drop(columns=["ra_mas", "dec_mas"], inplace=True)
 
     return pd.DataFrame(resampled_astrometry_dict)
 
