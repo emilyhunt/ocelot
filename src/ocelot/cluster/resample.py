@@ -69,7 +69,10 @@ def resample_gaia_astrometry(
     columns = ["pmra", "pmdec", "parallax"]
     if include_ra_dec:
         start_dim = 2
-        columns = ["ra", "dec"] + columns
+        data_gaia['ra_mas'] = data_gaia['ra'] * 60**2 * 1000
+        data_gaia['dec_mas'] = data_gaia['dec'] * 60**2 * 1000
+
+        columns = ["ra_mas", "dec_mas"] + columns
 
     resampled_astrometry = np.full((n_resamples, len(data_gaia), 3), np.nan)
 
