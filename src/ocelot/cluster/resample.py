@@ -65,8 +65,8 @@ def resample_gaia_astrometry(
 
         resampled_astrometry[:, five_parameter_astrometry] = (
             vectorized_multivariate_normal_rvs(
-                mean=data_gaia_five[["pmra", "pmdec", "parallax"]].to_numpy(),
-                cov=covariance_matrix_five,
+                means=data_gaia_five[["pmra", "pmdec", "parallax"]].to_numpy(),
+                covariances=covariance_matrix_five,
                 size=n_resamples,
                 method=method,
             )
@@ -80,10 +80,10 @@ def resample_gaia_astrometry(
 
         resampled_astrometry[six_parameter_astrometry] = (
             vectorized_multivariate_normal_rvs(
-                mean=data_gaia_six[
+                means=data_gaia_six[
                     ["pmra", "pmdec", "parallax", "pseudocolour"]
                 ].to_numpy(),
-                cov=covariance_matrix_six,
+                covariances=covariance_matrix_six,
                 size=n_resamples,
                 method=method,
             )[:, :, :-1]
