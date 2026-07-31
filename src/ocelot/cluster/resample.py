@@ -20,8 +20,8 @@ def resample_gaia_astrometry(
     data_gaia : pd.DataFrame
         data for the field, including keys 'astrometric_params_solved', 'pmra', 'pmdec',
         'parallax', 'pmra_error', 'pmdec_error', 'parallax_error', 'pmra_pmdec_corr',
-        'parallax_pmra_corr', 'parallax_pmdec_corr', 'pseudocolour_error',
-        'pmra_pseudocolour_corr', 'pmdec_pseudocolour_corr',
+        'parallax_pmra_corr', 'parallax_pmdec_corr', 'pseudocolour', 
+        'pseudocolour_error', 'pmra_pseudocolour_corr', 'pmdec_pseudocolour_corr',
         'parallax_pseudocolour_corr'
     n_resamples : int, optional
         Number of resamples to perform. Default: 1
@@ -118,8 +118,8 @@ def generate_gaia_covariance_matrix(
             parallax_pmra_corr, parallax_pmdec_corr
         For resampling for six parameter sources (i.e. six_parameter_sources=True),
         it must also contain:
-            pseudocolour_error, pmra_pseudocolour_corr, pmdec_pseudocolour_corr,
-            parallax_pseudocolour_corr
+            pseudocolour, pseudocolour_error, pmra_pseudocolour_corr, 
+            pmdec_pseudocolour_corr, parallax_pseudocolour_corr
         see Gaia release notes for help.
     six_parameter_sources : bool, optional
         whether or not ALL sources in data_gaia also depend on the estimated
