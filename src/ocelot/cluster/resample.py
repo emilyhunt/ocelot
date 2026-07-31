@@ -61,7 +61,7 @@ def resample_gaia_astrometry(
     data_gaia_six = data_gaia.loc[six_parameter_astrometry]
 
     # Let's make somewhere to store solutions
-    resampled_astrometry = np.zeros((n_resamples, len(data_gaia), 3))
+    resampled_astrometry = np.full((n_resamples, len(data_gaia), 3), np.nan)
 
     # 5 parameter resampling - "straightforward"
     if np.any(five_parameter_astrometry):
