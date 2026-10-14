@@ -296,6 +296,49 @@ def _current_orbital_velocities(
     return velocity_primary, velocity_secondary
 
 
+def _rotation_matrix_to_orbital_angles(rotation_matrices):
+    """Converts rotation matrices from the orbital plane frame into orbital angles.
+
+    Assumes that each matrix can be written as R = R_z(Omega) R_x(i) R_z(omega), where
+    i is the inclination, Omega is the longitude of the ascending node and omega is the
+    argument of periapsis, all measured relative to the x, y, z axes of the frame that
+    R rotates into. In that case, cos(i) = R[2, 2], Omega = atan2(R[0, 2], -R[1, 2])
+    and omega = atan2(R[2, 0], R[2, 1]).
+
+    When the orbit is face-on (sin(i) = 0), Omega and omega are not separately defined.
+    In that case, Omega is set to zero and the whole rotation about the z axis is given
+    to omega.
+
+    Parameters
+    ----------
+    rotation_matrices : numpy.ndarray
+        Array of shape (n, 3, 3) of rotation matrices.
+
+    Returns
+    -------
+    inclination, longitude_of_ascending_node, argument_of_periapsis : numpy.ndarray
+        Arrays of shape (n,) of angles in radians. The inclination is in [0, pi]; the
+        other two angles are in [0, 2 pi).
+    """
+    r = rotation_matrices
+    inclination = np.arccos(np.clip(r[:, 2, 2], -1.0, 1.0))
+    longitude_of_ascending_node = np.arctan2(r[:, 0, 2], -r[:, 1, 2])
+    argument_of_periapsis = np.arctan2(r[:, 2, 0], r[:, 2, 1])
+
+    # Face-on orbits: only the combination of Omega and omega is defined
+    face_on = np.hypot(r[:, 0, 2], r[:, 1, 2]) < 1e-12
+    longitude_of_ascending_node[face_on] = 0.0
+    argument_of_periapsis[face_on] = np.arctan2(
+        np.sign(r[face_on, 2, 2]) * r[face_on, 1, 0], r[face_on, 0, 0]
+    )
+
+    return (
+        inclination,
+        np.mod(longitude_of_ascending_node, 2 * np.pi),
+        np.mod(argument_of_periapsis, 2 * np.pi),
+    )
+
+
 def generate_star_velocities(
     cluster: ocelot.simulate.cluster.SimulatedCluster
 ):
