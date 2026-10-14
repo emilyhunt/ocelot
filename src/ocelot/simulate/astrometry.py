@@ -82,10 +82,19 @@ def generate_star_positions_with_binaries(
     ) = _compute_separation(
         secondary_mass, mass_ratio, period, eccentricity, cluster.random_generator
     )
-
+    
     # Secondly - while we're here - we can also grab current orbital speeds at these
-    # positions, which may be used later to calculate other things
-
+    # positions, which are (now) used later to calculate other things
+    primary_mass = secondary_mass / mass_ratio
+    primary_velocity_2d, secondary_velocity_2d = _current_orbital_velocities(
+        primary_mass,
+        secondary_mass,
+        total_semimajor_axis,
+        eccentricity,
+        cos_true_anomaly,
+        sin_true_anomaly,
+    )
+    
     # Project the separation into a random direction
     rotation_matrices = rotation_matrix(n_secondaries, seed=cluster.random_generator)
 
@@ -105,6 +114,14 @@ def generate_star_positions_with_binaries(
     secondary_location = (rotation_matrices @ secondary_2d.reshape(-1, 3, 1)).reshape(
         -1, 3
     ) + barycenter_location.reshape(-1, 3)
+    
+    # Rotate orbital velocities in exactly the same way as the positions
+    primary_velocity = (
+        rotation_matrices @ primary_velocity_2d.reshape(-1, 3, 1)
+    ).reshape(-1, 3)
+    secondary_velocity = (
+        rotation_matrices @ secondary_velocity_2d.reshape(-1, 3, 1)
+    ).reshape(-1, 3)
 
     cluster.cluster.loc[secondary, "x"] = secondary_location[:, 0]
     cluster.cluster.loc[secondary, "y"] = secondary_location[:, 1]
