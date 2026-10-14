@@ -147,11 +147,39 @@ def generate_star_positions_with_binaries(
     cluster.cluster.loc[secondary, "orbit_radius_secondary"] = secondary_radius
     cluster.cluster.loc[secondary, "orbit_mean_anomaly"] = mean_anomaly
     cluster.cluster.loc[secondary, "orbit_eccentric_anomaly"] = eccentric_anomaly
-    cluster.cluster.loc[secondary, "orbit_true_anomaly"] = np.arccos(cos_true_anomaly)
+    cluster.cluster.loc[secondary, "orbit_true_anomaly"] = np.mod(
+        np.arctan2(sin_true_anomaly, cos_true_anomaly), 2 * np.pi
+    )
     cluster.cluster.loc[secondary, "orbit_time_periapsis"] = (
         cluster.parameters.epoch
-        + mean_anomaly / 2 * np.pi * (period * u.day).to(u.yr).value
+        - mean_anomaly / (2 * np.pi) * (period * u.day).to(u.yr).value
     )
+    
+    # Orientation of each orbit relative to the x, y, z axes used here (i.e. the
+    # galactocentric cartesian frame used in generate_true_star_astrometry). The
+    # argument of periapsis refers to the secondary and the primary's is offset by pi.
+    inclination, longitude_of_ascending_node, argument_of_periapsis = (
+        _rotation_matrix_to_orbital_angles(rotation_matrices)
+    )
+    cluster.cluster.loc[secondary, "orbit_inclination"] = inclination
+    cluster.cluster.loc[secondary, "orbit_longitude_of_ascending_node"] = (
+        longitude_of_ascending_node
+    )
+    cluster.cluster.loc[secondary, "orbit_argument_of_periapsis"] = (
+        argument_of_periapsis
+    )
+
+    # Orbital velocities about the barycentre, in m/s, in the same frame. These are
+    # stored on the secondary's row (like the other orbit_* columns) and added to the
+    # barycentre velocities in generate_star_velocities.
+    for i, axis in enumerate("xyz"):
+        cluster.cluster.loc[secondary, f"orbit_velocity_primary_{axis}"] = (
+            primary_velocity[:, i]
+        )
+        cluster.cluster.loc[secondary, f"orbit_velocity_secondary_{axis}"] = (
+            secondary_velocity[:, i]
+        )
+    
     # cluster.cluster.loc[secondary, 'orbit_separation'] = separation
 
     # Remove x/y/z columns else they'll just be confusing later! We hijacked the df!!!
