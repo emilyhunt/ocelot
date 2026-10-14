@@ -232,20 +232,68 @@ def _current_distance_from_barycentre(
     )
 
 
-def _current_orbital_velocity(
-    total_mass,
-    semimajor_axis,
-    current_radius,
+def _current_orbital_velocities(
+    primary_mass,
+    secondary_mass,
+    total_semimajor_axis,
+    eccentricity,
+    cosine_of_true_anomaly,
+    sine_of_true_anomaly,
 ):
-    """Computes the current orbital velocity of an object orbiting a body using the
-    vis-viva equation.
+    """Computes the current orbital velocities of both stars in a binary, relative to
+    the binary's barycentre, in the plane of the orbit.
+
+    The orbital plane frame has its x axis pointing towards the periapsis of the
+    secondary star, its y axis in the orbital plane 90 degrees ahead in the direction
+    of motion, and its z axis along the orbit normal. The relative velocity of the
+    secondary with respect to the primary is
+
+        v_rel = sqrt(G M / p) * (-sin(f), e + cos(f), 0),
+
+    where M is the total mass, p = a (1 - e^2) is the semi-latus rectum of the relative
+    orbit, and f is the true anomaly. Each star's velocity about the barycentre is then
+    v_primary = -(m_2 / M) v_rel and v_secondary = (m_1 / M) v_rel, so that the total
+    momentum of the pair is zero. See e.g. Murray & Dermott (1999), Solar System
+    Dynamics, chapter 2.
+
+    Parameters
+    ----------
+    primary_mass, secondary_mass : array-like
+        Masses of the primary and secondary stars, in solar masses.
+    total_semimajor_axis : array-like
+        Semimajor axis of the relative orbit, in parsecs.
+    eccentricity : array-like
+        Orbital eccentricity.
+    cosine_of_true_anomaly, sine_of_true_anomaly : array-like
+        Cosine and sine of the current true anomaly.
+
+    Returns
+    -------
+    velocity_primary, velocity_secondary : numpy.ndarray
+        Arrays of shape (n, 3) containing velocities in the orbital plane frame, in
+        m/s.
     """
-    return np.sqrt(
-        constants.G
-        * total_mass
-        * u.Msun
-        * (2 / (current_radius * u.pc) - 1 / (semimajor_axis * u.pc))
-    ).to(u.m / u.s)
+    total_mass = primary_mass + secondary_mass
+    semilatus_rectum = total_semimajor_axis * (1 - eccentricity**2)
+    speed_scale = (
+        np.sqrt(constants.G * (total_mass * u.M_sun) / (semilatus_rectum * u.pc))
+        .to(u.m / u.s)
+        .value
+    )
+
+    velocity_relative = (
+        speed_scale.reshape(-1, 1)
+        * np.asarray(
+            [
+                -sine_of_true_anomaly,
+                eccentricity + cosine_of_true_anomaly,
+                np.zeros_like(cosine_of_true_anomaly),
+            ]
+        ).T
+    )
+    velocity_primary = -(secondary_mass / total_mass).reshape(-1, 1) * velocity_relative
+    velocity_secondary = (primary_mass / total_mass).reshape(-1, 1) * velocity_relative
+    return velocity_primary, velocity_secondary
 
 
 def generate_star_velocities(
