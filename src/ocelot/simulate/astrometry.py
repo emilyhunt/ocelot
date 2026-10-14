@@ -82,7 +82,7 @@ def generate_star_positions_with_binaries(
     ) = _compute_separation(
         secondary_mass, mass_ratio, period, eccentricity, cluster.random_generator
     )
-    
+
     # Secondly - while we're here - we can also grab current orbital speeds at these
     # positions, which are (now) used later to calculate other things
     primary_mass = secondary_mass / mass_ratio
@@ -94,7 +94,7 @@ def generate_star_positions_with_binaries(
         cos_true_anomaly,
         sin_true_anomaly,
     )
-    
+
     # Project the separation into a random direction
     rotation_matrices = rotation_matrix(n_secondaries, seed=cluster.random_generator)
 
@@ -114,7 +114,7 @@ def generate_star_positions_with_binaries(
     secondary_location = (rotation_matrices @ secondary_2d.reshape(-1, 3, 1)).reshape(
         -1, 3
     ) + barycenter_location.reshape(-1, 3)
-    
+
     # Rotate orbital velocities in exactly the same way as the positions
     primary_velocity = (
         rotation_matrices @ primary_velocity_2d.reshape(-1, 3, 1)
@@ -154,7 +154,7 @@ def generate_star_positions_with_binaries(
         cluster.parameters.epoch
         - mean_anomaly / (2 * np.pi) * (period * u.day).to(u.yr).value
     )
-    
+
     # Orientation of each orbit relative to the x, y, z axes used here (i.e. the
     # galactocentric cartesian frame used in generate_true_star_astrometry). The
     # argument of periapsis refers to the secondary and the primary's is offset by pi.
@@ -179,7 +179,7 @@ def generate_star_positions_with_binaries(
         cluster.cluster.loc[secondary, f"orbit_velocity_secondary_{axis}"] = (
             secondary_velocity[:, i]
         )
-    
+
     # cluster.cluster.loc[secondary, 'orbit_separation'] = separation
 
     # Remove x/y/z columns else they'll just be confusing later! We hijacked the df!!!
@@ -425,44 +425,36 @@ def generate_star_velocities(
         v_z[index_primaries],
     )
 
-    # eccentricity = cluster.cluster.loc[secondary, "eccentricity"].to_numpy()
-    # eccentric_anomaly = cluster.cluster.loc[
-    #     secondary, "orbit_eccentric_anomaly"
-    # ].to_numpy()
-    # primary_speed = cluster.cluster.loc[secondary, "orbit_speed_primary"].to_numpy()
-    # secondary_speed = cluster.cluster.loc[secondary, "orbit_speed_secondary"].to_numpy()
+    # Add orbital motion about the barycentre, computed in
+    # generate_star_positions_with_binaries. The velocities drawn above for primaries
+    # are therefore the velocities of each binary's barycentre.
+    # TODO this may not work with triples/higher-order multiples (as for positions)
+    orbit_velocity_primary = cluster.cluster.loc[
+        secondary, [f"orbit_velocity_primary_{axis}" for axis in "xyz"]
+    ].to_numpy()
+    orbit_velocity_secondary = cluster.cluster.loc[
+        secondary, [f"orbit_velocity_secondary_{axis}" for axis in "xyz"]
+    ].to_numpy()
+    v_x[secondary] += orbit_velocity_secondary[:, 0]
+    v_y[secondary] += orbit_velocity_secondary[:, 1]
+    v_z[secondary] += orbit_velocity_secondary[:, 2]
+    v_x[index_primaries] += orbit_velocity_primary[:, 0]
+    v_y[index_primaries] += orbit_velocity_primary[:, 1]
+    v_z[index_primaries] += orbit_velocity_primary[:, 2]
 
-    # # Then, use the coordinate relations to calculate new velocity values
-    # sin_e = np.sin(eccentric_anomaly)
-    # cos_e = np.cos(eccentric_anomaly)
-    # e_term = np.sqrt(1 - eccentricity**2)
-
-    # non_binary_motion = np.asarray(
-    #     [v_x[index_primaries], v_y[index_primaries], v_z[index_primaries]]
-    # ).T
-    # velocity_primary_2d = (
-    #     -1
-    #     * primary_speed.reshape(-1, 1)
-    #     * np.asarray([-sin_e, e_term * cos_e, np.zeros(n_secondaries)]).T
-    # )
-    # velocity_secondary_2d = (
-    #     secondary_speed.reshape(-1, 1)
-    #     * np.asarray([-sin_e, e_term * cos_e, np.zeros(n_secondaries)]).T
-    # )
-    # velocity_primary = (
-    #     rotation_matrices @ velocity_primary_2d.reshape(-1, 3, 1)
-    # ).reshape(-1, 3) + non_binary_motion
-    # velocity_secondary = (
-    #     rotation_matrices @ velocity_secondary_2d.reshape(-1, 3, 1)
-    # ).reshape(-1, 3) + non_binary_motion
-
-    # v_x[index_primaries], v_y[index_primaries], v_z[index_primaries] = velocity_primary.T
-    # v_x[secondary], v_y[secondary], v_z[secondary] = velocity_secondary.T
+    # These columns were only needed to pass orbital velocities between functions
+    cluster.cluster = cluster.cluster.drop(
+        columns=[
+            f"orbit_velocity_{star}_{axis}"
+            for star in ("primary", "secondary")
+            for axis in "xyz"
+        ]
+    )
 
     if (
         not np.all(np.isfinite(v_x))
-        and not np.all(np.isfinite(v_y))
-        and not np.all(np.isfinite(v_z))
+        or not np.all(np.isfinite(v_y))
+        or not np.all(np.isfinite(v_z))
     ):
         raise RuntimeError(
             "Something went wrong! At least one star has a non-finite velocity."

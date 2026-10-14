@@ -7,7 +7,7 @@ from ocelot.util.random import rotation_matrix
 from astropy import units as u
 from astropy import constants
 import numpy as np
-import kepler 
+import kepler
 
 
 pluto_mass = (869.3 * u.km**3 / u.s**2 / constants.G).to(u.M_sun).value
@@ -218,8 +218,8 @@ def test_current_orbital_velocities_physics():
             0.0,
             atol=1e-5,
         )
-        
-        
+
+
 def _rotation_from_angles(
     inclination, longitude_of_ascending_node, argument_of_periapsis
 ):
@@ -298,4 +298,4 @@ def test_rotation_matrix_to_orbital_angles():
     # flipped, so they act in opposite senses and only omega - Omega is defined.
     np.testing.assert_array_equal(node[2:], 0.0)
     np.testing.assert_allclose(periapsis[2], 0.3 + 0.7, atol=1e-12)
-    np.testing.assert_allclose(periapsis[3], np.mod(0.3 - 0.7, 2 * np.pi), atol=1e-12)        
+    np.testing.assert_allclose(periapsis[3], np.mod(0.3 - 0.7, 2 * np.pi), atol=1e-12)
