@@ -78,6 +78,21 @@ def unit_vectors(size: int, seed=None):
     return np.vstack((x, y, z)).T
 
 
+def rotation_matrix(number: int, seed=None):
+    """Creates random 3D rotation matrices."""
+    rng = np.random.default_rng(seed=seed)
+
+    z = rng.normal(size=(number, 3, 3))
+    q, r = np.linalg.qr(z)
+
+    sign = 2 * (np.diagonal(r, axis1=-2, axis2=-1) >= 0) - 1
+    rot = q
+    rot *= sign[..., None, :]
+    rot[:, 0, :] *= np.linalg.det(rot)[..., None]
+
+    return rot
+
+
 def fractal_noise_2d(resolution: int, seed=None):
     """Creates 2d fractal (pink) noise.
 
