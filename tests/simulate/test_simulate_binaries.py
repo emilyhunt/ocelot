@@ -6,6 +6,7 @@ from ocelot.simulate import astrometry
 from astropy import units as u
 from astropy import constants
 import numpy as np
+import kepler 
 
 
 pluto_mass = (869.3 * u.km**3 / u.s**2 / constants.G).to(u.M_sun).value
@@ -84,3 +85,135 @@ def test_compute_separation():
     np.testing.assert_allclose(
         samples.mean(), pluto_average_solar_distance, rtol=0.05, atol=0.0
     )
+
+
+def _random_binaries(n_samples, seed=42):
+    """Random binary parameters spanning circular to very eccentric orbits."""
+    rng = np.random.default_rng(seed=seed)
+    primary_mass = rng.uniform(0.5, 3.0, size=n_samples)
+    mass_ratio = rng.uniform(0.1, 1.0, size=n_samples)
+    period = 10 ** rng.uniform(0, 6, size=n_samples)  # days
+    eccentricity = rng.uniform(0.0, 0.95, size=n_samples)
+    mean_anomaly = rng.uniform(0, 2 * np.pi, size=n_samples)
+    return (
+        primary_mass,
+        mass_ratio * primary_mass,
+        mass_ratio,
+        period,
+        eccentricity,
+        mean_anomaly,
+    )
+
+
+def _true_anomaly(mean_anomaly, eccentricity):
+    """Cosine and sine of the true anomaly, computed from the eccentric anomaly.
+
+    kepler.kepler also returns cos(f) and sin(f), but its sin(f) is rounded to zero
+    within about 1e-5 rad of apoapsis, which breaks the numerical derivatives below.
+    """
+    eccentric_anomaly, _, _ = kepler.kepler(mean_anomaly, eccentricity)
+    true_anomaly = 2 * np.arctan2(
+        np.sqrt(1 + eccentricity) * np.sin(eccentric_anomaly / 2),
+        np.sqrt(1 - eccentricity) * np.cos(eccentric_anomaly / 2),
+    )
+    return np.cos(true_anomaly), np.sin(true_anomaly)
+
+
+def _orbital_plane_positions(
+    secondary_mass, mass_ratio, period, eccentricity, mean_anomaly
+):
+    """Positions (in pc) of both stars in the orbital plane at a given mean anomaly."""
+    primary_axis, secondary_axis, _ = astrometry._compute_semimajor_axes(
+        secondary_mass, mass_ratio, period
+    )
+    cos_f, sin_f = _true_anomaly(mean_anomaly, eccentricity)
+    direction = np.asarray([cos_f, sin_f, np.zeros_like(cos_f)]).T
+    primary = (
+        -astrometry._current_distance_from_barycentre(
+            primary_axis, eccentricity, cos_f
+        ).reshape(-1, 1)
+        * direction
+    )
+    secondary = (
+        astrometry._current_distance_from_barycentre(
+            secondary_axis, eccentricity, cos_f
+        ).reshape(-1, 1)
+        * direction
+    )
+    return primary, secondary
+
+
+def test_current_orbital_velocities_physics():
+    """Checks orbital velocities against momentum conservation, the vis-viva equation
+    and numerical derivatives of the orbital positions.
+    """
+    n_samples = 10000
+    primary_mass, secondary_mass, mass_ratio, period, eccentricity, mean_anomaly = (
+        _random_binaries(n_samples)
+    )
+    _, _, semimajor_axis = astrometry._compute_semimajor_axes(
+        secondary_mass, mass_ratio, period
+    )
+    cos_f, sin_f = _true_anomaly(mean_anomaly, eccentricity)
+    velocity_primary, velocity_secondary = astrometry._current_orbital_velocities(
+        primary_mass, secondary_mass, semimajor_axis, eccentricity, cos_f, sin_f
+    )
+    assert velocity_primary.shape == (n_samples, 3)
+    assert velocity_secondary.shape == (n_samples, 3)
+
+    # Orbits are flat in this frame
+    np.testing.assert_array_equal(velocity_primary[:, 2], 0.0)
+
+    # Total momentum about the barycentre is zero
+    momentum = (
+        primary_mass.reshape(-1, 1) * velocity_primary
+        + secondary_mass.reshape(-1, 1) * velocity_secondary
+    )
+    np.testing.assert_allclose(
+        np.linalg.norm(momentum, axis=1)
+        / (primary_mass * np.linalg.norm(velocity_primary, axis=1)),
+        0.0,
+        atol=1e-12,
+    )
+
+    # Relative speed obeys the vis-viva equation
+    primary, secondary = _orbital_plane_positions(
+        secondary_mass, mass_ratio, period, eccentricity, mean_anomaly
+    )
+    separation = np.linalg.norm(secondary - primary, axis=1)
+    expected_speed = (
+        np.sqrt(
+            constants.G
+            * (primary_mass + secondary_mass)
+            * u.M_sun
+            * (2 / (separation * u.pc) - 1 / (semimajor_axis * u.pc))
+        )
+        .to(u.m / u.s)
+        .value
+    )
+    np.testing.assert_allclose(
+        np.linalg.norm(velocity_secondary - velocity_primary, axis=1),
+        expected_speed,
+        rtol=1e-10,
+    )
+
+    # Velocities are the time derivative of the positions (central differences)
+    step = 1e-7  # in mean anomaly
+    time_step = (step / (2 * np.pi) * period * u.day).reshape(-1, 1)
+    primary_ahead, secondary_ahead = _orbital_plane_positions(
+        secondary_mass, mass_ratio, period, eccentricity, mean_anomaly + step
+    )
+    primary_behind, secondary_behind = _orbital_plane_positions(
+        secondary_mass, mass_ratio, period, eccentricity, mean_anomaly - step
+    )
+    for velocity, ahead, behind in (
+        (velocity_primary, primary_ahead, primary_behind),
+        (velocity_secondary, secondary_ahead, secondary_behind),
+    ):
+        numerical = ((ahead - behind) * u.pc / (2 * time_step)).to(u.m / u.s).value
+        np.testing.assert_allclose(
+            np.linalg.norm(numerical - velocity, axis=1)
+            / np.linalg.norm(velocity, axis=1),
+            0.0,
+            atol=1e-5,
+        )
