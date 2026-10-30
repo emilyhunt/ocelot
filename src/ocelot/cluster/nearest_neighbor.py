@@ -2,9 +2,16 @@
 DBSCAN/OPTICS epsilon parameters.
 """
 
+import warnings
+
 import numpy as np
 
 from sklearn.neighbors import NearestNeighbors
+
+
+warnings.warn(
+    "This submodule is likely to undergo some deprecations.", DeprecationWarning
+)
 
 
 def precalculate_nn_distances(

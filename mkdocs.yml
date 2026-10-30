@@ -18,12 +18,12 @@ theme:
     features:
         - navigation.sections  # Sections are included in the navigation on the left.
         # - toc.integrate  # Table of contents is integrated on the left; does not appear separately on the right.
-        # - header.autohide  # header disappears as you scroll
+        - header.autohide  # header disappears as you scroll
         - search.suggest  # Suggested search
         - search.highlight
         - search.share
         - navigation.tabs  # Shows tabs instead of endless header list
-        - navigation.tabs.sticky  # Tabs always visible
+        # - navigation.tabs.sticky  # Tabs always visible
     palette:
         # Light mode / dark mode
         # We deliberately don't automatically use `media` to check a user's preferences. We default to light mode as
@@ -104,6 +104,20 @@ nav:
             - Simulate a star cluster from scratch: 'tutorials/simulate_a_cluster.ipynb'
     - API Reference:
         # - Calculate: 'api/calculate.md'
-        - Simulate: 'api/simulate.md'
+        - Clustering analysis:
+            - Data preprocessing: 'api/cluster/preprocess.md'
+            - Data resampling: 'api/cluster/resample.md'
+        - Cluster simulation:
+            - SimulatedCluster: 'api/simulate.md'
+        - Models:
+            - Binaries: 'api/model/binaries.md'
+            - Differential reddening: 'api/model/differential_reddening.md'
+            - Distribution: 'api/model/distribution.md'
+            - Observation: 'api/model/observation.md'
+        - Utilities: 
+            - Coordinates: 'api/util/coordinates.md'
+            - Magnitudes: 'api/util/magnitudes.md'
+            - Random numbers: 'api/util/random.md'
+            - Statistics: 'api/util/stats.md'
     - Contibute to ocelot!: 
         - Why ocelot?: 'developing.md'

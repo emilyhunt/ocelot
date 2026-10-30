@@ -495,3 +495,45 @@ def test_field_model(show_figure=False):
     assert np.allclose(parameters, target_parameters, rtol=1e-5, atol=1e-8)
 
     assert n_cluster_members == 291
+
+
+def test_resample_gaia_astrometry():
+    """Very basic integration test of resampling.
+
+    TODO: add known test cases
+    """
+    gaia_data = pd.read_parquet(
+        test_data_path / "gaia/dr3/ra=45,dec=0,radius=0.5.parquet"
+    )
+
+    # Firstly, a quick integration test
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, suffixes=[""], include_ra_dec=False
+    )
+    pd.testing.assert_index_equal(
+        result.columns, pd.Index(["pmra", "pmdec", "parallax"], dtype="str")
+    )
+
+    # Then, check the sampling
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=False
+    )
+    assert len(result.columns) == 30
+
+    # Now with ra dec uncertainties!
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=True
+    )
+    assert len(result.columns) == 30
+
+    # Eigh version
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=True, method="eigh"
+    )
+    assert len(result.columns) == 30
+
+    # Cholesky (less stable) version
+    result = ocelot.cluster.resample_gaia_astrometry(
+        gaia_data, n_resamples=10, seed=42, include_ra_dec=True, method="cholesky"
+    )
+    assert len(result.columns) == 30
