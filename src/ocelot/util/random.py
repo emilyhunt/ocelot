@@ -114,7 +114,7 @@ def rotation_matrix(number: int, seed=None):
     return rot
 
 
-def fractal_noise_2d(resolution: int, seed: None):
+def fractal_noise_2d(resolution: int, seed=None):
     """Creates 2d fractal (pink) noise.
 
     Implemented for use in making synthetic (correlated) differential reddening.
